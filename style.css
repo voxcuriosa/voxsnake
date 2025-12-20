@@ -100,10 +100,23 @@ canvas {
     z-index: 100;
 }
 
+.main-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+
 /* ... title and scoreboard ... */
 .neon-title {
     text-align: center;
     width: 100%;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px var(--p1-color), 0 0 20px var(--p2-color);
 }
 
 #score-board {
