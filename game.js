@@ -80,7 +80,7 @@ class Snake {
         else if (key === right && this.direction.x === 0) this.nextDirection = { x: 1, y: 0 };
     }
 
-    move(isSingleMode) {
+    move(walls, isSingleMode) {
         if (this.isDead) return;
 
         // Handle Timers
@@ -95,7 +95,7 @@ class Snake {
         const head = this.body[0];
         const newHead = { x: head.x + this.direction.x, y: head.y + this.direction.y };
 
-        // Wall Collision
+        // Border Collision
         if (newHead.x < 0 || newHead.x >= CANVAS_WIDTH / GRID_SIZE ||
             newHead.y < 0 || newHead.y >= CANVAS_HEIGHT / GRID_SIZE) {
 
@@ -116,20 +116,17 @@ class Snake {
         }
 
         // Placed Wall Collision (Power-up Walls)
-        for (let w of this.walls) {
-            if (newHead.x === w.x && newHead.y === w.y) {
-                if (this.ghostTimer > 0) break; // Ghost passes through
-                if (this.hasShield) {
-                    this.hasShield = false;
-                    // Remove wall we hit? Optional. Let's keep it robust: just lose shield and stop/bounce or just lose shield and continue? 
-                    // Standard: Lose shield, dont die, but must stop or bounce? 
-                    // Actually, if we hit a wall and lose shield, we are still occupying the wall space. 
-                    // Simplest robust fix: Lose shield and RETURN (cancel move). 
-                    // This acts like a "bounce" or "stop".
+        if (walls) {
+            for (let w of walls) {
+                if (newHead.x === w.x && newHead.y === w.y) {
+                    if (this.ghostTimer > 0) break; // Ghost passes through
+                    if (this.hasShield) {
+                        this.hasShield = false;
+                        return; // Bounce/Stop
+                    }
+                    this.isDead = true;
                     return;
                 }
-                this.isDead = true;
-                return;
             }
         }
 
@@ -153,11 +150,9 @@ class Snake {
         }
         return false;
     }
-
 }
 
 class Game {
-    // ...
     constructor() {
         this.snakes = [];
         this.food = {};
@@ -190,7 +185,8 @@ class Game {
         };
 
         this.initListeners();
-        this.resize();
+        // Delay resize slightly to ensure layout is ready
+        setTimeout(() => this.resize(), 50);
         window.addEventListener('resize', () => this.resize());
         this.loadHighScores();
         this.showMainMenu();
@@ -203,7 +199,7 @@ class Game {
         if (restartBtn) restartBtn.addEventListener('click', () => this.startGame(this.gameMode));
         if (menuBtn) menuBtn.addEventListener('click', () => this.showMainMenu());
         if (submitScoreBtn) submitScoreBtn.addEventListener('click', () => this.submitHighScore());
-        if (btnResume) btnResume.addEventListener('click', () => this.togglePause()); // Resume listener
+        if (btnResume) btnResume.addEventListener('click', () => this.togglePause());
 
         // Enter key for name entry
         if (playerNameInput) {
@@ -332,15 +328,17 @@ class Game {
         let w = container ? container.clientWidth : window.innerWidth;
         let h = container ? container.clientHeight : window.innerHeight;
 
-        if (!w || w === 0) w = window.innerWidth;
-        if (!h || h === 0) h = window.innerHeight;
+        // Extra Robustness: If container width is somehow 0 (e.g. collapsed flex),
+        // try window and subtract padding guess.
+        if (!w || w <= 10) w = window.innerWidth - 20;
+        if (!h || h <= 10) h = window.innerHeight - 100; // Account for scoreboard
 
-        // Ensure w/h are non-zero before dividing
-        if (w <= 0) w = 800;
-        if (h <= 0) h = 600;
+        // Final sanity check min sizes
+        if (w < 300) w = 300;
+        if (h < 300) h = 300;
 
-        CANVAS_WIDTH = Math.floor((w - 10) / GRID_SIZE) * GRID_SIZE;
-        CANVAS_HEIGHT = Math.floor((h - 10) / GRID_SIZE) * GRID_SIZE;
+        CANVAS_WIDTH = Math.floor((w - 4) / GRID_SIZE) * GRID_SIZE;
+        CANVAS_HEIGHT = Math.floor((h - 4) / GRID_SIZE) * GRID_SIZE;
 
         canvas.width = CANVAS_WIDTH;
         canvas.height = CANVAS_HEIGHT;
@@ -351,18 +349,17 @@ class Game {
         let valid = false;
         let attempts = 0;
 
-        // Ensure we have valid dimensions
         if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) this.resize();
 
         let maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
         let maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
 
         if (maxX <= 1 || maxY <= 1) {
+            // Should not happen with resize fix, but safety fallback
             maxX = 40;
             maxY = 30;
         }
 
-        // Robust spawning check
         while (!valid && attempts < 100) {
             attempts++;
             this.food = {
@@ -373,7 +370,6 @@ class Game {
         }
 
         if (!valid) {
-            // Fallback to CENTER instead of corner to prove randomness failed
             this.food = { x: Math.floor(maxX / 2), y: Math.floor(maxY / 2) };
         }
     }
@@ -388,7 +384,6 @@ class Game {
             availableTypes = types.filter(t => !['eraser', 'blind', 'ice', 'switch'].includes(t));
         }
 
-        // Blue/Slow logic
         if (this.totalFoodEaten < 10) {
             availableTypes = availableTypes.filter(t => t !== 'slow');
         }
@@ -426,7 +421,6 @@ class Game {
     }
 
     handleInput(e) {
-        // Pause Toggle (P)
         if (e.key.toLowerCase() === 'p' && this.isRunning) {
             this.togglePause();
             return;
@@ -440,17 +434,10 @@ class Game {
         this.isPaused = !this.isPaused;
 
         if (this.isPaused) {
-            // Show Menu
             mainMenu.classList.remove('hidden');
             mainMenu.classList.add('active');
-
-            // Show Resume Button
-            if (btnResume) {
-                btnResume.classList.remove('hidden');
-                // onclick already bound
-            }
+            if (btnResume) btnResume.classList.remove('hidden');
         } else {
-            // Hide Menu
             mainMenu.classList.add('hidden');
             mainMenu.classList.remove('active');
             if (btnResume) btnResume.classList.add('hidden');
@@ -564,7 +551,7 @@ class Game {
                 this.spawnPowerUp();
                 this.updateScoreUI();
             }
-            // Magnet Logic (Active if timer > 0)
+            // Magnet Logic
             if (s.magnetTimer > 0) {
                 const head = s.body[0];
                 const dx = this.food.x - head.x;
@@ -650,7 +637,6 @@ class Game {
     updateDynamicLegend() {
         if (!dynamicLegend) return;
 
-        // Optimize: Only update if content changed to prevent flickering
         const currentPowerups = this.powerups.map(p => p.type).sort().join(',');
         if (this._lastLegendState === currentPowerups) return;
         this._lastLegendState = currentPowerups;
