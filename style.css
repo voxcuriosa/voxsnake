@@ -106,7 +106,8 @@ canvas {
     /* Remove absolute positioning in favor of Flexbox centering from parent */
     position: relative;
     /* Max width to prevent overflowing */
-    max-width: 90%;
+    max-width: 95%;
+    width: 900px;
     background: rgba(10, 10, 10, 0.95);
     backdrop-filter: blur(10px);
     padding: 40px 60px;
@@ -262,104 +263,87 @@ h2 {
     vertical-align: middle;
 }
 
+/* Power Up Dot Colors */
 .dot.normal {
     background: #ff0055;
-    box-shadow: 0 0 5px #ff0055;
+    box-shadow: 0 0 8px #ff0055;
 }
 
-.dot.gold {
-    background: #ffd700;
-    box-shadow: 0 0 5px #ffd700;
+.dot.purple {
+    background: #8800ff;
+    box-shadow: 0 0 8px #8800ff;
+}
+
+.dot.white {
+    background: #ffffff;
+    box-shadow: 0 0 8px #ffffff;
+}
+
+.dot.black {
+    background: #111;
+    box-shadow: 0 0 5px #333;
+    border: 1px solid #777;
+}
+
+.dot.orange {
+    background: #ff6600;
+    box-shadow: 0 0 8px #ff6600;
+}
+
+.dot.cyan {
+    background: #00ffff;
+    box-shadow: 0 0 8px #00ffff;
+}
+
+.dot.red {
+    background: #ff0000;
+    box-shadow: 0 0 8px #ff0000;
+    animation: blink 0.5s infinite;
+}
+
+.dot.silver {
+    background: #c0c0c0;
+    box-shadow: 0 0 8px #c0c0c0;
+}
+
+.dot.pink {
+    background: #ff69b4;
+    box-shadow: 0 0 8px #ff69b4;
+}
+
+.dot.green {
+    background: #00ff00;
+    box-shadow: 0 0 8px #00ff00;
+}
+
+.dot.brown {
+    background: #8b4513;
+    box-shadow: 0 0 8px #8b4513;
 }
 
 .dot.blue {
     background: #0000ff;
-    box-shadow: 0 0 5px #0000ff;
+    box-shadow: 0 0 8px #0000ff;
+}
+
+/* Remove old gold if present, strictly defined above */
+
+100% {
+    opacity: 1;
+}
 }
 
 .mt-2 {
     margin-top: 10px;
 }
 
-/* Menu Options */
 .menu-options {
     display: flex;
     gap: 20px;
+    justify-content: center;
 }
 
-/* Blind Effect */
+/* Added centering */
 .game-container.blinded canvas {
     filter: brightness(0);
-}
-
-/* Power Up Dot Colors */
-.dot.purple {
-    background: #8800ff;
-    box-shadow: 0 0 5px #8800ff;
-}
-
-.dot.white {
-    background: #ffffff;
-    box-shadow: 0 0 5px #ffffff;
-}
-
-.dot.black {
-    background: #333333;
-    box-shadow: 0 0 5px #333333;
-    border: 1px solid #555;
-}
-
-.dot.orange {
-    background: #ff6600;
-    box-shadow: 0 0 5px #ff6600;
-}
-
-.dot.cyan {
-    background: #00ffff;
-    box-shadow: 0 0 5px #00ffff;
-}
-
-.dot.red {
-    background: #ff0000;
-    box-shadow: 0 0 5px #ff0000;
-    animation: blink 0.5s infinite;
-}
-
-.dot.silver {
-    background: #c0c0c0;
-    box-shadow: 0 0 5px #c0c0c0;
-}
-
-.dot.pink {
-    background: #ff69b4;
-    box-shadow: 0 0 5px #ff69b4;
-}
-
-.dot.green {
-    background: #00ff00;
-    box-shadow: 0 0 5px #00ff00;
-}
-
-.dot.brown {
-    background: #8b4513;
-    box-shadow: 0 0 5px #8b4513;
-}
-
-@keyframes blink {
-    0% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.2;
-    }
-
-    100% {
-        opacity: 1;
-    }
-}
-
-.dot.blue {
-    background: #0000ff;
-    box-shadow: 0 0 5px #0000ff;
 }
