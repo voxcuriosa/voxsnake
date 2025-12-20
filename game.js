@@ -350,18 +350,50 @@ class Game {
                 this.gameOver(-1);
                 return;
             }
-        } else {
-            // Multiplayer Collision (Same as previous)
+            // Multiplayer Logic
+            // Check Collisions
             let p1Dead = this.snakes[0].isDead || this.snakes[0].checkSelfCollision();
             let p2Dead = this.snakes[1].isDead || this.snakes[1].checkSelfCollision();
-            // Cross Collision
-            for (let segment of this.snakes[1].body) {
-                if (this.snakes[0].body[0].x === segment.x && this.snakes[0].body[0].y === segment.y) { p1Dead = true; break; }
+
+            // Cross Collision with Tail Biting Mechanic
+            // P1 hitting P2
+            const p1Head = this.snakes[0].body[0];
+            const p2Body = this.snakes[1].body;
+            for (let i = 0; i < p2Body.length; i++) {
+                if (p1Head.x === p2Body[i].x && p1Head.y === p2Body[i].y) {
+                    // Hit detection
+                    if (i >= p2Body.length - 2) {
+                        // Hit the tail (last 2 segments) -> P2 dies (Victim)
+                        p2Dead = true;
+                    } else {
+                        // Hit the body -> P1 dies (Attacker crashed)
+                        p1Dead = true;
+                    }
+                    break;
+                }
             }
-            for (let segment of this.snakes[0].body) {
-                if (this.snakes[1].body[0].x === segment.x && this.snakes[1].body[0].y === segment.y) { p2Dead = true; break; }
+
+            // P2 hitting P1
+            const p2Head = this.snakes[1].body[0];
+            const p1Body = this.snakes[0].body;
+            for (let i = 0; i < p1Body.length; i++) {
+                if (p2Head.x === p1Body[i].x && p2Head.y === p1Body[i].y) {
+                    if (i >= p1Body.length - 2) {
+                        // Hit the tail -> P1 dies (Victim)
+                        p1Dead = true;
+                    } else {
+                        // Hit the body -> P2 dies (Attacker crashed)
+                        p2Dead = true;
+                    }
+                    break;
+                }
             }
-            if (this.snakes[0].body[0].x === this.snakes[1].body[0].x && this.snakes[0].body[0].y === this.snakes[1].body[0].y) { p1Dead = true; p2Dead = true; }
+
+            // Head to Head Collision
+            if (p1Head.x === p2Head.x && p1Head.y === p2Head.y) {
+                p1Dead = true;
+                p2Dead = true;
+            }
 
             if (p1Dead && p2Dead) { this.gameOver(-1); return; }
             else if (p1Dead) { this.gameOver(1); return; }
@@ -406,10 +438,7 @@ class Game {
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // Draw Food
-        let foodColor = COLORS.food;
-        if (this.food.type === 'gold') foodColor = COLORS.gold;
-        if (this.food.type === 'blue') foodColor = COLORS.blue;
-        this.drawRect(this.food.x, this.food.y, foodColor, true);
+        this.drawRect(this.food.x, this.food.y, COLORS.food, true);
 
         // Draw Snakes
         this.snakes.forEach(snake => {
