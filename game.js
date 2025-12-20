@@ -166,30 +166,48 @@ class Game {
     }
 
     loadHighScores() {
-        const scores = JSON.parse(localStorage.getItem('snake_highscores_v2') || '[]');
-        highScoreList.innerHTML = '';
-        if (scores.length === 0) {
-            highScoreList.innerHTML = '<li>No High Scores Yet</li>';
-            return;
-        }
-        // Take top 20
-        scores.slice(0, 5).forEach((s, i) => { // Displaying top 5 on menu to keep it clean, storing 20
-            const li = document.createElement('li');
-            li.innerHTML = `<span>#${i + 1} ${s.name}</span> <span>${s.score} pts</span>`;
-            highScoreList.appendChild(li);
-        });
+        const list = document.getElementById('high-score-list');
+        list.innerHTML = '<li>Loading...</li>';
+
+        fetch('api.php')
+            .then(res => res.json())
+            .then(data => {
+                list.innerHTML = '';
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<li>No High Scores Yet</li>';
+                    return;
+                }
+                data.forEach((s, i) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>#${i + 1} ${s.name}</span> <span>${s.score} pts</span>`;
+                    list.appendChild(li);
+                });
+                // Store in local for fallback check
+                localStorage.setItem('snake_highscores_cache', JSON.stringify(data));
+            })
+            .catch(err => {
+                console.error("API Load Error", err);
+                list.innerHTML = '<li>Offline Mode</li>';
+            });
     }
 
     saveHighScore(name, score) {
-        const scores = JSON.parse(localStorage.getItem('snake_highscores_v2') || '[]');
-        scores.push({ name: name, score: score });
-        scores.sort((a, b) => b.score - a.score);
-        const topScores = scores.slice(0, 20); // Keep top 20
-        localStorage.setItem('snake_highscores_v2', JSON.stringify(topScores));
+        fetch('api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, score: score })
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log("Score Saved", data);
+                this.loadHighScores();
+            })
+            .catch(err => console.error("API Save Error", err));
     }
 
     checkHighScore(score) {
-        const scores = JSON.parse(localStorage.getItem('snake_highscores_v2') || '[]');
+        // Use cached data for immediate check to avoid async lag
+        const scores = JSON.parse(localStorage.getItem('snake_highscores_cache') || '[]');
         if (scores.length < 20) return true;
         return score > scores[scores.length - 1].score;
     }
