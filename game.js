@@ -184,6 +184,13 @@ class Game {
         if (menuBtn) menuBtn.addEventListener('click', () => this.showMainMenu());
         if (submitScoreBtn) submitScoreBtn.addEventListener('click', () => this.submitHighScore());
         if (btnResume) btnResume.addEventListener('click', () => this.togglePause()); // Resume listener
+
+        // Enter key for name entry
+        if (playerNameInput) {
+            playerNameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.submitHighScore();
+            });
+        }
     }
 
     showMainMenu() {
@@ -590,10 +597,8 @@ class Game {
             case 'shield': user.hasShield = true; break;
             case 'magnet': user.magnetTimer = 10000; break;
             case 'wall':
-                if (user.body.length > 1) {
-                    const tail = user.body[user.body.length - 1];
-                    this.walls.push({ x: tail.x, y: tail.y });
-                }
+                const tail = user.body[user.body.length - 1];
+                this.walls.push({ x: tail.x, y: tail.y });
                 break;
             case 'eraser':
                 if (isMulti && enemy) {
