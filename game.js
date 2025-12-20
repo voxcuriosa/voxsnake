@@ -376,41 +376,98 @@ class Game {
     }
 
     handleInput(e) {
+        // Pause Toggle (P)
+        if (e.key.toLowerCase() === 'p' && this.isRunning) {
+            this.togglePause();
+            return;
+        }
+
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
         this.snakes.forEach(s => s.handleInput(e.key));
     }
 
-    gameOver(winnerIndex, skipNameEntry = false) {
-        this.isRunning = false;
-        if (this.gameMode === 'single' && !skipNameEntry) {
-            const score = this.snakes[0].score;
-            if (this.checkHighScore(score) && score > 0) {
-                this.currentPendingScore = score;
-                playerNameInput.value = "";
-                nameEntryScreen.classList.remove('hidden');
-                nameEntryScreen.classList.add('active'); // Explicit active class
-                playerNameInput.focus();
-                return;
+    togglePause() {
+        this.isPaused = !this.isPaused;
+        const btnResume = document.getElementById('btn-resume');
+
+        if (this.isPaused) {
+            // Show Menu
+            mainMenu.classList.remove('hidden');
+            mainMenu.classList.add('active');
+
+            // Show Resume Button
+            if (btnResume) {
+                btnResume.classList.remove('hidden');
+                btnResume.onclick = () => this.togglePause(); // Bind click
             }
-        }
+        } else {
+            // Hide Menu
+            mainMenu.classList.add('hidden');
+            mainMenu.classList.remove('active');
+            if (btnResume) btnResume.classList.add('hidden');
 
-        let msg = "GAME OVER";
-        let color = COLORS.p1;
-        if (this.gameMode === 'multi') {
-            if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
-            else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
-            else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
+            // Reset loop time to prevent jump
+            this.lastTime = performance.now();
+            this.loop(this.lastTime);
         }
+    }
 
-        winnerText.innerText = msg;
-        winnerText.style.color = color;
-        gameOverScreen.classList.remove('hidden');
-        gameOverScreen.classList.add('active');
-        // Clear Legend
-        dynamicLegend.innerHTML = '';
+    gameOver(winnerIndex, skipNameEntry = false) {
+        try {
+            this.isRunning = false;
+            this.isPaused = false;
+
+            // Ensure Menu UI is updated first (Hide main menu if open)
+            mainMenu.classList.remove('active');
+            mainMenu.classList.add('hidden');
+
+            // Single Player High Score Check
+            if (this.gameMode === 'single' && !skipNameEntry) {
+                const score = this.snakes[0].score;
+                if (score > 0 && this.checkHighScore(score)) {
+                    this.currentPendingScore = score;
+                    if (playerNameInput) playerNameInput.value = "";
+                    nameEntryScreen.classList.remove('hidden');
+                    nameEntryScreen.classList.add('active');
+                    if (playerNameInput) playerNameInput.focus();
+                    return;
+                }
+            }
+
+            let msg = "GAME OVER";
+            let color = COLORS.p1;
+            if (this.gameMode === 'multi') {
+                if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
+                else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
+                else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
+            }
+
+            if (winnerText) {
+                winnerText.innerText = msg;
+                winnerText.style.color = color;
+            }
+
+            gameOverScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('active');
+
+            // Hide Resume button if present
+            const btnResume = document.getElementById('btn-resume');
+            if (btnResume) btnResume.classList.add('hidden');
+
+            // Clear Legend
+            if (dynamicLegend) dynamicLegend.innerHTML = '';
+        } catch (err) {
+            console.error("Game Over Error", err);
+            // Fallback for user
+            mainMenu.classList.remove('hidden');
+            mainMenu.classList.add('active');
+            alert("Game Over! (Recovered)");
+        }
     }
 
     update() {
+        if (this.isPaused) return;
+
         // Timers
         if (this.speedEffectTimer > 0) {
             this.speedEffectTimer -= 16;

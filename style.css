@@ -181,8 +181,16 @@ text-shadow: 0 0 10px var(--p1-color),
 .dynamic-legend-bar {
     justify-self: center;
     margin-bottom: 0;
-    /* Remove margin since it's in grid now */
-    height: auto;
+    height: 30px;
+    /* Fixed height to prevent jumping */
+    display: flex;
+    flex-direction: row;
+    /* Force horizontal */
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+    /* Ensure space */
 }
 
 .menu-screen {
