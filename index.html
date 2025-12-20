@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=v7.7">
+    <link rel="stylesheet" href="style.css?v=v7.8">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -88,40 +88,42 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="menu-options">
-                            <button id="btn-resume" class="neon-btn hidden">RESUME</button>
-                            <button id="btn-1p" class="neon-btn">1 PLAYER</button>
-                            <button id="btn-2p" class="neon-btn">2 PLAYERS</button>
-                        </div>
-
-                        <div id="high-scores" class="mt-4">
-                            <h2>TOP SCORES</h2>
-                            <ul id="high-score-list">
-                                <!-- Populated by JS -->
-                            </ul>
-                        </div>
                     </div>
 
-                    <!-- Game Over Screen -->
-                    <div id="game-over-screen" class="menu-screen hidden">
-                        <h1 id="winner-text">GAME OVER</h1>
-                        <div class="menu-options">
-                            <button id="restart-btn" class="neon-btn">RESTART</button>
-                            <button id="menu-btn" class="neon-btn secondary">MENU</button>
-                        </div>
+                    <div class="menu-options">
+                        <button id="btn-resume" class="neon-btn hidden">RESUME</button>
+                        <button id="btn-1p" class="neon-btn">1 PLAYER</button>
+                        <button id="btn-2p" class="neon-btn">2 PLAYERS</button>
                     </div>
 
-                    <!-- Name Entry Screen -->
-                    <div id="name-entry-screen" class="menu-screen hidden">
-                        <h2 class="neon-title" style="font-size: 2rem;">NEW HIGH SCORE!</h2>
-                        <input type="text" id="player-name-input" maxlength="10" placeholder="ENTER NAME">
-                        <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
+                    <div id="high-scores" class="mt-4">
+                        <h2>TOP SCORES</h2>
+                        <ul id="high-score-list">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div> <!-- END MAIN MENU -->
+
+                <!-- Game Over Screen (Sibling now) -->
+                <div id="game-over-screen" class="menu-screen hidden">
+                    <h1 id="winner-text">GAME OVER</h1>
+                    <div class="menu-options">
+                        <button id="restart-btn" class="neon-btn">RESTART</button>
+                        <button id="menu-btn" class="neon-btn secondary">MENU</button>
                     </div>
                 </div>
+
+                <!-- Name Entry Screen (Sibling now) -->
+                <div id="name-entry-screen" class="menu-screen hidden">
+                    <h2 class="neon-title" style="font-size: 2rem;">NEW HIGH SCORE!</h2>
+                    <input type="text" id="player-name-input" maxlength="10" placeholder="ENTER NAME">
+                    <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
+                </div>
+
             </div>
         </div>
-        <script src="game.js"></script>
+    </div>
+    <script src="game.js"></script>
 </body>
 
 </html>

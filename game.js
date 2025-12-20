@@ -312,19 +312,32 @@ class Game {
     spawnFood() {
         let valid = false;
         let attempts = 0;
+
+        // Safety check for dimensions
+        if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) this.resize();
+
+        const maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
+        const maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
+
+        if (maxX <= 1 || maxY <= 1) {
+            // Fallback if resize failed
+            this.food = { x: 10, y: 10 };
+            return;
+        }
+
         // Robust spawning check
         while (!valid && attempts < 100) {
             attempts++;
             this.food = {
-                x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
-                y: Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE))
+                x: Math.floor(Math.random() * maxX),
+                y: Math.floor(Math.random() * maxY)
             };
             valid = !this.isOccupied(this.food);
         }
         if (!valid) {
             // Brute force find empty
-            for (let x = 0; x < CANVAS_WIDTH / GRID_SIZE; x++) {
-                for (let y = 0; y < CANVAS_HEIGHT / GRID_SIZE; y++) {
+            for (let x = 0; x < maxX; x++) {
+                for (let y = 0; y < maxY; y++) {
                     if (!this.isOccupied({ x, y })) {
                         this.food = { x, y };
                         valid = true;
