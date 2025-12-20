@@ -92,65 +92,22 @@ canvas {
     pointer-events: none;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 20px;
-}
-
-.title {
-    text-align: center;
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: 4px;
-    color: rgba(255, 255, 255, 0.1);
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
-    margin-top: 10px;
-}
-
-.score-board {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    padding: 0 40px;
-    margin-bottom: auto;
-    /* Push to top */
-    margin-top: 20px;
-    transition: opacity 0.3s;
-}
-
-.score-board.hidden {
-    opacity: 0;
-}
-
-.score {
-    display: flex;
-    flex-direction: column;
+    justify-content: center;
+    /* Center vertically */
     align-items: center;
-    font-size: 1.2rem;
-    font-weight: 700;
+    /* Center horizontally */
+    padding: 20px;
+    z-index: 100;
 }
 
-.score.p1 {
-    color: var(--p1-color);
-    text-shadow: 0 0 10px var(--p1-color);
-}
-
-.score.p2 {
-    color: var(--p2-color);
-    text-shadow: 0 0 10px var(--p2-color);
-}
-
-.score .value {
-    font-size: 2.5rem;
-    margin-top: 5px;
-}
+/* ... title and scoreboard ... */
 
 .menu-screen {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    background: rgba(10, 10, 10, 0.85);
+    /* Remove absolute positioning in favor of Flexbox centering from parent */
+    position: relative;
+    /* Max width to prevent overflowing */
+    max-width: 90%;
+    background: rgba(10, 10, 10, 0.95);
     backdrop-filter: blur(10px);
     padding: 40px 60px;
     border-radius: 16px;
@@ -158,17 +115,36 @@ canvas {
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
     pointer-events: auto;
     transition: opacity 0.3s ease, transform 0.3s ease;
+    /* Ensure it sits on top of everything inside UI layer */
+    z-index: 200;
 }
 
 .menu-screen.hidden {
     opacity: 0;
     pointer-events: none;
-    transform: translate(-50%, -45%);
+    /* Hide using display none to prevent layout taking up space if needed, 
+       but opacity transition requires it to stay. 
+       We'll rely on z-index or absolute if flex doesn't overlap well. */
+    display: none;
 }
 
 .menu-screen.active {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    display: block;
+    /* Transform not needed for centering anymore, but nice for entrance */
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .instruction {
