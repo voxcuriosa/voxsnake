@@ -101,6 +101,36 @@ canvas {
 }
 
 /* ... title and scoreboard ... */
+.neon-title {
+    text-align: center;
+    width: 100%;
+}
+
+#score-board {
+    display: flex;
+    justify-content: space-between;
+    width: 98vw;
+    /* Match game container width */
+    margin: 0 auto 10px auto;
+    padding: 0 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.score-box {
+    color: #fff;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.score-box.p1 {
+    color: var(--p1-color);
+}
+
+.score-box.p2 {
+    color: var(--p2-color);
+}
 
 .menu-screen {
     /* Remove absolute positioning in favor of Flexbox centering from parent */
