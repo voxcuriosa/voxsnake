@@ -406,20 +406,9 @@ class Game {
                 // Progressive Speed: 1% faster
                 this.baseSpeed *= 0.99;
                 if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
-                // Determine effect based on type
-                if (this.food.type === 'normal') {
-                    snake.growPending++;
-                    snake.score++;
-                } else if (this.food.type === 'gold') {
-                    snake.growPending += 3;
-                    snake.score += 50;
-                } else if (this.food.type === 'blue') {
-                    snake.growPending++;
-                    snake.score += 5;
-                    // Slow down game
-                    this.currentSpeed = 200; // Slower
-                    this.speedEffectTimer = 5000; // 5 seconds
-                }
+                // Normal growth (Power-ups removed)
+                snake.growPending++;
+                snake.score++;
 
                 this.spawnFood();
                 this.updateScoreUI();

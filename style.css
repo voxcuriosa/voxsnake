@@ -284,3 +284,25 @@ h2 {
     display: flex;
     gap: 20px;
 }
+/* Blind Effect */
+.game-container.blinded canvas {
+    filter: brightness(0);
+}
+
+/* Power Up Dot Colors */
+.dot.purple { background: #8800ff; box-shadow: 0 0 5px #8800ff; }
+.dot.white { background: #ffffff; box-shadow: 0 0 5px #ffffff; }
+.dot.black { background: #333333; box-shadow: 0 0 5px #333333; border: 1px solid #555; }
+.dot.orange { background: #ff6600; box-shadow: 0 0 5px #ff6600; }
+.dot.cyan { background: #00ffff; box-shadow: 0 0 5px #00ffff; }
+.dot.red { background: #ff0000; box-shadow: 0 0 5px #ff0000; animation: blink 0.5s infinite; }
+.dot.silver { background: #c0c0c0; box-shadow: 0 0 5px #c0c0c0; }
+.dot.pink { background: #ff69b4; box-shadow: 0 0 5px #ff69b4; }
+.dot.green { background: #00ff00; box-shadow: 0 0 5px #00ff00; }
+.dot.brown { background: #8b4513; box-shadow: 0 0 5px #8b4513; }
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.2; }
+    100% { opacity: 1; }
+}
