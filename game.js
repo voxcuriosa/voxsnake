@@ -154,15 +154,6 @@ class Snake {
         return false;
     }
 
-    // Use Game instance to access walls if needed, but 'walls' is passed in or accessible? 
-    // Snake class doesn't have access to Game.walls directly unless passed.
-    // Wait, 'this.walls' in Snake class refers to Snake property? No. 
-    // Snake.move() needs access to the Game's walls. 
-    // I need to refactor move() to accept walls as argument OR move collision check to Game.update
-    // Refactoring move() to accept walls is cleaner.
-}
-
-    // ...
 }
 
 class Game {
