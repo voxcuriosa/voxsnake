@@ -160,6 +160,7 @@ text-shadow: 0 0 10px var(--p1-color),
 #score-board {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
+    /* Left (P1) - Center (Legend) - Right (P2) */
     align-items: center;
     width: 98vw;
     margin: 0 auto 10px auto;
@@ -450,4 +451,4 @@ h2 {
 }
 
 /* Force hidden utility */
-.hidden {}
+.hidden {}.dynamic-legend-bar { flex-wrap: nowrap; }
