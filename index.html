@@ -41,55 +41,67 @@
                             <div><span class="key">ARROWS</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
                         </div>
-                        <div class="inst-grid mt-2"
-                            style="font-size: 0.7rem; display: block; max-height: 100px; overflow-y: auto;">
-                            <div><span class="dot normal"></span> Eat to Grow</div>
-                            <div><span class="dot purple"></span> Ghost (No Clip)</div>
-                            <div><span class="dot white"></span> Eraser (Halve Enemy)</div>
-                            <div><span class="dot black"></span> Blindness</div>
-                            <div><span class="dot blue"></span> Slow Time (5s)</div>
-                            <div><span class="dot orange"></span> Speed Boost</div>
-                            <div><span class="dot cyan"></span> Ice Freeze</div>
-                            <div><span class="dot red"></span> Bomb (Clear)</div>
-                            <div><span class="dot silver"></span> Shield (1 Hit)</div>
-                            <div><span class="dot pink"></span> Magnet</div>
-                            <div><span class="dot green"></span> Switch Places</div>
-                            <div><span class="dot brown"></span> Wall (Obstacle)</div>
+                        <div class="instructions-split-layout" style="display: flex; gap: 10px; font-size: 0.7rem;">
+                            <!-- Global Items -->
+                            <div style="flex: 1;">
+                                <h4 style="margin: 5px 0; color: #fff; border-bottom: 1px solid #444;">GLOBAL (1P & 2P)
+                                </h4>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <div><span class="dot normal"></span> Eat (Grow)</div>
+                                    <div><span class="dot purple"></span> Ghost (Wall Hack)</div>
+                                    <div><span class="dot orange"></span> Speed Boost</div>
+                                    <div><span class="dot blue"></span> Slow Time</div>
+                                    <div><span class="dot red"></span> Bomb (Clear)</div>
+                                    <div><span class="dot silver"></span> Shield (1 Hit)</div>
+                                    <div><span class="dot pink"></span> Magnet</div>
+                                    <div><span class="dot brown"></span> Wall (Block)</div>
+                                </div>
+                            </div>
+                            <!-- Combat Items -->
+                            <div style="flex: 1; border-left: 1px solid #333; padding-left: 10px;">
+                                <h4 style="margin: 5px 0; color: #ff0055; border-bottom: 1px solid #444;">COMBAT (2P
+                                    ONLY)</h4>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <div><span class="dot white"></span> Eraser (1/2 Enemy)</div>
+                                    <div><span class="dot black"></span> Blindness</div>
+                                    <div><span class="dot cyan"></span> Ice Freeze</div>
+                                    <div><span class="dot green"></span> Switch Places</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="menu-options">
+                            <button id="btn-1p" class="neon-btn">1 PLAYER</button>
+                            <button id="btn-2p" class="neon-btn">2 PLAYERS</button>
+                        </div>
+
+                        <div id="high-scores" class="mt-4">
+                            <h2>TOP SCORES</h2>
+                            <ul id="high-score-list">
+                                <!-- Populated by JS -->
+                            </ul>
                         </div>
                     </div>
 
-                    <div class="menu-options">
-                        <button id="btn-1p" class="neon-btn">1 PLAYER</button>
-                        <button id="btn-2p" class="neon-btn">2 PLAYERS</button>
+                    <!-- Game Over Screen -->
+                    <div id="game-over-screen" class="menu-screen hidden">
+                        <h1 id="winner-text">GAME OVER</h1>
+                        <div class="menu-options">
+                            <button id="restart-btn" class="neon-btn">RESTART</button>
+                            <button id="menu-btn" class="neon-btn secondary">MENU</button>
+                        </div>
                     </div>
 
-                    <div id="high-scores" class="mt-4">
-                        <h2>TOP SCORES</h2>
-                        <ul id="high-score-list">
-                            <!-- Populated by JS -->
-                        </ul>
+                    <!-- Name Entry Screen -->
+                    <div id="name-entry-screen" class="menu-screen hidden">
+                        <h2 class="neon-title" style="font-size: 2rem;">NEW HIGH SCORE!</h2>
+                        <input type="text" id="player-name-input" maxlength="10" placeholder="ENTER NAME">
+                        <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
                     </div>
-                </div>
-
-                <!-- Game Over Screen -->
-                <div id="game-over-screen" class="menu-screen hidden">
-                    <h1 id="winner-text">GAME OVER</h1>
-                    <div class="menu-options">
-                        <button id="restart-btn" class="neon-btn">RESTART</button>
-                        <button id="menu-btn" class="neon-btn secondary">MENU</button>
-                    </div>
-                </div>
-
-                <!-- Name Entry Screen -->
-                <div id="name-entry-screen" class="menu-screen hidden">
-                    <h2 class="neon-title" style="font-size: 2rem;">NEW HIGH SCORE!</h2>
-                    <input type="text" id="player-name-input" maxlength="10" placeholder="ENTER NAME">
-                    <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
                 </div>
             </div>
         </div>
-    </div>
-    <script src="game.js"></script>
+        <script src="game.js"></script>
 </body>
 
 </html>
