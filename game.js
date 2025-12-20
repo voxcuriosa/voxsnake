@@ -317,26 +317,26 @@ class Game {
                 this.updateScoreUI();
 
                 // Magnet Effect (Triggered on eat? No, magnet is active state)
-            }
-            // Magnet Logic (Continuous)
-            if (s.magnetTimer > 0) {
-                // Move food towards head if close
-                const head = s.body[0];
-                const dx = this.food.x - head.x;
-                const dy = this.food.y - head.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (s.magnetTimer > 0) {
+                    // Move food towards head if close
+                    const head = s.body[0];
+                    const dx = this.food.x - head.x;
+                    const dy = this.food.y - head.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
 
-                if (dist < 15 && dist > 0) { // Increased Range to 15
-                    // Stronger pull: Move every frame (100% chance)
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        this.food.x -= Math.sign(dx);
-                    } else {
-                        this.food.y -= Math.sign(dy);
+                    if (dist < 15 && dist > 0) { // Increased Range to 15
+                        // Stronger pull: Move every frame (100% chance)
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            this.food.x -= Math.sign(dx);
+                        } else {
+                            this.food.y -= Math.sign(dy);
+                        }
                     }
                 }
             }
         });
 
+        // Eat Powerups
         this.snakes.forEach((s, sIdx) => {
             const head = s.body[0];
             for (let i = 0; i < this.powerups.length; i++) {
@@ -355,22 +355,13 @@ class Game {
         const isMulti = this.gameMode === 'multi';
 
         switch (type) {
+            // ... (rest of applyPowerUp logic) ...
             case 'ghost': user.ghostTimer = 5000; break;
             case 'speed':
                 this.currentSpeed = 50;
                 this.speedEffectTimer = 3000;
                 break;
             case 'slow':
-                // Slows speed by 10% of CURRENT speed (which is currentSpeed + some amount)
-                // Actually user requested: "Senker speed med 10% av nåværende speed"
-                // Slower = Higher ms value. 
-                // Logic: currentSpeed (ms) * 1.10 = 10% slower (larger delay)
-                this.currentSpeed = this.currentSpeed * 1.10;
-                // Applies to base speed too so it stacks? Or just temporary effect?
-                // Request said "Blue... senker speed". Usually implied temporary or permanent?
-                // Let's make it a temporary effect for 5s like others, OR permanent? 
-                // "Blue is available after 10 bits... it lowers speed". Sound beneficial for high speed.
-                // Let's make it PERMANENT reduction to baseSpeed to help control
                 this.baseSpeed = this.baseSpeed * 1.10;
                 this.currentSpeed = this.baseSpeed;
                 break;

@@ -11,6 +11,14 @@
     --font-main: 'Outfit', sans-serif;
 }
 
+/* GLOBAL UTILITY - MUST BE TOP LEVEL */
+.hidden {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -440,7 +448,6 @@ h2 {
 .game-container.blinded canvas {
     filter: brightness(0);
 }
-/* Force hidden utility */
-.hidden {
-}
 
+/* Force hidden utility */
+.hidden {}
