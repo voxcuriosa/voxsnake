@@ -622,6 +622,12 @@ class Game {
 
     updateDynamicLegend() {
         if (!dynamicLegend) return;
+
+        // Optimize: Only update if content changed to prevent flickering
+        const currentPowerups = this.powerups.map(p => p.type).sort().join(',');
+        if (this._lastLegendState === currentPowerups) return;
+        this._lastLegendState = currentPowerups;
+
         dynamicLegend.innerHTML = '';
         this.powerups.forEach(p => {
             const def = this.powerUpTypes[p.type];

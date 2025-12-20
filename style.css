@@ -167,6 +167,8 @@ text-shadow: 0 0 10px var(--p1-color),
     padding: 0 10px;
     font-size: 1.2rem;
     font-weight: bold;
+    white-space: nowrap;
+    /* Prevent wrapping */
 }
 
 .score-box {
@@ -451,4 +453,8 @@ h2 {
 }
 
 /* Force hidden utility */
-.hidden {}.dynamic-legend-bar { flex-wrap: nowrap; }
+.hidden {}
+
+.dynamic-legend-bar {
+    flex-wrap: nowrap;
+}
