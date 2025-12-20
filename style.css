@@ -302,7 +302,8 @@ h2 {
     margin-bottom: 30px;
     width: 100%;
     max-width: 400px;
-    text-align: left;
+    text-align: center;
+    /* Centered Text */
     margin-left: auto;
     margin-right: auto;
 }
@@ -313,6 +314,7 @@ h2 {
     margin-bottom: 5px;
     display: flex;
     justify-content: space-between;
+    /* This keeps name/score separated */
     border-radius: 4px;
     font-size: 1.1rem;
     color: var(--p1-color);
