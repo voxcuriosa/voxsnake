@@ -637,10 +637,7 @@ class Game {
     updateDynamicLegend() {
         if (!dynamicLegend) return;
 
-        const currentPowerups = this.powerups.map(p => p.type).sort().join(',');
-        if (this._lastLegendState === currentPowerups) return;
-        this._lastLegendState = currentPowerups;
-
+        // Force redraw to update timer every second/frame
         dynamicLegend.innerHTML = '';
         this.powerups.forEach(p => {
             const def = this.powerUpTypes[p.type];
@@ -649,6 +646,15 @@ class Game {
             div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
             dynamicLegend.appendChild(div);
         });
+
+        // Add Active Ghost Timer (Single Player Focus)
+        if (this.gameMode === 'single' && this.snakes[0] && this.snakes[0].ghostTimer > 0) {
+            const secondsLeft = Math.ceil(this.snakes[0].ghostTimer / 1000);
+            const div = document.createElement('div');
+            div.className = 'legend-item';
+            div.innerHTML = `<span class="dot ghost" style="background-color:${COLORS.ghost}; box-shadow: 0 0 10px ${COLORS.ghost}"></span> GHOST (${secondsLeft}s)`;
+            dynamicLegend.appendChild(div);
+        }
     }
 
     draw() {
