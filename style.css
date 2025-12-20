@@ -306,3 +306,4 @@ h2 {
     50% { opacity: 0.2; }
     100% { opacity: 1; }
 }
+.dot.blue { background: #0000ff; box-shadow: 0 0 5px #0000ff; }
