@@ -41,6 +41,16 @@ body {
     justify-content: center;
     align-items: center;
     background: #050505;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    background-image:
+        linear-gradient(rgba(26, 26, 26, 0.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26, 26, 26, 0.5) 1px, transparent 1px);
+    background-size: 20px 20px;
+    /* Maximize container */
+    width: 98vw;
+    height: 85vh;
+    /* Reduced height to fit scoreboard */
 }
 
 #player-name-input {

@@ -265,10 +265,10 @@ class Game {
         let pos = {};
         let type = 'normal';
 
-        // Power-up chance 10%
+        // Power-up chance 20% (Increased from 10%)
         const rand = Math.random();
-        if (rand < 0.05) type = 'gold'; // 5%
-        else if (rand < 0.10) type = 'blue'; // 5%
+        if (rand < 0.10) type = 'gold'; // 10%
+        else if (rand < 0.20) type = 'blue'; // 10%
 
         while (!valid) {
             pos = {

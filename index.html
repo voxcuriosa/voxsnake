@@ -12,50 +12,58 @@
 </head>
 
 <body>
-    <div class="game-container">
-        <div class="ui-layer" id="ui-layer">
-            <h1 class="title">NEON SNAKE</h1>
-
-            <div class="score-board hidden" id="score-board">
-                <div class="score p1">
-                    <span class="label">P1 (Arrows)</span>
-                    <span class="value" id="score-p1">0</span>
-                </div>
-                <div class="score p2" id="p2-score-box">
-                    <span class="label">P2 (WASD)</span>
-                    <span class="value" id="score-p2">0</span>
-                </div>
+    <div class="main-wrapper">
+        <!-- Score Board (Moved Outside) -->
+        <h1 class="neon-title" style="margin-bottom: 10px; font-size: 2.5rem;">NEON SNAKE</h1>
+        <div id="score-board" class="hidden">
+            <div class="score-box p1">
+                <span>PLAYER 1</span>
+                <span id="score-p1" class="score-digit">0</span>
             </div>
+            <div class="score-box p2" id="p2-score-box">
+                <span>PLAYER 2</span>
+                <span id="score-p2" class="score-digit">0</span>
+            </div>
+        </div>
 
-            <!-- Main Menu -->
-            <div id="main-menu" class="screen active">
-                <h2>LEADERBOARD</h2>
-                <ul id="high-score-list">
-                    <li>No High Scores Yet</li>
-                </ul>
-                <div class="menu-buttons">
-                    <button id="btn-1p" class="btn primary">1 PLAYER</button>
-                    <button id="btn-2p" class="btn primary">2 PLAYERS</button>
+        <div class="game-container">
+            <canvas id="game-canvas"></canvas>
+
+            <!-- UI Layer -->
+            <div id="ui-layer">
+                <!-- Main Menu -->
+                <div id="main-menu" class="menu-screen active">
+                    <h1 class="neon-title">SCIFI SNAKE</h1>
+                    <div class="menu-options">
+                        <button id="btn-1p" class="neon-btn">1 PLAYER</button>
+                        <button id="btn-2p" class="neon-btn">2 PLAYERS</button>
+                    </div>
+
+                    <div id="high-scores" class="mt-4">
+                        <h2>TOP SCORES</h2>
+                        <ul id="high-score-list">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Name Entry Screen -->
-            <div id="name-entry-screen" class="screen hidden">
-                <h2>NEW HIGH SCORE!</h2>
-                <input type="text" id="player-name-input" placeholder="ENTER YOUR NAME" maxlength="10"
-                    autocomplete="off">
-                <button id="submit-score-btn" class="btn primary">SUBMIT</button>
-            </div>
+                <!-- Game Over Screen -->
+                <div id="game-over-screen" class="menu-screen hidden">
+                    <h1 id="winner-text">GAME OVER</h1>
+                    <div class="menu-options">
+                        <button id="restart-btn" class="neon-btn">RESTART</button>
+                        <button id="menu-btn" class="neon-btn secondary">MENU</button>
+                    </div>
+                </div>
 
-            <div id="game-over-screen" class="screen hidden">
-                <h2 id="winner-text">GAME OVER</h2>
-                <div class="menu-buttons">
-                    <button id="restart-btn" class="btn primary">PLAY AGAIN</button>
-                    <button id="menu-btn" class="btn secondary">MAIN MENU</button>
+                <!-- Name Entry Screen -->
+                <div id="name-entry-screen" class="menu-screen hidden">
+                    <h2 class="neon-title" style="font-size: 2rem;">NEW HIGH SCORE!</h2>
+                    <input type="text" id="player-name-input" maxlength="10" placeholder="ENTER NAME">
+                    <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
                 </div>
             </div>
         </div>
-        <canvas id="game-canvas"></canvas>
     </div>
     <script src="game.js"></script>
 </body>
