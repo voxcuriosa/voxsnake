@@ -142,11 +142,18 @@ canvas {
     text-shadow: 0 0 10px var(--p1-color), 0 0 20px var(--p2-color);
 }
 
+width: 100%;
+margin-bottom: 10px;
+letter-spacing: 4px;
+text-shadow: 0 0 10px var(--p1-color),
+0 0 20px var(--p2-color);
+}
+
 #score-board {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     width: 98vw;
-    /* Match game container width */
     margin: 0 auto 10px auto;
     padding: 0 10px;
     font-size: 1.2rem;
@@ -162,10 +169,20 @@ canvas {
 
 .score-box.p1 {
     color: var(--p1-color);
+    justify-self: start;
 }
 
 .score-box.p2 {
     color: var(--p2-color);
+    justify-self: end;
+}
+
+/* Legend Styling override for grid context */
+.dynamic-legend-bar {
+    justify-self: center;
+    margin-bottom: 0;
+    /* Remove margin since it's in grid now */
+    height: auto;
 }
 
 .menu-screen {
