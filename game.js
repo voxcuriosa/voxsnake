@@ -326,17 +326,12 @@ class Game {
                 const dy = this.food.y - head.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
-                if (dist < 10 && dist > 0) { // Range 10
-                    // Move food 1 step randomly towards snake? Or smooth float?
-                    // Grid based... can't float smoothly.
-                    // Maybe move food 1 grid step every N frames? 
-                    // Let's rely on simple probability to simulate "pull"
-                    if (Math.random() < 0.1) { // 10% chance per frame to slide closer
-                        if (Math.abs(dx) > Math.abs(dy)) {
-                            this.food.x -= Math.sign(dx);
-                        } else {
-                            this.food.y -= Math.sign(dy);
-                        }
+                if (dist < 15 && dist > 0) { // Increased Range to 15
+                    // Stronger pull: Move every frame (100% chance)
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        this.food.x -= Math.sign(dx);
+                    } else {
+                        this.food.y -= Math.sign(dy);
                     }
                 }
             }
