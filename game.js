@@ -371,6 +371,9 @@ class Game {
         // Eat Food
         this.snakes.forEach(snake => {
             if (snake.body[0].x === this.food.x && snake.body[0].y === this.food.y) {
+                // Progressive Speed: 1% faster
+                this.baseSpeed *= 0.99;
+                if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
                 // Determine effect based on type
                 if (this.food.type === 'normal') {
                     snake.growPending++;
