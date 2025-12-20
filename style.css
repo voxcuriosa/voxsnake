@@ -81,14 +81,10 @@ body {
 }
 
 canvas {
-    background-color: #0a0a0a;
-    background-image:
-        linear-gradient(var(--grid-color) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-    background-size: 20px 20px;
     display: block;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1), inset 0 0 100px rgba(0, 0, 0, 0.9);
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    /* Canvas size is set by JS, just ensure it doesn't overflow */
+    max-width: 100%;
+    max-height: 100%;
 }
 
 #ui-layer {
