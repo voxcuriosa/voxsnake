@@ -306,7 +306,17 @@ class Game {
             ];
         }
 
-        this.spawnFood();
+        // Force a resize check BEFORE spawning to avoid 0x0 canvas -> Center Spawn Fallback
+        this.resize();
+
+        // Safety delay for spawn if canvas is somehow still weird, otherwise immediate
+        if (CANVAS_WIDTH > 0 && CANVAS_HEIGHT > 0) {
+            this.spawnFood();
+        } else {
+            console.warn("Canvas dimensions invalid at start. Retrying spawn in 100ms");
+            setTimeout(() => this.spawnFood(), 100);
+        }
+
         this.isRunning = true;
 
         mainMenu.classList.remove('active');
@@ -637,8 +647,26 @@ class Game {
     updateDynamicLegend() {
         if (!dynamicLegend) return;
 
-        // Force redraw to update timer every second/frame
+        // Optimize: Only redraw if the SET of powerups changes, OR if the Ghost Timer needs update.
+        // We will separate the static list from the timer to avoid full innerHTML trashing.
+
+        const currentPowerups = this.powerups.map(p => p.type).sort().join(',');
+        const activeGhost = (this.gameMode === 'single' && this.snakes[0] && this.snakes[0].ghostTimer > 0);
+
+        // Timer Logic
+        let timerText = "";
+        if (activeGhost) {
+            const secondsLeft = Math.ceil(this.snakes[0].ghostTimer / 1000);
+            timerText = `GHOST (${secondsLeft}s)`;
+        }
+
+        const newStateSig = currentPowerups + "|" + timerText;
+        if (this._lastLegendState === newStateSig) return;
+        this._lastLegendState = newStateSig;
+
         dynamicLegend.innerHTML = '';
+
+        // Draw standard icons
         this.powerups.forEach(p => {
             const def = this.powerUpTypes[p.type];
             const div = document.createElement('div');
@@ -647,12 +675,11 @@ class Game {
             dynamicLegend.appendChild(div);
         });
 
-        // Add Active Ghost Timer (Single Player Focus)
-        if (this.gameMode === 'single' && this.snakes[0] && this.snakes[0].ghostTimer > 0) {
-            const secondsLeft = Math.ceil(this.snakes[0].ghostTimer / 1000);
+        // Add Active Ghost Timer
+        if (timerText) {
             const div = document.createElement('div');
             div.className = 'legend-item';
-            div.innerHTML = `<span class="dot ghost" style="background-color:${COLORS.ghost}; box-shadow: 0 0 10px ${COLORS.ghost}"></span> GHOST (${secondsLeft}s)`;
+            div.innerHTML = `<span class="dot ghost" style="background-color:${COLORS.ghost}; box-shadow: 0 0 10px ${COLORS.ghost}"></span> ${timerText}`;
             dynamicLegend.appendChild(div);
         }
     }
@@ -661,10 +688,15 @@ class Game {
         ctx.fillStyle = COLORS.bg;
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        // Draw Walls
-        ctx.fillStyle = COLORS.brown;
+        // Draw Walls (Distinct Texture for Placed Walls)
+        // Walls in this.walls are placed by powerups. Normal borders are implicit.
         this.walls.forEach(w => {
+            // "Danger" style: Brown with Red X or border
             this.drawRect(w.x, w.y, COLORS.brown);
+            // Draw a red X or inner square to signify danger
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
         });
 
         // Draw Powerups
