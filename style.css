@@ -197,6 +197,8 @@ h2 {
     width: 100%;
     max-width: 400px;
     text-align: left;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 #high-score-list li {
