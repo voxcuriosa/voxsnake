@@ -233,7 +233,11 @@ text-shadow: 0 0 10px var(--p1-color),
 
 .menu-screen.active {
     opacity: 1;
-    display: block;
+    display: flex;
+    /* Changed from block to flex for centering */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     /* Transform not needed for centering anymore, but nice for entrance */
     animation: fadeIn 0.3s ease-out;
 }
