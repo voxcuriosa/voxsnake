@@ -231,15 +231,24 @@ class Game {
     }
 
     checkHighScore(score) {
-        const scores = JSON.parse(localStorage.getItem('snake_highscores_cache') || '[]');
-        if (scores.length < 20) return true;
-        return score > scores[scores.length - 1].score;
+        try {
+            const raw = localStorage.getItem('snake_highscores_cache');
+            const scores = JSON.parse(raw || '[]');
+            if (!Array.isArray(scores)) return true;
+            if (scores.length < 20) return true;
+            return score > scores[scores.length - 1].score;
+        } catch (e) {
+            console.error("HighScore Check Error", e);
+            return false;
+        }
     }
 
     submitHighScore() {
+        if (!playerNameInput) return;
         const name = playerNameInput.value.trim() || "ANON";
         this.saveHighScore(name, this.currentPendingScore);
         nameEntryScreen.classList.add('hidden');
+        nameEntryScreen.classList.remove('active');
         this.gameOver(-1, true);
     }
 
