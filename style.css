@@ -83,7 +83,7 @@ canvas {
     border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
-.ui-layer {
+#ui-layer {
     position: absolute;
     top: 0;
     left: 0;
@@ -144,7 +144,7 @@ canvas {
     margin-top: 5px;
 }
 
-.screen {
+.menu-screen {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -160,13 +160,13 @@ canvas {
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.screen.hidden {
+.menu-screen.hidden {
     opacity: 0;
     pointer-events: none;
     transform: translate(-50%, -45%);
 }
 
-.screen.active {
+.menu-screen.active {
     opacity: 1;
     transform: translate(-50%, -50%);
 }
@@ -239,6 +239,7 @@ h2 {
     color: var(--bg-color);
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
 }
+
 /* Instructions */
 .instructions-box {
     background: rgba(0, 0, 0, 0.6);
@@ -282,11 +283,25 @@ h2 {
     border-radius: 50%;
     margin-right: 5px;
 }
-.dot.normal { background: #ff0055; box-shadow: 0 0 5px #ff0055; }
-.dot.gold { background: #ffd700; box-shadow: 0 0 5px #ffd700; }
-.dot.blue { background: #0000ff; box-shadow: 0 0 5px #0000ff; }
 
-.mt-2 { margin-top: 10px; }
+.dot.normal {
+    background: #ff0055;
+    box-shadow: 0 0 5px #ff0055;
+}
+
+.dot.gold {
+    background: #ffd700;
+    box-shadow: 0 0 5px #ffd700;
+}
+
+.dot.blue {
+    background: #0000ff;
+    box-shadow: 0 0 5px #0000ff;
+}
+
+.mt-2 {
+    margin-top: 10px;
+}
 
 /* Menu Options */
 .menu-options {
