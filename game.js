@@ -115,6 +115,24 @@ class Snake {
             }
         }
 
+        // Placed Wall Collision (Power-up Walls)
+        for (let w of this.walls) {
+            if (newHead.x === w.x && newHead.y === w.y) {
+                if (this.ghostTimer > 0) break; // Ghost passes through
+                if (this.hasShield) {
+                    this.hasShield = false;
+                    // Remove wall we hit? Optional. Let's keep it robust: just lose shield and stop/bounce or just lose shield and continue? 
+                    // Standard: Lose shield, dont die, but must stop or bounce? 
+                    // Actually, if we hit a wall and lose shield, we are still occupying the wall space. 
+                    // Simplest robust fix: Lose shield and RETURN (cancel move). 
+                    // This acts like a "bounce" or "stop".
+                    return;
+                }
+                this.isDead = true;
+                return;
+            }
+        }
+
         this.body.unshift(newHead);
         if (this.growPending > 0) this.growPending--;
         else this.body.pop();
@@ -135,9 +153,20 @@ class Snake {
         }
         return false;
     }
+
+    // Use Game instance to access walls if needed, but 'walls' is passed in or accessible? 
+    // Snake class doesn't have access to Game.walls directly unless passed.
+    // Wait, 'this.walls' in Snake class refers to Snake property? No. 
+    // Snake.move() needs access to the Game's walls. 
+    // I need to refactor move() to accept walls as argument OR move collision check to Game.update
+    // Refactoring move() to accept walls is cleaner.
+}
+
+    // ...
 }
 
 class Game {
+    // ...
     constructor() {
         this.snakes = [];
         this.food = {};
@@ -496,7 +525,7 @@ class Game {
         const now = Date.now();
         this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
 
-        this.snakes.forEach(s => s.move(this.gameMode === 'single'));
+        this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single'));
 
         if (this.gameMode === 'single') {
             if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision()) {
