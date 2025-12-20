@@ -301,9 +301,20 @@ class Game {
 
     resize() {
         const container = canvas.parentElement;
-        if (!container) return;
-        CANVAS_WIDTH = Math.floor((container.clientWidth - 10) / GRID_SIZE) * GRID_SIZE;
-        CANVAS_HEIGHT = Math.floor((container.clientHeight - 10) / GRID_SIZE) * GRID_SIZE;
+        // Fallback to window if container is missing or has 0 size
+        let w = container ? container.clientWidth : window.innerWidth;
+        let h = container ? container.clientHeight : window.innerHeight;
+
+        if (!w || w === 0) w = window.innerWidth;
+        if (!h || h === 0) h = window.innerHeight;
+
+        // Ensure w/h are non-zero before dividing
+        if (w <= 0) w = 800;
+        if (h <= 0) h = 600;
+
+        CANVAS_WIDTH = Math.floor((w - 10) / GRID_SIZE) * GRID_SIZE;
+        CANVAS_HEIGHT = Math.floor((h - 10) / GRID_SIZE) * GRID_SIZE;
+
         canvas.width = CANVAS_WIDTH;
         canvas.height = CANVAS_HEIGHT;
         this.draw();
@@ -313,16 +324,15 @@ class Game {
         let valid = false;
         let attempts = 0;
 
-        // Safety check for dimensions
+        // Ensure we have valid dimensions
         if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) this.resize();
 
-        const maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
-        const maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
+        let maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
+        let maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
 
         if (maxX <= 1 || maxY <= 1) {
-            // Fallback if resize failed
-            this.food = { x: 10, y: 10 };
-            return;
+            maxX = 40;
+            maxY = 30;
         }
 
         // Robust spawning check
@@ -334,18 +344,10 @@ class Game {
             };
             valid = !this.isOccupied(this.food);
         }
+
         if (!valid) {
-            // Brute force find empty
-            for (let x = 0; x < maxX; x++) {
-                for (let y = 0; y < maxY; y++) {
-                    if (!this.isOccupied({ x, y })) {
-                        this.food = { x, y };
-                        valid = true;
-                        break;
-                    }
-                }
-                if (valid) break;
-            }
+            // Fallback to CENTER instead of corner to prove randomness failed
+            this.food = { x: Math.floor(maxX / 2), y: Math.floor(maxY / 2) };
         }
     }
 
