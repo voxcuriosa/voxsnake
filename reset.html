@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Snake - REPAIR TOOL</title>
+    <style>
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: monospace;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #f00;
+        }
+
+        .log {
+            margin-top: 20px;
+            color: #fff;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>REPAIRING GAME...</h1>
+    <p>Please wait while we fix the caching issues.</p>
+    <div id="log" class="log">Starting repair...</div>
+
+    <script>
+        const logEl = document.getElementById('log');
+        function log(msg) {
+            console.log(msg);
+            logEl.textContent += "\n" + msg;
+        }
+
+        async function repair() {
+            log("Step 1: Unregistering Service Workers...");
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        log("Found SW: " + registration.scope);
+                        await registration.unregister();
+                        log("Unregistered!");
+                    }
+                    if (registrations.length === 0) log("No Service Workers found.");
+                } catch (e) {
+                    log("Error unregistering SW: " + e);
+                }
+            } else {
+                log("Service Worker not supported.");
+            }
+
+            log("Step 2: Clearing Cache Storage...");
+            if ('caches' in window) {
+                try {
+                    const keys = await caches.keys();
+                    for (let key of keys) {
+                        log("Deleting cache: " + key);
+                        await caches.delete(key);
+                    }
+                    if (keys.length === 0) log("No caches found.");
+                } catch (e) {
+                    log("Error clearing caches: " + e);
+                }
+            }
+
+            log("Step 3: DONE! Redirecting in 3 seconds...");
+            setTimeout(() => {
+                // Force random version to bypass HTTP cache
+                window.location.href = "index.html?t=" + Date.now();
+            }, 3000);
+        }
+
+        repair();
+    </script>
+</body>
+
+</html>
