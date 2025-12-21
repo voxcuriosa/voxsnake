@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.0 (FILE RENAMED TO game_v9.js)...");
+    log("v4.1 (Stable Release - No Debug Visuals)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
