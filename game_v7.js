@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v2.3 (DEBUG HUD ENABLED)...");
+    log("v2.4 (FIXED NAME ENTRY UN-NUKE)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1271,7 +1271,9 @@ window.addEventListener('DOMContentLoaded', () => {
                         this.currentPendingScore = score;
                         if (playerNameInput) playerNameInput.value = "";
                         nameEntryScreen.classList.remove('hidden');
+                        nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
                         nameEntryScreen.classList.add('active');
+                        nameEntryScreen.style.display = 'flex';
                         if (playerNameInput) playerNameInput.focus();
                         return;
                     }
