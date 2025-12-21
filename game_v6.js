@@ -44,7 +44,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v6.2 (NEW FILENAME CACHE BUST)...");
+    log("v6.3 (ALERT CONFIRMATION)...");
+    // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
