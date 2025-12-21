@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v2.4 (FIXED NAME ENTRY UN-NUKE)...");
+    log("v2.5 (MASTER UI LAYER TOGGLE)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1240,6 +1240,9 @@ window.addEventListener('DOMContentLoaded', () => {
         togglePause() {
             this.isPaused = !this.isPaused;
 
+            const uiLayer = document.getElementById('ui-layer');
+            if (uiLayer) uiLayer.style.display = 'block';
+
             if (this.isPaused) {
                 mainMenu.classList.remove('hidden');
                 mainMenu.classList.remove('nuclear-hidden'); // UN-NUKE
@@ -1260,6 +1263,14 @@ window.addEventListener('DOMContentLoaded', () => {
             try {
                 this.isRunning = false;
                 this.isPaused = false;
+
+                // SHOW MASTER UI
+                const uiLayer = document.getElementById('ui-layer');
+                if (uiLayer) {
+                    uiLayer.style.display = 'block';
+                    // Force reflow
+                    uiLayer.offsetHeight;
+                }
 
                 mainMenu.classList.remove('active');
                 mainMenu.classList.add('hidden');
@@ -1615,26 +1626,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
         draw() {
             // BRUTE FORCE UI CLEANUP (Fixes persistent overlay issues)
-            // BRUTE FORCE UI CLEANUP (Fixes persistent overlay issues)
             if (this.isRunning) {
-                const lobby = document.getElementById('lobby-screen');
-                const menu = document.getElementById('main-menu');
-                const join = document.getElementById('join-screen');
-
-                if (lobby && lobby.style.display !== 'none') {
-                    lobby.style.setProperty('display', 'none', 'important');
-                    lobby.classList.add('hidden', 'nuclear-hidden');
-                    lobby.classList.remove('active');
+                // HIDE THE ENTIRE UI LAYER WHILE PLAYING
+                const uiLayer = document.getElementById('ui-layer');
+                if (uiLayer && uiLayer.style.display !== 'none') {
+                    uiLayer.style.setProperty('display', 'none', 'important');
                 }
-                if (menu && menu.style.display !== 'none') {
-                    menu.style.setProperty('display', 'none', 'important');
-                    menu.classList.add('hidden', 'nuclear-hidden');
-                    menu.classList.remove('active');
-                }
-                if (join && join.style.display !== 'none') {
-                    join.style.setProperty('display', 'none', 'important');
-                    join.classList.add('hidden', 'nuclear-hidden');
-                    join.classList.remove('active');
+            } else {
+                // Ensure it comes back when not running
+                const uiLayer = document.getElementById('ui-layer');
+                if (uiLayer && uiLayer.style.display === 'none') {
+                    uiLayer.style.display = 'block';
                 }
             }
 
