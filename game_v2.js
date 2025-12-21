@@ -627,19 +627,7 @@ class Game {
             alert("START ERROR: " + e.message);
         }
     }
-
-        mainMenu.classList.remove('active');
-        mainMenu.classList.add('hidden');
-        gameOverScreen.classList.add('hidden');
-        scoreBoard.classList.remove('hidden');
-
-    if(p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
-        this.updateScoreUI();
-
-if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-this.lastTime = performance.now();
-this.loop(this.lastTime);
-    }
+}
 
 resize() {
     const container = canvas.parentElement;
