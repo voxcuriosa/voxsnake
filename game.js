@@ -344,6 +344,7 @@ class Game {
         this.snakes = [];
         this.powerups = [];
         this.walls = [];
+        this.baseSpeed = 100; // FIX: Hard reset base speed so it doesn't carry over
         this.currentSpeed = this.baseSpeed;
         this.totalFoodEaten = 0;
         this.isPaused = false;
