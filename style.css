@@ -134,6 +134,31 @@ canvas {
     min-width: 200px;
 }
 
+.legend-timers {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: 15px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 5px currentColor;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85rem;
+    color: #ccc;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
 .menu-screen {
     position: relative;
     max-width: 95%;
