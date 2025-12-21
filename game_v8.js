@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v3.1 (ERROR ALERTS + CENTERED STAMP)...");
+    log("v3.2 (ALERTS ENABLED)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1625,6 +1625,11 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         draw() {
+            if (!this.hasAlertedDraw) {
+                // alert("DEBUG: DRAW LOOP STARTED");
+                this.hasAlertedDraw = true;
+            }
+
             // BRUTE FORCE UI CLEANUP (Fixes persistent overlay issues)
             if (this.isRunning) {
                 // HIDE THE ENTIRE UI LAYER WHILE PLAYING
