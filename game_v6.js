@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.29 (TRAP FX FIXED)...");
+    log("v1.30 (WALL TRAP & LEGEND)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1454,23 +1454,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // 2. Draw Active Timers (Ghost Style: Individual rows)
             const s1 = this.snakes[0];
+            const s2 = this.snakes[1];
+
+            // Helper to add a timer row
+            const addTimer = (type, seconds, labelOverride = null) => {
+                const def = this.powerUpTypes[type];
+                const label = labelOverride || def.label;
+                const div = document.createElement('div');
+                div.className = 'legend-item'; // Use standard class
+                // Add specific styling to make it pop
+                div.style.color = '#fff';
+                div.style.fontWeight = 'bold';
+                div.style.textShadow = '0 0 5px ' + def.color;
+
+                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+                dynamicLegend.appendChild(div);
+            };
+
             if (this.gameMode === 'single' && s1) {
-
-                // Helper to add a timer row
-                const addTimer = (type, seconds, labelOverride = null) => {
-                    const def = this.powerUpTypes[type];
-                    const label = labelOverride || def.label;
-                    const div = document.createElement('div');
-                    div.className = 'legend-item'; // Use standard class
-                    // Add specific styling to make it pop
-                    div.style.color = '#fff';
-                    div.style.fontWeight = 'bold';
-                    div.style.textShadow = '0 0 5px ' + def.color;
-
-                    div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
-                    dynamicLegend.appendChild(div);
-                };
-
                 if (s1.ghostTimer > 0) {
                     addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
                 }
@@ -1479,6 +1480,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 if (s1.magnetTimer > 0) {
                     addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+                }
+            } else if (this.gameMode === 'multi') {
+                // Multi Mode Legends (e.g. Wall Trap)
+                // Check BOTH players for Wall Trap
+                if (s1 && s1.wallTrapTimer > 0) {
+                    addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
+                }
+                if (s2 && s2.wallTrapTimer > 0) {
+                    addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
                 }
             }
         }
