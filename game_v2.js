@@ -982,6 +982,16 @@ class Game {
         this.handleInput({ key: key, preventDefault: () => { } });
     }
 
+    handleRemoteInput(key) {
+        // FIX: Route remote input to Player 2
+        if (this.snakes.length > 1 && this.snakes[1]) {
+            // Basic validation
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(key)) {
+                this.snakes[1].handleInput(key);
+            }
+        }
+    }
+
 
 
     handleInput(e) {
