@@ -365,10 +365,17 @@ class Game {
 
         // Safety delay for spawn if canvas is somehow still weird, otherwise immediate
         if (CANVAS_WIDTH > 0 && CANVAS_HEIGHT > 0) {
+            // Spawn 3 Foods initially (User Request: "Mer mat")
+            this.spawnFood();
+            this.spawnFood();
             this.spawnFood();
         } else {
             console.warn("Canvas dimensions invalid at start. Retrying spawn in 100ms");
-            setTimeout(() => this.spawnFood(), 100);
+            setTimeout(() => {
+                this.spawnFood();
+                this.spawnFood();
+                this.spawnFood();
+            }, 100);
         }
 
         this.isRunning = true;
@@ -636,6 +643,47 @@ class Game {
             console.error(err);
             alert("Game Over!");
         }
+    }
+
+    triggerShieldEffect(x, y) {
+        // Visual Flare
+        const div = document.createElement('div');
+        div.innerText = "SHIELD BLOCKED!";
+        div.style.position = 'absolute';
+        div.style.left = (x * GRID_SIZE) + 'px';
+        div.style.top = (y * GRID_SIZE) + 'px';
+        div.style.color = '#fff';
+        div.style.fontWeight = 'bold';
+        div.style.textShadow = '0 0 5px #000';
+        div.style.zIndex = '100';
+        div.style.pointerEvents = 'none';
+        div.className = 'shield-broken-msg'; // Add class for animation
+        document.body.appendChild(div);
+
+        // Animate up and fade
+        let op = 1;
+        let top = y * GRID_SIZE;
+        const anim = setInterval(() => {
+            op -= 0.05;
+            top -= 1;
+            div.style.opacity = op;
+            div.style.top = top + 'px';
+            if (op <= 0) {
+                clearInterval(anim);
+                div.remove();
+            }
+        }, 50);
+
+        // Flash Screen
+        const flash = document.createElement('div');
+        flash.style.position = 'fixed';
+        flash.style.top = '0'; flash.style.left = '0';
+        flash.style.width = '100vw'; flash.style.height = '100vh';
+        flash.style.background = 'rgba(255, 255, 255, 0.3)';
+        flash.style.zIndex = '99';
+        flash.style.pointerEvents = 'none';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 100);
     }
 
     update() {
