@@ -33,7 +33,7 @@ window.onerror = function (msg, url, line) {
     return false;
 };
 
-log("v7.9 (DEBUG CRASH TRAP)...");
+log("v8.1 (REVERT LOOP SYNTAX)...");
 // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
 // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
@@ -1572,28 +1572,37 @@ class Game {
     }
 
     loop(timestamp) {
-        try {
-            if (!this.isRunning) return;
-            if (this.isPaused) return;
+        if (!this.isRunning) return;
+        if (this.isPaused) return;
 
-            if (timestamp - this.lastTime < this.currentSpeed) {
-                this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-                return;
-            }
-            this.lastTime = timestamp;
-            this.update();
-
-            if (this.isHost) {
-                this.broadcastState();
-            }
-
-            this.draw();
-            if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-        } catch (e) {
-            console.error("GAME LOOP CRASH:", e);
-            alert("GAME CRASHED:\n" + e.message + "\n" + e.stack);
-            this.isRunning = false;
+        if (timestamp - this.lastTime < this.currentSpeed) {
+            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+            return;
         }
+        this.lastTime = timestamp;
+
+        try {
+            this.update();
+        } catch (e) {
+            console.error("UPDATE CRASH:", e);
+            alert("GAME UPDATE CRASH:\n" + e.message);
+            this.isRunning = false;
+            return;
+        }
+
+        if (this.isHost) {
+            try { this.broadcastState(); } catch (e) { console.error(e); }
+        }
+
+        try {
+            this.draw();
+        } catch (e) {
+            console.error("DRAW CRASH:", e);
+            this.isRunning = false;
+            return;
+        }
+
+        if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
     }
 }
 
