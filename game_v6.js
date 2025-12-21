@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.07 (LAYOUT FIX)...");
+    log("v1.09 (KEYFRAME FIX)...");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
