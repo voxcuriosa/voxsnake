@@ -226,12 +226,58 @@ class Game {
             'slow': { color: COLORS.blue, label: 'Slow' }
         };
 
+        // Multiplayer Props
+        this.peer = null;
+        this.conn = null;
+        this.isHost = false;
+        this.isClient = false;
+        this.remoteInput = { up: false, down: false, left: false, right: false };
+        this.clientState = null; // For client to render
+
         this.initListeners();
+        this.initMultiplayer(); // AUTO-RUN
+
         // Delay resize slightly to ensure layout is ready
         setTimeout(() => this.resize(), 50);
         window.addEventListener('resize', () => this.resize());
         this.loadHighScores();
         this.showMainMenu();
+    }
+
+    initMultiplayer() {
+        // 1. Bind UI Buttons
+        const btnHost = document.getElementById('btn-host');
+        const btnJoin = document.getElementById('btn-join');
+        const btnConnect = document.getElementById('connect-btn');
+        const lobbyBack = document.getElementById('lobby-back-btn');
+        const joinBack = document.getElementById('join-back-btn');
+
+        if (btnHost) btnHost.addEventListener('click', () => this.startHost());
+        if (btnJoin) btnJoin.addEventListener('click', () => {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('active');
+            document.getElementById('join-screen').classList.remove('hidden');
+            document.getElementById('join-screen').classList.add('active');
+        });
+
+        if (lobbyBack) lobbyBack.addEventListener('click', () => location.reload()); // Simple reset
+        if (joinBack) joinBack.addEventListener('click', () => location.reload());
+
+        if (btnConnect) {
+            btnConnect.addEventListener('click', () => {
+                const code = document.getElementById('join-id-input').value;
+                if (code) this.joinGame(code);
+            });
+        }
+
+        // 2. Check URL for Auto-Join (?join=CODE)
+        const urlParams = new URLSearchParams(window.location.search);
+        const joinCode = urlParams.get('join');
+        if (joinCode) {
+            console.log("Auto-Joining:", joinCode);
+            // Wait a sec for UI init
+            setTimeout(() => this.joinGame(joinCode), 500);
+        }
     }
 
     initListeners() {
@@ -255,10 +301,10 @@ class Game {
         };
 
         bindStartButton(btn1P, 'single');
-        bindStartButton(btn2P, 'multi');
+        bindStartButton(btn2P, 'multi'); // Local handling
 
         if (restartBtn) restartBtn.addEventListener('click', () => this.startGame(this.gameMode));
-        if (menuBtn) menuBtn.addEventListener('click', () => this.showMainMenu());
+        if (menuBtn) menuBtn.addEventListener('click', () => location.reload()); // Full reload for safety
         if (submitScoreBtn) submitScoreBtn.addEventListener('click', () => this.submitHighScore());
         if (btnResume) btnResume.addEventListener('click', () => this.togglePause());
 
@@ -516,7 +562,7 @@ class Game {
         dynamicLegend.innerHTML = '';
 
         // 1. Draw Static Powerups (Available on board)
-        this.powerups.forEach(p => {
+        renderPowerups.forEach(p => {
             const def = this.powerUpTypes[p.type];
             const div = document.createElement('div');
             div.className = 'legend-item';
@@ -713,9 +759,20 @@ class Game {
 
 
     handleInput(e) {
-        if (e.key.toLowerCase() === 'p' && this.isRunning) {
+        if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
             this.togglePause();
             return;
+        }
+
+        // Network Client Input
+        if (this.isClient) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                if (this.conn && this.conn.open) {
+                    this.conn.send({ type: 'input', key: e.key });
+                }
+            }
+            return; // Client ONLY sends input, does not move locally
         }
 
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
@@ -1020,7 +1077,7 @@ class Game {
         dynamicLegend.innerHTML = '';
 
         // 1. Draw Static Powerups (Available on board)
-        this.powerups.forEach(p => {
+        renderPowerups.forEach(p => {
             const def = this.powerUpTypes[p.type];
             const div = document.createElement('div');
             div.className = 'legend-item';
@@ -1060,9 +1117,25 @@ class Game {
     }
 
     draw() {
+        // CLIENT RENDER OVERRIDE
+        let renderSnakes = this.snakes;
+        let renderFoods = this.foods;
+        let renderPowerups = this.powerups;
+        let renderWalls = this.walls;
+
+        if (this.isClient && this.clientState) {
+            renderSnakes = this.clientState.snakes;
+            renderFoods = this.clientState.foods;
+            renderPowerups = this.clientState.powerups;
+            renderWalls = this.clientState.walls;
+            // Update Score UI from state
+            if (scoreP1El && renderSnakes[0]) scoreP1El.innerText = renderSnakes[0].score;
+            if (scoreP2El && renderSnakes[1]) scoreP2El.innerText = renderSnakes[1].score;
+        }
+
         // Blind Effect Logic
         let isBlinded = false;
-        this.snakes.forEach(s => {
+        renderSnakes.forEach(s => {
             if (s.blindTimer > 0) isBlinded = true;
         });
 
@@ -1077,7 +1150,7 @@ class Game {
 
         // Draw Walls (Distinct Texture for Placed Walls)
         // Walls in this.walls are placed by powerups. Normal borders are implicit.
-        this.walls.forEach(w => {
+        renderWalls.forEach(w => {
             // "Danger" style: Brown with Red X or border
             this.drawRect(w.x, w.y, COLORS.brown);
             // Draw a red X or inner square to signify danger
@@ -1087,20 +1160,20 @@ class Game {
         });
 
         // Draw Powerups
-        this.powerups.forEach(p => {
+        renderPowerups.forEach(p => {
             const def = this.powerUpTypes[p.type];
             this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
         });
 
         // Draw Foods (Multi-Food)
-        if (this.foods) {
-            this.foods.forEach(f => {
+        if (renderFoods) {
+            renderFoods.forEach(f => {
                 this.drawRect(f.x, f.y, COLORS.food, true);
             });
         }
 
         // Draw Snakes
-        this.snakes.forEach(snake => {
+        renderSnakes.forEach(snake => {
             const snakeColor = snake.hasShield ? COLORS.silver :
                 snake.ghostTimer > 0 ? COLORS.ghost :
                     snake.blindTimer > 0 ? '#0a0a0a' : snake.color; // Almost black, but slight vis checks allowed? No, make it dark.
