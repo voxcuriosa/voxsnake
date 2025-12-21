@@ -156,6 +156,8 @@ canvas {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    text-align: center;
+    /* Force text center */
 
     /* FORCE CENTER OVERRIDE */
     position: absolute;
@@ -163,6 +165,10 @@ canvas {
     left: 50%;
     transform: translate(-50%, -50%);
     margin: 0;
+    width: 100%;
+    /* Ensure width allows centering */
+    max-width: 900px;
+    /* Restore constraint */
 
     animation: fadeIn 0.3s ease-out;
 }
@@ -203,6 +209,9 @@ canvas {
         margin-bottom: 20px;
         text-transform: uppercase;
         letter-spacing: 2px;
+        text-align: center;
+        width: 100%;
+        display: block;
     }
 
     .btn,
