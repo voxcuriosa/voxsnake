@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v8.3 (RESTORED INIT)...");
+    log("v1.00 (Methods Fixed)...");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
@@ -217,7 +217,7 @@ window.addEventListener('DOMContentLoaded', () => {
             else this.body.pop();
         }
 
-        checkCollision(walls, snakes) {
+        checkSelfCollision(onShieldBreak) {
             // Invulnerability check
             if (this.invulnerable || this.ghostTimer > 0) return false;
 

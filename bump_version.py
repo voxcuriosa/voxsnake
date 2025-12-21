@@ -31,7 +31,11 @@ def bump_version():
 
         current_ver_str = match.group(1)
         current_ver = float(current_ver_str)
-        new_ver = round(current_ver + 0.1, 1)
+        # Force Reset to 1.00 if we are in the 8.x chaos, or just increment by 0.01
+        if current_ver >= 8.0:
+            new_ver = 1.00
+        else:
+            new_ver = round(current_ver + 0.01, 2)
         new_ver_str = str(new_ver)
         
         print(f"Bumping version from {current_ver_str} to {new_ver_str}")
@@ -84,7 +88,7 @@ def bump_version():
              return
              
         old_ver_str = str(max_ver)
-        new_ver_2 = round(max_ver + 0.1, 1)
+        new_ver_2 = round(max_ver + 0.01, 2)
         new_ver_str_2 = str(new_ver_2)
         
         print(f"Detected main version: {old_ver_str}. Bumping to {new_ver_str_2}...")
