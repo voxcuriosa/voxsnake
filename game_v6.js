@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.44 (REALLY FIXING MISSING FUNCTION)...");
+    log("v1.45 (LOBBY UI CONSISTENCY)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -372,11 +372,16 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         startHost() {
-            // UI Swith
-            document.getElementById('main-menu').classList.remove('active');
-            document.getElementById('main-menu').classList.add('hidden');
-            document.getElementById('lobby-screen').classList.remove('hidden');
-            document.getElementById('lobby-screen').classList.add('active');
+            // 1. Reset UI State completely
+            this.hideAllScreens();
+
+            // 2. Show Lobby
+            const lobby = document.getElementById('lobby-screen');
+            if (lobby) {
+                lobby.classList.remove('hidden');
+                lobby.classList.add('active');
+                lobby.style.display = 'flex'; // Force Flex
+            }
 
             // Reset Status
             document.getElementById('host-id-display').innerText = "...";
