@@ -5,6 +5,11 @@ if "%~1"=="" (
 )
 
 echo ========================================
+echo Bumping Version...
+echo ========================================
+python bump_version.py
+
+echo ========================================
 echo Syncing to GitHub...
 echo ========================================
 call .\git-wrapper.bat add .
