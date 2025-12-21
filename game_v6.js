@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.51 (PWA + CLEANUP)...");
+    log("v1.52 (BRUTE FORCE UI FIX)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1608,6 +1608,24 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         draw() {
+            // BRUTE FORCE UI CLEANUP (Fixes persistent overlay issues)
+            if (this.isRunning) {
+                const lobby = document.getElementById('lobby-screen');
+                const menu = document.getElementById('main-menu');
+                if (lobby && lobby.style.display !== 'none') {
+                    // console.log("BRUTE FORCE HIDING LOBBY");
+                    lobby.style.setProperty('display', 'none', 'important');
+                    lobby.classList.add('hidden', 'nuclear-hidden');
+                    lobby.classList.remove('active');
+                }
+                if (menu && menu.style.display !== 'none') {
+                    // console.log("BRUTE FORCE HIDING MENU");
+                    menu.style.setProperty('display', 'none', 'important');
+                    menu.classList.add('hidden', 'nuclear-hidden');
+                    menu.classList.remove('active');
+                }
+            }
+
             // CLIENT RENDER OVERRIDE
             let renderSnakes = this.snakes || [];
             let renderFoods = this.foods || [];
