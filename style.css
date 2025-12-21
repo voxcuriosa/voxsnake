@@ -205,6 +205,8 @@ canvas {
         pointer-events: auto;
         transition: opacity 0.3s ease;
         z-index: 200;
+        /* FIX: Allow scrolling on menu even with global touch-action: none */
+        touch-action: pan-y !important;
     }
 
     .menu-screen.active {

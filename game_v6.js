@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.03 (CSS FIX)...");
+    log("v1.05 (SCROLL FIX)...");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
@@ -826,6 +826,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // Center the canvas if needed (flex does this usually, but good to be sure)
             // canvas.style.marginTop = ... handled by flex center
+
+            // 3. UI Updates based on device
+            const btn1P = document.getElementById('btn-1p');
+            if (btn1P) {
+                if (window.innerWidth < 768) btn1P.innerText = "START GAME";
+                else btn1P.innerText = "1 PLAYER";
+            }
 
             this.draw();
         }
