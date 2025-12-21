@@ -252,6 +252,21 @@ canvas {
         box-shadow: 0 0 20px rgba(100, 100, 100, 0.4);
     }
 
+    #high-scores {
+        margin-top: 20px;
+        width: 100%;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #high-scores h2 {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
     #high-score-list {
         list-style: none;
         margin-bottom: 20px;
@@ -260,131 +275,131 @@ canvas {
         text-align: center;
         margin-left: auto;
         margin-right: auto;
-
         /* Scrollable */
         max-height: 240px;
         /* Approx 5 rows (40px each + gap) */
         overflow-y: auto;
         padding-right: 5px;
         /* Space for scrollbar */
-
-        /* Scrollbar Styling */
-        scrollbar-width: thin;
-        scrollbar-color: var(--p1-color) rgba(255, 255, 255, 0.05);
     }
 
-    /* Webkit Scrollbar */
-    #high-score-list::-webkit-scrollbar {
-        width: 6px;
-    }
+    /* Scrollbar Styling */
+    scrollbar-width: thin;
+    scrollbar-color: var(--p1-color) rgba(255, 255, 255, 0.05);
+}
 
-    #high-score-list::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
+/* Webkit Scrollbar */
+#high-score-list::-webkit-scrollbar {
+    width: 6px;
+}
 
-    #high-score-list::-webkit-scrollbar-thumb {
-        background-color: var(--p1-color);
-        border-radius: 3px;
-    }
+#high-score-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
 
-    #high-score-list li {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 10px 20px;
-        margin-bottom: 5px;
-        display: flex;
-        justify-content: space-between;
-        border-radius: 4px;
-        font-size: 1.1rem;
-        color: var(--p1-color);
-        border: 1px solid transparent;
-        /* Prepare for border highlight */
-    }
+#high-score-list::-webkit-scrollbar-thumb {
+    background-color: var(--p1-color);
+    border-radius: 3px;
+}
 
-    #high-score-list li.highlight {
-        background: rgba(0, 255, 136, 0.2);
-        border-color: var(--p1-color);
+#high-score-list li {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 20px;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    color: var(--p1-color);
+    border: 1px solid transparent;
+    /* Prepare for border highlight */
+}
+
+#high-score-list li.highlight {
+    background: rgba(0, 255, 136, 0.2);
+    border-color: var(--p1-color);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    font-weight: bold;
+    color: #fff;
+    animation: pulseHighlight 2s infinite;
+}
+
+@keyframes pulseHighlight {
+    0% {
         box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
-        font-weight: bold;
-        color: #fff;
-        animation: pulseHighlight 2s infinite;
     }
 
-    @keyframes pulseHighlight {
-        0% {
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
-        }
-
-        50% {
-            box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
-        }
-
-        100% {
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
-        }
+    50% {
+        box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
     }
 
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
-        color: #ccc;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+    100% {
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
     }
+}
 
-    .dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 2px;
-        display: inline-block;
-        box-shadow: 0 0 5px currentColor;
-    }
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #ccc;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
-    /* Mobile adjustments */
-    @media (max-width: 768px) {
-        .neon-title {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-        }
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    display: inline-block;
+    box-shadow: 0 0 5px currentColor;
+}
 
-        #score-board {
-            font-size: 0.9rem;
-            padding: 0 5px;
-            margin-bottom: 5px;
-        }
-
-        .menu-screen {
-            padding: 20px;
-            width: 95%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .instructions-split-layout {
-            flex-direction: column;
-        }
-
-        .instructions-split-layout>div {
-            border-left: none !important;
-            padding-left: 0 !important;
-            border-top: 1px solid #333;
-            padding-top: 10px;
-            margin-top: 10px;
-        }
-    }
-
-    #player-name-input {
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid var(--p1-color);
-        color: #fff;
-        padding: 15px;
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .neon-title {
         font-size: 1.5rem;
-        font-family: var(--font-main);
-        text-align: center;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        width: 100%;
-        outline: none;
-        text-transform: uppercase;
+        margin-bottom: 5px;
     }
+
+    #score-board {
+        font-size: 0.9rem;
+        padding: 0 5px;
+        margin-bottom: 5px;
+    }
+
+    .menu-screen {
+        padding: 20px;
+        width: 95%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .instructions-split-layout {
+        flex-direction: column;
+    }
+
+    .instructions-split-layout>div {
+        border-left: none !important;
+        padding-left: 0 !important;
+        border-top: 1px solid #333;
+        padding-top: 10px;
+        margin-top: 10px;
+    }
+}
+
+#player-name-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--p1-color);
+    color: #fff;
+    padding: 15px;
+    font-size: 1.5rem;
+    font-family: var(--font-main);
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    width: 100%;
+    outline: none;
+    text-transform: uppercase;
+}
