@@ -5,16 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake MOBILE</title>
-    <link rel="stylesheet" href="style.css?v=v8.26">
+    <link rel="stylesheet" href="style.css?v=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        window.onerror = function (msg, url, line) {
+            alert("CRITICAL JS ERROR:\n" + msg + "\nLine: " + line);
+            const errDiv = document.createElement('div');
+            errDiv.style = "position:fixed; top:0; left:0; width:100%; background:red; color:white; z-index:999999; padding:20px;";
+            errDiv.innerText = "ERROR: " + msg + " (Line " + line + ")";
+            document.body.appendChild(errDiv);
+        };
+    </script>
 </head>
 
 <body>
     <div class="main-wrapper">
         <!-- Score Board (Moved Outside) -->
-        <h1 class="neon-title" style="color: #ffff00">MOBILE VERSION v10</h1>
+        <h1 class="neon-title" style="color: #ffff00">MOBILE v1.0</h1>
 
         <div id="score-board">
             <div class="score-box p1">
@@ -123,7 +132,7 @@
             </div>
         </div>
     </div>
-    <script src="game.js?v=10.1"></script>
+    <script src="game.js?v=1.0"></script>
 </body>
 
 </html>

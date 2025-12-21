@@ -1,28 +1,16 @@
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-// DEBUG: Add touch logger
-const debugDiv = document.createElement('div');
-debugDiv.style.position = 'fixed';
-debugDiv.style.top = '10px';
-debugDiv.style.left = '10px';
-debugDiv.style.background = 'rgba(0,0,0,0.9)';
-debugDiv.style.color = 'lime';
-debugDiv.style.border = '2px solid red';
-debugDiv.style.zIndex = '99999';
-debugDiv.style.fontSize = '16px'; // Bigger font
-debugDiv.style.padding = '10px';
-debugDiv.innerText = "DEBUG ACTIVE v10.0 (Big Update)"; // Initial text
-document.body.appendChild(debugDiv);
+// DEBUG: Touch logger removed for production
+// const debugDiv = ...
 
 function log(msg) {
     console.log(msg);
-    debugDiv.innerText = msg + '\n' + debugDiv.innerText.substring(0, 100);
+    // debugDiv.innerText = ...
 }
 
 window.onerror = function (msg, url, line) {
-    log("ERROR: " + msg + " @ " + line);
-    alert("JS ERROR: " + msg);
+    console.error("ERROR: " + msg + " @ " + line);
 };
 
 // Game Constants
@@ -248,8 +236,27 @@ class Game {
 
     initListeners() {
         document.addEventListener('keydown', (e) => this.handleInput(e));
-        if (btn1P) btn1P.addEventListener('click', () => this.startGame('single'));
-        if (btn2P) btn2P.addEventListener('click', () => this.startGame('multi'));
+
+        const bindStartButton = (btn, mode) => {
+            if (!btn) return;
+            const handler = (e) => {
+                // Prevent double-firing (e.g. touchend then click)
+                e.preventDefault();
+                e.stopPropagation();
+                log("ACTION: " + mode + " via " + e.type);
+                this.startGame(mode);
+            };
+
+            // Listen to EVERYTHING
+            btn.addEventListener('touchstart', (e) => { e.stopPropagation(); log("BTN TOUCHSTART"); }, { passive: false });
+            btn.addEventListener('touchend', handler, { passive: false });
+            btn.addEventListener('click', handler);
+            btn.addEventListener('mousedown', handler);
+        };
+
+        bindStartButton(btn1P, 'single');
+        bindStartButton(btn2P, 'multi');
+
         if (restartBtn) restartBtn.addEventListener('click', () => this.startGame(this.gameMode));
         if (menuBtn) menuBtn.addEventListener('click', () => this.showMainMenu());
         if (submitScoreBtn) submitScoreBtn.addEventListener('click', () => this.submitHighScore());
@@ -376,6 +383,7 @@ class Game {
     }
 
     startGame(mode) {
+        // alert("STARTING GAME: " + mode); // Debug feedback removed
         console.log("Starting Game Mode:", mode);
         this.gameMode = mode;
         this.resize();
@@ -631,6 +639,33 @@ class Game {
         if (!e.target.closest('.menu-screen')) {
             e.preventDefault();
         }
+
+        if (!this.isRunning || this.isPaused) return;
+
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - this.touchStartX;
+        const deltaY = touch.clientY - this.touchStartY;
+
+        // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
+        // Let's stick to 30px for "move detected"
+        if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30) {
+            let key = '';
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
+            } else {
+                key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
+            }
+
+            // Trigger Input
+            if (this.snakes.length > 0) {
+                this.snakes[0].handleInput(key);
+            }
+
+            // RESET Start Position to current finger position
+            // This is the key for "Continuous" swiping (Up -> Right without lifting)
+            this.touchStartX = touch.clientX;
+            this.touchStartY = touch.clientY;
+        }
     }
 
     handleTouchEnd(e) {
@@ -675,429 +710,437 @@ class Game {
         }
     }
 
-    // Simulate Input for Player 1 only (Swipe is 1P feature for now)
-    if(this.snakes.length > 0) {
-    this.snakes[0].handleInput(key);
-}
-    }
 
-handleInput(e) {
-    if (e.key.toLowerCase() === 'p' && this.isRunning) {
-        this.togglePause();
-        return;
-    }
 
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
-    this.snakes.forEach(s => s.handleInput(e.key));
-}
-
-togglePause() {
-    this.isPaused = !this.isPaused;
-
-    if (this.isPaused) {
-        mainMenu.classList.remove('hidden');
-        mainMenu.classList.add('active');
-        if (btnResume) btnResume.classList.remove('hidden');
-    } else {
-        mainMenu.classList.add('hidden');
-        mainMenu.classList.remove('active');
-        if (btnResume) btnResume.classList.add('hidden');
-
-        this.lastTime = performance.now();
-        this.loop(this.lastTime);
-    }
-}
-
-gameOver(winnerIndex, skipNameEntry = false) {
-    try {
-        this.isRunning = false;
-        this.isPaused = false;
-
-        mainMenu.classList.remove('active');
-        mainMenu.classList.add('hidden');
-        nameEntryScreen.classList.add('hidden');
-
-        if (this.gameMode === 'single' && !skipNameEntry) {
-            const score = this.snakes[0].score;
-            if (score > 0 && this.checkHighScore(score)) {
-                this.currentPendingScore = score;
-                if (playerNameInput) playerNameInput.value = "";
-                nameEntryScreen.classList.remove('hidden');
-                nameEntryScreen.classList.add('active');
-                if (playerNameInput) playerNameInput.focus();
-                return;
-            }
-        }
-
-        let msg = "GAME OVER";
-        let color = COLORS.p1;
-        if (this.gameMode === 'multi') {
-            if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
-            else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
-            else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
-        }
-
-        if (winnerText) {
-            winnerText.innerText = msg;
-            winnerText.style.color = color;
-        }
-
-        gameOverScreen.classList.remove('hidden');
-        gameOverScreen.classList.add('active');
-
-        if (btnResume) btnResume.classList.add('hidden');
-        if (dynamicLegend) dynamicLegend.innerHTML = '';
-    } catch (err) {
-        console.error(err);
-        alert("Game Over!");
-    }
-}
-
-triggerShieldEffect(x, y) {
-    // Visual Flare
-    const div = document.createElement('div');
-    div.innerText = "SHIELD BLOCKED!";
-    div.style.position = 'absolute';
-    div.style.left = (x * GRID_SIZE) + 'px';
-    div.style.top = (y * GRID_SIZE) + 'px';
-    div.style.color = '#fff';
-    div.style.fontWeight = 'bold';
-    div.style.textShadow = '0 0 5px #000';
-    div.style.zIndex = '100';
-    div.style.pointerEvents = 'none';
-    div.className = 'shield-broken-msg'; // Add class for animation
-    document.body.appendChild(div);
-
-    // Animate up and fade
-    let op = 1;
-    let top = y * GRID_SIZE;
-    const anim = setInterval(() => {
-        op -= 0.05;
-        top -= 1;
-        div.style.opacity = op;
-        div.style.top = top + 'px';
-        if (op <= 0) {
-            clearInterval(anim);
-            div.remove();
-        }
-    }, 50);
-
-    // Flash Screen
-    const flash = document.createElement('div');
-    flash.style.position = 'fixed';
-    flash.style.top = '0'; flash.style.left = '0';
-    flash.style.width = '100vw'; flash.style.height = '100vh';
-    flash.style.background = 'rgba(255, 255, 255, 0.3)';
-    flash.style.zIndex = '99';
-    flash.style.pointerEvents = 'none';
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 100);
-}
-
-update() {
-    if (this.isPaused) return;
-
-    const now = Date.now();
-    // Use true delta time for smoother timers if framerate dips
-    const delta = now - this.lastTime;
-    // Note: this.lastTime is updated at end of loop(), but here we need delta for logic. 
-    // Actually, main loop passes timestamp. Let's stick to fixed time steps or just robust decrement.
-    // Simple fix: Decrement by `this.currentSpeed` (which is tick rate) or roughly 16ms?
-    // Actually, the loop runs at `currentSpeed` interval! 
-    // Standard loop: requestAnimationFrame runs freely? 
-    // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;` 
-    // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms). 
-    // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower! 
-    // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
-
-    const tickRate = this.currentSpeed;
-
-    if (this.speedEffectTimer > 0) {
-        this.speedEffectTimer -= tickRate;
-        if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
-    }
-
-    this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
-
-    // Update Snakes (Collision & Movement)
-    this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate, (x, y) => this.triggerShieldEffect(x, y)));
-
-    // Game Over Checks...
-    if (this.gameMode === 'single') {
-        if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
-            this.gameOver();
+    handleInput(e) {
+        if (e.key.toLowerCase() === 'p' && this.isRunning) {
+            this.togglePause();
             return;
         }
-    } else if (this.gameMode === 'multi') {
-        let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-        let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
 
-
-        // Head-to-Head/Body collision logic (omitted for brevity, assume same)
-        const h1 = this.snakes[0].body[0];
-        const h2 = this.snakes[1].body[0];
-        this.snakes[1].body.forEach((seg, i) => { if (h1.x === seg.x && h1.y === seg.y) { if (i >= this.snakes[1].body.length - 2) p2d = true; else p1d = true; } });
-        this.snakes[0].body.forEach((seg, i) => { if (h2.x === seg.x && h2.y === seg.y) { if (i >= this.snakes[0].body.length - 2) p1d = true; else p2d = true; } });
-        if (h1.x === h2.x && h1.y === h2.y) { p1d = true; p2d = true; }
-
-        if (p1d && p2d) { this.gameOver(-1); return; }
-        if (p1d) { this.gameOver(1); return; }
-        if (p2d) { this.gameOver(0); return; }
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+        this.snakes.forEach(s => s.handleInput(e.key));
     }
 
-    // Timed Powerup Spawning (Independent of eating)
-    if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
-        this.spawnPowerUp();
-        this.lastPowerUpTime = now;
-        // Randomize next delay: 5s to 15s
-        this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+    togglePause() {
+        this.isPaused = !this.isPaused;
+
+        if (this.isPaused) {
+            mainMenu.classList.remove('hidden');
+            mainMenu.classList.add('active');
+            if (btnResume) btnResume.classList.remove('hidden');
+        } else {
+            mainMenu.classList.add('hidden');
+            mainMenu.classList.remove('active');
+            if (btnResume) btnResume.classList.add('hidden');
+
+            this.lastTime = performance.now();
+            this.loop(this.lastTime);
+        }
     }
 
-    // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
-    this.snakes.forEach(s => {
-        let ate = false;
-        let ateIndex = -1;
+    gameOver(winnerIndex, skipNameEntry = false) {
+        try {
+            this.isRunning = false;
+            this.isPaused = false;
 
-        for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
-            const f = this.foods[fIdx];
+            mainMenu.classList.remove('active');
+            mainMenu.classList.add('hidden');
+            nameEntryScreen.classList.add('hidden');
 
-            // Regular Eat
-            if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                ate = true;
-                ateIndex = fIdx;
-                break;
+            if (this.gameMode === 'single' && !skipNameEntry) {
+                const score = this.snakes[0].score;
+                if (score > 0 && this.checkHighScore(score)) {
+                    this.currentPendingScore = score;
+                    if (playerNameInput) playerNameInput.value = "";
+                    nameEntryScreen.classList.remove('hidden');
+                    nameEntryScreen.classList.add('active');
+                    if (playerNameInput) playerNameInput.focus();
+                    return;
+                }
             }
 
-            // Magnet Logic (Pull closest food)
-            else if (s.magnetTimer > 0) {
-                const head = s.body[0];
-                const dx = f.x - head.x;
-                const dy = f.y - head.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+            let msg = "GAME OVER";
+            let color = COLORS.p1;
+            if (this.gameMode === 'multi') {
+                if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
+                else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
+                else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
+            }
 
-                if (dist < 15 && dist > 0) {
-                    // Pull food closer
-                    if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
-                    else f.y -= Math.sign(dy);
+            if (winnerText) {
+                winnerText.innerText = msg;
+                winnerText.style.color = color;
+            }
 
-                    // Check capture
-                    if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                        ate = true;
-                        ateIndex = fIdx;
-                        break;
+            gameOverScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('active');
+
+            if (btnResume) btnResume.classList.add('hidden');
+            if (dynamicLegend) dynamicLegend.innerHTML = '';
+        } catch (err) {
+            console.error(err);
+            alert("Game Over!");
+        }
+    }
+
+    triggerShieldEffect(x, y) {
+        // Visual Flare
+        const div = document.createElement('div');
+        div.innerText = "SHIELD BLOCKED!";
+        div.style.position = 'absolute';
+        div.style.left = (x * GRID_SIZE) + 'px';
+        div.style.top = (y * GRID_SIZE) + 'px';
+        div.style.color = '#fff';
+        div.style.fontWeight = 'bold';
+        div.style.textShadow = '0 0 5px #000';
+        div.style.zIndex = '100';
+        div.style.pointerEvents = 'none';
+        div.className = 'shield-broken-msg'; // Add class for animation
+        document.body.appendChild(div);
+
+        // Animate up and fade
+        let op = 1;
+        let top = y * GRID_SIZE;
+        const anim = setInterval(() => {
+            op -= 0.05;
+            top -= 1;
+            div.style.opacity = op;
+            div.style.top = top + 'px';
+            if (op <= 0) {
+                clearInterval(anim);
+                div.remove();
+            }
+        }, 50);
+
+        // Flash Screen
+        const flash = document.createElement('div');
+        flash.style.position = 'fixed';
+        flash.style.top = '0'; flash.style.left = '0';
+        flash.style.width = '100vw'; flash.style.height = '100vh';
+        flash.style.background = 'rgba(255, 255, 255, 0.3)';
+        flash.style.zIndex = '99';
+        flash.style.pointerEvents = 'none';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 100);
+    }
+
+    update() {
+        if (this.isPaused) return;
+
+        const now = Date.now();
+        // Use true delta time for smoother timers if framerate dips
+        const delta = now - this.lastTime;
+        // Note: this.lastTime is updated at end of loop(), but here we need delta for logic. 
+        // Actually, main loop passes timestamp. Let's stick to fixed time steps or just robust decrement.
+        // Simple fix: Decrement by `this.currentSpeed` (which is tick rate) or roughly 16ms?
+        // Actually, the loop runs at `currentSpeed` interval! 
+        // Standard loop: requestAnimationFrame runs freely? 
+        // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;` 
+        // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms). 
+        // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower! 
+        // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
+
+        const tickRate = this.currentSpeed;
+
+        if (this.speedEffectTimer > 0) {
+            this.speedEffectTimer -= tickRate;
+            if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+        }
+
+        this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
+
+        // Update Snakes (Collision & Movement)
+        this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate, (x, y) => this.triggerShieldEffect(x, y)));
+
+        // Game Over Checks...
+        if (this.gameMode === 'single') {
+            if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
+                this.gameOver();
+                return;
+            }
+        } else if (this.gameMode === 'multi') {
+            let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+            let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+
+
+            // Head-to-Head/Body collision logic (omitted for brevity, assume same)
+            const h1 = this.snakes[0].body[0];
+            const h2 = this.snakes[1].body[0];
+            this.snakes[1].body.forEach((seg, i) => { if (h1.x === seg.x && h1.y === seg.y) { if (i >= this.snakes[1].body.length - 2) p2d = true; else p1d = true; } });
+            this.snakes[0].body.forEach((seg, i) => { if (h2.x === seg.x && h2.y === seg.y) { if (i >= this.snakes[0].body.length - 2) p1d = true; else p2d = true; } });
+            if (h1.x === h2.x && h1.y === h2.y) { p1d = true; p2d = true; }
+
+            if (p1d && p2d) { this.gameOver(-1); return; }
+            if (p1d) { this.gameOver(1); return; }
+            if (p2d) { this.gameOver(0); return; }
+        }
+
+        // Timed Powerup Spawning (Independent of eating)
+        if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
+            this.spawnPowerUp();
+            this.lastPowerUpTime = now;
+            // Randomize next delay: 5s to 15s
+            this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+        }
+
+        // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
+        this.snakes.forEach(s => {
+            let ate = false;
+            let ateIndex = -1;
+
+            for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
+                const f = this.foods[fIdx];
+
+                // Regular Eat
+                if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                    ate = true;
+                    ateIndex = fIdx;
+                    break;
+                }
+
+                // Magnet Logic (Pull closest food)
+                else if (s.magnetTimer > 0) {
+                    const head = s.body[0];
+                    const dx = f.x - head.x;
+                    const dy = f.y - head.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 15 && dist > 0) {
+                        // Pull food closer
+                        if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
+                        else f.y -= Math.sign(dy);
+
+                        // Check capture
+                        if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                            ate = true;
+                            ateIndex = fIdx;
+                            break;
+                        }
                     }
                 }
             }
-        }
 
-        if (ate && ateIndex !== -1) {
-            // Remove the eaten piece
-            this.foods.splice(ateIndex, 1);
+            if (ate && ateIndex !== -1) {
+                // Remove the eaten piece
+                this.foods.splice(ateIndex, 1);
 
-            this.baseSpeed *= 0.99;
-            if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+                this.baseSpeed *= 0.99;
+                if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
 
-            s.growPending++;
-            s.score++;
-            this.totalFoodEaten++;
+                s.growPending++;
+                s.score++;
+                this.totalFoodEaten++;
 
-            // Spawn Replacement right away to keep map full
-            this.spawnFood();
-            // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
-            // User asked for "random", not "just when eaten".
-            // But maybe small chance?
-            if (Math.random() < 0.2) this.spawnPowerUp();
+                // Spawn Replacement right away to keep map full
+                this.spawnFood();
+                // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
+                // User asked for "random", not "just when eaten".
+                // But maybe small chance?
+                if (Math.random() < 0.2) this.spawnPowerUp();
 
-            this.updateScoreUI();
-        }
-    });
+                this.updateScoreUI();
+            }
+        });
 
-    // Eat Powerups
-    this.snakes.forEach((s, sIdx) => {
-        const head = s.body[0];
-        for (let i = 0; i < this.powerups.length; i++) {
-            const p = this.powerups[i];
-            if (head.x === p.x && head.y === p.y) {
-                this.applyPowerUp(s, p.type, sIdx);
-                this.powerups.splice(i, 1);
+        // Eat Powerups
+        this.snakes.forEach((s, sIdx) => {
+            const head = s.body[0];
+            for (let i = 0; i < this.powerups.length; i++) {
+                const p = this.powerups[i];
+                if (head.x === p.x && head.y === p.y) {
+                    this.applyPowerUp(s, p.type, sIdx);
+                    this.powerups.splice(i, 1);
+                    break;
+                }
+            }
+        });
+    }
+
+    applyPowerUp(user, type, userIdx) {
+        const enemy = this.snakes[userIdx === 0 ? 1 : 0];
+        const isMulti = this.gameMode === 'multi';
+
+        switch (type) {
+            case 'ghost': user.ghostTimer = 5000; break;
+            case 'speed':
+                this.currentSpeed = 50;
+                this.speedEffectTimer = 3000;
                 break;
-            }
+            case 'slow':
+                this.baseSpeed = this.baseSpeed * 1.10;
+                this.currentSpeed = this.baseSpeed;
+                break;
+            case 'bomb':
+                this.spawnFood();
+                this.powerups = [];
+                this.walls = [];
+                break;
+            case 'shield':
+                user.hasShield = true;
+                user.shieldTimer = 10000; // FIX: Initialize timer!
+                break;
+            case 'magnet': user.magnetTimer = 10000; break;
+            case 'wall':
+                const tail = user.body[user.body.length - 1];
+                this.walls.push({ x: tail.x, y: tail.y });
+                break;
+            case 'eraser':
+                if (isMulti && enemy) {
+                    const newLen = Math.max(1, Math.floor(enemy.body.length / 2));
+                    enemy.body = enemy.body.slice(0, newLen);
+                }
+                break;
+            case 'blind':
+                if (isMulti && enemy) {
+                    enemy.blindTimer = 2000;
+                }
+                break;
+            case 'ice':
+                if (isMulti && enemy) enemy.frozenTimer = 2000;
+                break;
+            case 'switch':
+                if (isMulti && enemy) {
+                    const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
+                    const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
+                }
+                break;
         }
-    });
-}
-
-applyPowerUp(user, type, userIdx) {
-    const enemy = this.snakes[userIdx === 0 ? 1 : 0];
-    const isMulti = this.gameMode === 'multi';
-
-    switch (type) {
-        case 'ghost': user.ghostTimer = 5000; break;
-        case 'speed':
-            this.currentSpeed = 50;
-            this.speedEffectTimer = 3000;
-            break;
-        case 'slow':
-            this.baseSpeed = this.baseSpeed * 1.10;
-            this.currentSpeed = this.baseSpeed;
-            break;
-        case 'bomb':
-            this.spawnFood();
-            this.powerups = [];
-            this.walls = [];
-            break;
-        case 'shield':
-            user.hasShield = true;
-            user.shieldTimer = 10000; // FIX: Initialize timer!
-            break;
-        case 'magnet': user.magnetTimer = 10000; break;
-        case 'wall':
-            const tail = user.body[user.body.length - 1];
-            this.walls.push({ x: tail.x, y: tail.y });
-            break;
-        case 'eraser':
-            if (isMulti && enemy) {
-                const newLen = Math.max(1, Math.floor(enemy.body.length / 2));
-                enemy.body = enemy.body.slice(0, newLen);
-            }
-            break;
-        case 'blind':
-            if (isMulti && enemy) {
-                enemy.blindTimer = 2000;
-            }
-            break;
-        case 'ice':
-            if (isMulti && enemy) enemy.frozenTimer = 2000;
-            break;
-        case 'switch':
-            if (isMulti && enemy) {
-                const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
-                const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
-            }
-            break;
     }
-}
 
-updateScoreUI() {
-    if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
-    if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
-}
+    updateScoreUI() {
+        if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
+        if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
+    }
 
-updateDynamicLegend() {
-    if (!dynamicLegend) return;
+    updateDynamicLegend() {
+        if (!dynamicLegend) return;
 
-    // Force Redraw Every Frame (No Caching)
-    dynamicLegend.innerHTML = '';
+        // Force Redraw Every Frame (No Caching)
+        dynamicLegend.innerHTML = '';
 
-    // 1. Draw Static Powerups (Available on board)
-    this.powerups.forEach(p => {
-        const def = this.powerUpTypes[p.type];
-        const div = document.createElement('div');
-        div.className = 'legend-item';
-        div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
-        dynamicLegend.appendChild(div);
-    });
-
-    // 2. Draw Active Timers (Ghost Style: Individual rows)
-    const s1 = this.snakes[0];
-    if (this.gameMode === 'single' && s1) {
-
-        // Helper to add a timer row
-        const addTimer = (type, seconds, labelOverride = null) => {
-            const def = this.powerUpTypes[type];
-            const label = labelOverride || def.label;
+        // 1. Draw Static Powerups (Available on board)
+        this.powerups.forEach(p => {
+            const def = this.powerUpTypes[p.type];
             const div = document.createElement('div');
-            div.className = 'legend-item'; // Use standard class
-            // Add specific styling to make it pop
-            div.style.color = '#fff';
-            div.style.fontWeight = 'bold';
-            div.style.textShadow = '0 0 5px ' + def.color;
-
-            div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+            div.className = 'legend-item';
+            div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
             dynamicLegend.appendChild(div);
-        };
+        });
 
-        if (s1.ghostTimer > 0) {
-            addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
-        }
-        if (s1.shieldTimer > 0) {
-            addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
-        }
-        if (s1.magnetTimer > 0) {
-            addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+        // 2. Draw Active Timers (Ghost Style: Individual rows)
+        const s1 = this.snakes[0];
+        if (this.gameMode === 'single' && s1) {
+
+            // Helper to add a timer row
+            const addTimer = (type, seconds, labelOverride = null) => {
+                const def = this.powerUpTypes[type];
+                const label = labelOverride || def.label;
+                const div = document.createElement('div');
+                div.className = 'legend-item'; // Use standard class
+                // Add specific styling to make it pop
+                div.style.color = '#fff';
+                div.style.fontWeight = 'bold';
+                div.style.textShadow = '0 0 5px ' + def.color;
+
+                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+                dynamicLegend.appendChild(div);
+            };
+
+            if (s1.ghostTimer > 0) {
+                addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+            }
+            if (s1.shieldTimer > 0) {
+                addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+            }
+            if (s1.magnetTimer > 0) {
+                addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+            }
         }
     }
-}
 
-draw() {
-    ctx.fillStyle = COLORS.bg;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // Draw Walls (Distinct Texture for Placed Walls)
-    // Walls in this.walls are placed by powerups. Normal borders are implicit.
-    this.walls.forEach(w => {
-        // "Danger" style: Brown with Red X or border
-        this.drawRect(w.x, w.y, COLORS.brown);
-        // Draw a red X or inner square to signify danger
-        ctx.strokeStyle = '#ff0000';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-    });
-
-    // Draw Powerups
-    this.powerups.forEach(p => {
-        const def = this.powerUpTypes[p.type];
-        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-    });
-
-    // Draw Foods (Multi-Food)
-    if (this.foods) {
-        this.foods.forEach(f => {
-            this.drawRect(f.x, f.y, COLORS.food, true);
+    draw() {
+        // Blind Effect Logic
+        let isBlinded = false;
+        this.snakes.forEach(s => {
+            if (s.blindTimer > 0) isBlinded = true;
         });
+
+        const container = document.querySelector('.game-container');
+        if (container) {
+            if (isBlinded) container.classList.add('blinded');
+            else container.classList.remove('blinded');
+        }
+
+        ctx.fillStyle = COLORS.bg;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Draw Walls (Distinct Texture for Placed Walls)
+        // Walls in this.walls are placed by powerups. Normal borders are implicit.
+        this.walls.forEach(w => {
+            // "Danger" style: Brown with Red X or border
+            this.drawRect(w.x, w.y, COLORS.brown);
+            // Draw a red X or inner square to signify danger
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+        });
+
+        // Draw Powerups
+        this.powerups.forEach(p => {
+            const def = this.powerUpTypes[p.type];
+            this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+        });
+
+        // Draw Foods (Multi-Food)
+        if (this.foods) {
+            this.foods.forEach(f => {
+                this.drawRect(f.x, f.y, COLORS.food, true);
+            });
+        }
+
+        // Draw Snakes
+        this.snakes.forEach(snake => {
+            const snakeColor = snake.hasShield ? COLORS.silver :
+                snake.ghostTimer > 0 ? COLORS.ghost :
+                    snake.blindTimer > 0 ? '#0a0a0a' : snake.color; // Almost black, but slight vis checks allowed? No, make it dark.
+            snake.body.forEach((segment, index) => {
+                const isHead = index === 0;
+                if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                else ctx.fillStyle = snakeColor;
+
+                this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
+            });
+        });
+
+        this.updateDynamicLegend();
     }
 
-    // Draw Snakes
-    this.snakes.forEach(snake => {
-        const snakeColor = snake.hasShield ? COLORS.silver :
-            snake.ghostTimer > 0 ? COLORS.ghost :
-                snake.blindTimer > 0 ? '#0a0a0a' : snake.color; // Almost black, but slight vis checks allowed? No, make it dark.
-        snake.body.forEach((segment, index) => {
-            const isHead = index === 0;
-            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-            else ctx.fillStyle = snakeColor;
-
-            this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
-        });
-    });
-
-    this.updateDynamicLegend();
-}
-
-drawRect(x, y, color, glow = false) {
-    ctx.fillStyle = color;
-    if (glow) {
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = color;
-    } else {
+    drawRect(x, y, color, glow = false) {
+        ctx.fillStyle = color;
+        if (glow) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
+        } else {
+            ctx.shadowBlur = 0;
+        }
+        ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
         ctx.shadowBlur = 0;
     }
-    ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
-    ctx.shadowBlur = 0;
-}
 
-loop(timestamp) {
-    if (!this.isRunning) return;
-    if (this.isPaused) return;
+    loop(timestamp) {
+        if (!this.isRunning) return;
+        if (this.isPaused) return;
 
-    if (timestamp - this.lastTime < this.currentSpeed) {
-        this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-        return;
+        if (timestamp - this.lastTime < this.currentSpeed) {
+            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+            return;
+        }
+        this.lastTime = timestamp;
+        this.update();
+        this.draw();
+        if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
     }
-    this.lastTime = timestamp;
-    this.update();
-    this.draw();
-    if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-}
 }
 
 const game = new Game();

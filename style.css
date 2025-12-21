@@ -60,8 +60,30 @@ body {
     /* Fill remaining space */
     min-height: 0;
     margin-bottom: 5px;
+    transition: filter 0.2s ease;
 }
 
+/* BLIND EFFECT */
+.game-container.blinded {
+    filter: brightness(0);
+    /* Pitch black */
+    animation: flashBlind 0.2s ease-out;
+}
+
+@keyframes flashBlind {
+    0% {
+        filter: brightness(1);
+    }
+
+    10% {
+        filter: brightness(5);
+    }
+
+    /* Flash white first */
+    100% {
+        filter: brightness(0);
+    }
+}
 
 
 canvas {
