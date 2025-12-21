@@ -606,6 +606,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         joinGame(hostId) {
             console.log("Joining Host:", hostId);
+            this.stopGame(); // KILL ANY RUNNING GAME
 
             // UI Feedback
             document.getElementById('main-menu').classList.remove('active');
