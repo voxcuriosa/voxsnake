@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v3.3 (ACTIVE ALERTS)...");
+    log("v3.4 (DOM STRUCTURE FIX)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1626,7 +1626,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         draw() {
             if (!this.hasAlertedDraw) {
-                alert("DEBUG: DRAW LOOP STARTED");
+                // alert("DEBUG: DRAW LOOP STARTED");
                 this.hasAlertedDraw = true;
             }
 
@@ -1636,6 +1636,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 const uiLayer = document.getElementById('ui-layer');
                 if (uiLayer && uiLayer.style.display !== 'none') {
                     uiLayer.style.setProperty('display', 'none', 'important');
+                }
+                // SAFETY: Just in case Join Screen is somehow still outside in a cached HTML
+                const join = document.getElementById('join-screen');
+                if (join && join.style.display !== 'none') {
+                    join.style.setProperty('display', 'none', 'important');
                 }
             } else {
                 // Ensure it comes back when not running
