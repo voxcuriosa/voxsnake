@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.30 (WALL TRAP & LEGEND)...");
+    log("v1.33 (STRICT COLLISION)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -269,7 +269,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // Power Up Types Definition
             this.powerUpTypes = {
-                'ghost': { color: COLORS.ghost, label: 'Ghost' },
+                'ghost': { color: COLORS.ghost, label: 'Wall Trap' }, // Renamed from Ghost
                 'eraser': { color: COLORS.white, label: 'Eraser' },
                 'blind': { color: COLORS.black, label: 'Blind' },
                 'speed': { color: COLORS.orange, label: 'Speed' },
@@ -1285,11 +1285,20 @@ window.addEventListener('DOMContentLoaded', () => {
                 let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
 
 
-                // Head-to-Head/Body collision logic (omitted for brevity, assume same)
+                // Head-to-Head/Body collision logic
                 const h1 = this.snakes[0].body[0];
                 const h2 = this.snakes[1].body[0];
-                this.snakes[1].body.forEach((seg, i) => { if (h1.x === seg.x && h1.y === seg.y) { if (i >= this.snakes[1].body.length - 2) p2d = true; else p1d = true; } });
-                this.snakes[0].body.forEach((seg, i) => { if (h2.x === seg.x && h2.y === seg.y) { if (i >= this.snakes[0].body.length - 2) p1d = true; else p2d = true; } });
+
+                // P1 Head hits P2 Body -> P1 Dies
+                this.snakes[1].body.forEach((seg) => {
+                    if (h1.x === seg.x && h1.y === seg.y) p1d = true;
+                });
+
+                // P2 Head hits P1 Body -> P2 Dies
+                this.snakes[0].body.forEach((seg) => {
+                    if (h2.x === seg.x && h2.y === seg.y) p2d = true;
+                });
+
                 if (h1.x === h2.x && h1.y === h2.y) { p1d = true; p2d = true; }
 
                 if (p1d && p2d) { this.gameOver(-1); return; }
