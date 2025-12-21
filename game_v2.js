@@ -44,12 +44,15 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    // log("v4.14 (Visual Polish)...");
+    log("v4.16 (Strict Sync & NoJump)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
-    // FORCE TOUCH ACTION
+    // FORCE TOUCH ACTION & NO SCROLL
     document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
+    // Prevent "Rubber banding" or "Pull to refresh"
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     if (canvas) canvas.style.touchAction = 'none';
     // -----------------------------------
 
@@ -176,7 +179,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         this.shieldTimer = 0;
                         if (onShieldBreak) onShieldBreak(head.x, head.y);
 
-                        // CRITICAL FIX: Stop the snake! 
+                        // CRITICAL FIX: Stop the snake!
                         // Otherwise it hits the wall again in next frame and dies.
                         this.direction = { x: 0, y: 0 };
                         this.nextDirection = { x: 0, y: 0 };
@@ -637,7 +640,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         startGame(mode) {
-            // alert("STARTING GAME: " + mode); 
+            // alert("STARTING GAME: " + mode);
             console.log("STARTING GAME MODE:", mode);
 
             try {
@@ -741,13 +744,24 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // MULTIPLAYER RESOLUTION SYNC
-            if (this.gameMode === 'multi' && this.multiplayerTargetWidth) {
-                const mw = Math.floor((this.multiplayerTargetWidth - 4) / GRID_SIZE) * GRID_SIZE;
-                const mh = Math.floor((this.multiplayerTargetHeight - 4) / GRID_SIZE) * GRID_SIZE;
+            if (this.gameMode === 'multi') {
+                if (this.isHost && this.multiplayerTargetWidth) {
+                    // HOST: Must shrink to fit Client
+                    const mw = Math.floor((this.multiplayerTargetWidth - 4) / GRID_SIZE) * GRID_SIZE;
+                    const mh = Math.floor((this.multiplayerTargetHeight - 4) / GRID_SIZE) * GRID_SIZE;
 
-                // Use smallest common denominator (min width/height)
-                if (mw < CANVAS_WIDTH) CANVAS_WIDTH = mw;
-                if (mh < CANVAS_HEIGHT) CANVAS_HEIGHT = mh;
+                    if (mw < CANVAS_WIDTH) CANVAS_WIDTH = mw;
+                    if (mh < CANVAS_HEIGHT) CANVAS_HEIGHT = mh;
+
+                    // log("HOST SYNC: Shrinking to " + CANVAS_WIDTH + "x" + CANVAS_HEIGHT);
+                }
+                else if (this.isClient && this.multiplayerTargetWidth) {
+                    // CLIENT: Must MATCH Host exactly (Host has already calculated the Min)
+                    // NOTE: We trust the Host's 'dims' broadcast implicitly
+                    CANVAS_WIDTH = this.multiplayerTargetWidth;
+                    CANVAS_HEIGHT = this.multiplayerTargetHeight;
+                    // log("CLIENT SYNC: Forcing " + CANVAS_WIDTH + "x" + CANVAS_HEIGHT);
+                }
             }
 
             canvas.width = CANVAS_WIDTH;
@@ -764,6 +778,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
             canvas.style.width = Math.floor(CANVAS_WIDTH * scale) + 'px';
             canvas.style.height = Math.floor(CANVAS_HEIGHT * scale) + 'px';
+
+            // DEBUG DISPLAY (Temporary - Remove if distracting, but good for user proof)
+            if (ctx) {
+                // We can't draw here because draw() clears it.
+                // We rely on log() or just the fact it works.
+            }
 
             this.draw();
         }
