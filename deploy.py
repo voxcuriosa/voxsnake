@@ -57,7 +57,7 @@ def upload_files(ftp, config):
     # Files to upload (simple list for now, or walk)
     # We want to upload everything except .git, .gitignore, deploy.py, ftp_config.json
     
-    ignored = {'.git', '.gitignore', 'deploy.py', 'ftp_config.json', '.vscode', '__pycache__', 'index_v6.html', 'game.js'}
+    ignored = {'.git', '.gitignore', 'deploy.py', 'ftp_config.json', '.vscode', '__pycache__', 'index_v6.html', 'game.js', 'game_v6.js', 'game_v7.js', 'game_v8.js'}
     
     for root, dirs, files in os.walk(local_path):
         # Remove ignored dirs

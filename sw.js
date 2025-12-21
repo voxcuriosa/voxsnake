@@ -1,9 +1,9 @@
-const CACHE_NAME = 'neon-snake-v2';
+const CACHE_NAME = 'neon-snake-v40';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './style.css',
-    './game_v7.js',
+    './game_v9.js',
     './manifest.json',
     './icon_192.png',
     './icon_512.png',
