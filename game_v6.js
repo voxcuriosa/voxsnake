@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.48 (STOP GAME FIX)...");
+    log("v1.50 (DOUBLE TAP MAIN MENU)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -388,6 +388,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 s.classList.add('hidden');
                 s.classList.add('nuclear-hidden'); // NUKE IT
                 s.classList.remove('active');
+                s.style.display = 'none'; // TRIPLE KILL
             });
         }
 
@@ -396,6 +397,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // 1. Reset UI State completely
             this.hideAllScreens();
+            // DOUBLE TAP MAIN MENU
+            const mm = document.getElementById('main-menu');
+            if (mm) {
+                mm.classList.add('hidden');
+                mm.classList.add('nuclear-hidden');
+                mm.classList.remove('active');
+                mm.style.display = 'none';
+            }
 
             // 2. Show Lobby
             const lobby = document.getElementById('lobby-screen');
@@ -609,6 +618,13 @@ window.addEventListener('DOMContentLoaded', () => {
             this.stopGame(); // KILL ANY RUNNING GAME
 
             // UI Feedback
+            this.hideAllScreens();
+            const mm = document.getElementById('main-menu');
+            if (mm) {
+                mm.style.display = 'none';
+                mm.classList.add('nuclear-hidden');
+            }
+
             document.getElementById('main-menu').classList.remove('active');
             document.getElementById('main-menu').classList.add('hidden');
             document.getElementById('join-screen').classList.add('hidden');
