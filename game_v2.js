@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.20 (Debug Sync Stats)...");
+    log("v5.1 (Final Stable)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
@@ -1431,17 +1431,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
             ctx.fillStyle = COLORS.bg;
             ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-            // Draw Stats for Debugging (Sync Proof)
-            ctx.fillStyle = this.isHost ? '#00ff88' : '#00ccff';
-            ctx.font = '10px monospace';
-            ctx.textAlign = 'left';
-            ctx.fillText(`LOGIC: ${CANVAS_WIDTH}x${CANVAS_HEIGHT}`, 10, 20);
-            ctx.fillText(`VISUAL: ${canvas.width}x${canvas.height}`, 10, 35);
-            ctx.fillText(`STYLE: ${canvas.style.width}x${canvas.style.height}`, 10, 50);
-            if (this.multiplayerTargetWidth) {
-                ctx.fillText(`TARGET: ${this.multiplayerTargetWidth}px`, 10, 65);
-            }
 
             // Draw Walls (Distinct Texture for Placed Walls)
             // Walls in this.walls are placed by powerups. Normal borders are implicit.
