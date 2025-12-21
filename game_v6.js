@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.43 (FIX MISSING FUNCTION)...");
+    log("v1.44 (REALLY FIXING MISSING FUNCTION)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -360,6 +360,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 // Wait a tiny bit for PeerJS to be ready? No, new Peer() is in joinGame.
                 setTimeout(() => this.joinGame(joinCode), 500);
             }
+        }
+
+        hideAllScreens() {
+            const screens = document.querySelectorAll('.menu-screen');
+            screens.forEach(s => {
+                s.classList.add('hidden');
+                s.classList.remove('active');
+                s.style.display = 'none'; // Force Hard Hide
+            });
         }
 
         startHost() {
