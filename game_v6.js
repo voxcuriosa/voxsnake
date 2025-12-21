@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v7.3 (CONN RACE FIX)...");
+    log("v7.5 (FORCE SYNC START)...");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
@@ -753,6 +753,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 this.updateScoreUI();
 
                 if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+
+                // FORCE FIRST BROADCAST to ensure Client starts immediately
+                this.broadcastState();
+
                 this.loop(this.lastTime);
 
                 console.log("Game Start Sequence Complete.");
@@ -762,7 +766,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 alert("START ERROR: " + e.message);
             }
         }
-
 
         resize() {
             const container = canvas.parentElement;
