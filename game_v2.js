@@ -333,12 +333,12 @@ class Game {
                         this.handleRemoteInput(data.key);
                     } else if (data.type === 'hello') {
                         // RESOLUTION SYNC
+                        // alert("HOST RX HELLO: " + data.width + "x" + data.height); // DEBUG
                         console.log("Client Resolution:", data.width, data.height);
                         this.multiplayerTargetWidth = data.width;
                         this.multiplayerTargetHeight = data.height;
-                        this.resize(); // Force resize to min dimensions
+                        this.resize();
                     } else if (data.type === 'restart') {
-                        // RESTART GAME
                         this.startGame('multi');
                     }
                 });
@@ -391,17 +391,10 @@ class Game {
         if (submitScoreBtn) submitScoreBtn.addEventListener('click', () => this.submitHighScore());
         if (btnResume) btnResume.addEventListener('click', () => this.togglePause());
 
-        // Touch / Swipe Listeners - Try BOTH Canvas and Window/Document
-        const touchTarget = document.getElementById('game-canvas') || document;
-
-        touchTarget.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
-        touchTarget.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-        touchTarget.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-
-        // Also add to window just in case
-        if (touchTarget !== window) {
-            window.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-        }
+        // Global Touch Listeners (Window) for maximum reliability
+        window.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        window.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+        window.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
 
         // Enter key for name entry
         if (playerNameInput) {
