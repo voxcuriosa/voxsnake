@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=7.14">
+    <link rel="stylesheet" href="style.css?v=7.15">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -15,12 +15,17 @@
     <link rel="apple-touch-icon" href="icon_192.png">
     <meta name="theme-color" content="#000000">
     <script>
+        // NUCLEAR CACHE CLEAR: FORCE UNREGISTER ALL SERVICE WORKERS
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW Registered!', reg))
-                    .catch(err => console.error('SW Failed:', err));
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) {
+                    console.log('Unregistering SW:', registration);
+                    registration.unregister();
+                }
+                // Force reload if we found and killed one? 
+                // No, just unregister so next load is fresh.
             });
+            // DO NOT REGISTER NEW SW YET. Let's run raw for a version.
         }
     </script>
 
@@ -62,7 +67,7 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v2.6</span></h3>
+                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v3.0</span></h3>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
