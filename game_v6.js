@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v7.1 (MISSING METHOD RESTORED)...");
+    log("v7.3 (CONN RACE FIX)...");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
@@ -409,14 +409,23 @@ window.addEventListener('DOMContentLoaded', () => {
                         }
                     });
 
-                    conn.on('open', () => {
+                    const handleOpen = () => {
                         // Start Game after delay
                         setTimeout(() => {
-                            document.getElementById('lobby-screen').classList.add('hidden');
-                            document.getElementById('lobby-screen').classList.remove('active');
+                            const lobby = document.getElementById('lobby-screen');
+                            if (lobby) {
+                                lobby.classList.add('hidden');
+                                lobby.classList.remove('active');
+                            }
                             this.startGame('multi');
                         }, 500);
-                    });
+                    };
+
+                    if (conn.open) {
+                        handleOpen();
+                    } else {
+                        conn.on('open', handleOpen);
+                    }
                 });
             } catch (e) {
                 alert("PeerJS Init Failed: " + e);
