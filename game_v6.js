@@ -486,11 +486,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     const handleOpen = () => {
                         // Start Game after delay
                         setTimeout(() => {
-                            const lobby = document.getElementById('lobby-screen');
-                            if (lobby) {
-                                lobby.classList.add('hidden');
-                                lobby.classList.remove('active');
-                            }
+                            this.hideAllScreens();
                             this.startGame('multi');
                         }, 500);
                     };
