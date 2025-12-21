@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v5.2 (Fix Ghost Sim)...");
+    log("v5.5 (Touch Sensitive + Visuals)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
@@ -978,8 +978,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const deltaY = touch.clientY - this.touchStartY;
 
             // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
-            // Let's stick to 30px for "move detected"
-            if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30) {
+            // REDUCED TO 15px for ultra-responsive continuous control
+            if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
                 let key = '';
                 if (Math.abs(deltaX) > Math.abs(deltaY)) {
                     key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
@@ -987,10 +987,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
                 }
 
-                // Trigger Input
-                if (this.snakes.length > 0) {
-                    this.snakes[0].handleInput(key);
-                }
+                if (typeof log !== 'undefined') log(`CONT SWIPE: ${key}`);
+                this.handleInput({ key: key, preventDefault: () => { } });
 
                 // RESET Start Position to current finger position
                 // This is the key for "Continuous" swiping (Up -> Right without lifting)
@@ -1017,9 +1015,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (!this.isRunning || this.isPaused) return;
 
-            // Threshold for swipe vs tap (Increased to 30px for stability)
-            if (Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) {
-                if (typeof log !== 'undefined') log("Tap ignored (<30px)");
+            // Threshold for swipe vs tap (Reduced to 10px for responsiveness)
+            if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
+                // if (typeof log !== 'undefined') log("Tap ignored (<10px)");
                 return;
             }
 
@@ -1033,10 +1031,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
             }
 
-            if (typeof log !== 'undefined') log(`SWIPE: ${key}`);
-
-            // Simulate "Networkable" Input
-            if (typeof log !== 'undefined') log(`TOUCH -> HANDLE INPUT: ${key}`);
+            if (typeof log !== 'undefined') log(`SWIPE END: ${key}`);
             this.handleInput({ key: key, preventDefault: () => { } });
         }
 
@@ -1071,6 +1066,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (typeof log !== 'undefined') log(`CLIENT INPUT: ${e.key} Send: ${this.conn && this.conn.open}`);
                     if (this.conn && this.conn.open) {
                         this.conn.send({ type: 'input', key: e.key });
+                        // Record for visual feedback
+                        this.lastClientInputKey = e.key;
+                        this.lastClientInputTime = Date.now();
                     }
                 }
                 return; // Client ONLY sends input, does not move locally
@@ -1437,6 +1435,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 // Update Score UI from state
                 if (scoreP1El && renderSnakes[0]) scoreP1El.innerText = renderSnakes[0].score;
                 if (scoreP2El && renderSnakes[1]) scoreP2El.innerText = renderSnakes[1].score;
+
+                // Visual Input Feedback (Client Only)
+                if (this.lastClientInputTime && (Date.now() - this.lastClientInputTime < 300)) {
+                    ctx.save();
+                    ctx.globalAlpha = (1 - (Date.now() - this.lastClientInputTime) / 300) * 0.5;
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '100px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    let sym = '';
+                    if (this.lastClientInputKey === 'ArrowUp') sym = '↑';
+                    else if (this.lastClientInputKey === 'ArrowDown') sym = '↓';
+                    else if (this.lastClientInputKey === 'ArrowLeft') sym = '←';
+                    else if (this.lastClientInputKey === 'ArrowRight') sym = '→';
+                    ctx.fillText(sym, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+                    ctx.restore();
+                }
             }
 
             // Blind Effect Logic
