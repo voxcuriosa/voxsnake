@@ -65,6 +65,7 @@ class Snake {
         this.ghostTimer = 0;
         this.frozenTimer = 0;
         this.hasShield = false;
+        this.shieldTimer = 0;
         this.magnetTimer = 0;
     }
 
@@ -80,16 +81,21 @@ class Snake {
         else if (key === right && this.direction.x === 0) this.nextDirection = { x: 1, y: 0 };
     }
 
-    move(walls, isSingleMode) {
+    move(walls, isSingleMode, tickRate) {
         if (this.isDead) return;
 
-        // Handle Timers
-        if (this.ghostTimer > 0) this.ghostTimer -= 16;
+        // Handle Timers (Use actual tick rate, usually ~100ms, not 16ms)
+        if (this.ghostTimer > 0) this.ghostTimer -= tickRate;
+        if (this.magnetTimer > 0) this.magnetTimer -= tickRate;
+        if (this.shieldTimer > 0) this.shieldTimer -= tickRate;
+
+        // Disable expired effects
+        if (this.shieldTimer <= 0) this.hasShield = false;
+
         if (this.frozenTimer > 0) {
-            this.frozenTimer -= 16;
+            this.frozenTimer -= tickRate;
             return; // Skip move if frozen
         }
-        if (this.magnetTimer > 0) this.magnetTimer -= 16;
 
         this.direction = this.nextDirection;
         const head = this.body[0];
@@ -108,6 +114,7 @@ class Snake {
             } else {
                 if (this.hasShield) {
                     this.hasShield = false;
+                    this.shieldTimer = 0; // Shield consumed on hit
                     return;
                 }
                 this.isDead = true;
@@ -122,6 +129,7 @@ class Snake {
                     if (this.ghostTimer > 0) break; // Ghost passes through
                     if (this.hasShield) {
                         this.hasShield = false;
+                        this.shieldTimer = 0; // Shield consumed
                         return; // Bounce/Stop
                     }
                     this.isDead = true;
@@ -523,16 +531,32 @@ class Game {
     update() {
         if (this.isPaused) return;
 
+        const now = Date.now();
+        // Use true delta time for smoother timers if framerate dips
+        const delta = now - this.lastTime;
+        // Note: this.lastTime is updated at end of loop(), but here we need delta for logic. 
+        // Actually, main loop passes timestamp. Let's stick to fixed time steps or just robust decrement.
+        // Simple fix: Decrement by `this.currentSpeed` (which is tick rate) or roughly 16ms?
+        // Actually, the loop runs at `currentSpeed` interval! 
+        // Standard loop: requestAnimationFrame runs freely? 
+        // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;` 
+        // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms). 
+        // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower! 
+        // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
+
+        const tickRate = this.currentSpeed;
+
         if (this.speedEffectTimer > 0) {
-            this.speedEffectTimer -= 16;
+            this.speedEffectTimer -= tickRate;
             if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
         }
 
-        const now = Date.now();
         this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
 
-        this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single'));
+        // Update Snakes (Collision & Movement)
+        this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate));
 
+        // Game Over Checks...
         if (this.gameMode === 'single') {
             if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision()) {
                 this.gameOver();
@@ -542,22 +566,11 @@ class Game {
             let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision();
             let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision();
 
+            // Head-to-Head/Body collision logic (omitted for brevity, assume same)
             const h1 = this.snakes[0].body[0];
             const h2 = this.snakes[1].body[0];
-
-            this.snakes[1].body.forEach((seg, i) => {
-                if (h1.x === seg.x && h1.y === seg.y) {
-                    if (i >= this.snakes[1].body.length - 2) p2d = true;
-                    else p1d = true;
-                }
-            });
-            this.snakes[0].body.forEach((seg, i) => {
-                if (h2.x === seg.x && h2.y === seg.y) {
-                    if (i >= this.snakes[0].body.length - 2) p1d = true;
-                    else p2d = true;
-                }
-            });
-
+            this.snakes[1].body.forEach((seg, i) => { if (h1.x === seg.x && h1.y === seg.y) { if (i >= this.snakes[1].body.length - 2) p2d = true; else p1d = true; } });
+            this.snakes[0].body.forEach((seg, i) => { if (h2.x === seg.x && h2.y === seg.y) { if (i >= this.snakes[0].body.length - 2) p1d = true; else p2d = true; } });
             if (h1.x === h2.x && h1.y === h2.y) { p1d = true; p2d = true; }
 
             if (p1d && p2d) { this.gameOver(-1); return; }
@@ -565,9 +578,33 @@ class Game {
             if (p2d) { this.gameOver(0); return; }
         }
 
-        // Eat Food
+        // Eat Food (Combined Magnet & Regular)
         this.snakes.forEach(s => {
+            let ate = false;
+            // Regular Eat
             if (s.body[0].x === this.food.x && s.body[0].y === this.food.y) {
+                ate = true;
+            }
+            // Magnet Logic
+            else if (s.magnetTimer > 0) {
+                const head = s.body[0];
+                const dx = this.food.x - head.x;
+                const dy = this.food.y - head.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 15 && dist > 0) {
+                    // Pull food closer
+                    if (Math.abs(dx) > Math.abs(dy)) this.food.x -= Math.sign(dx);
+                    else this.food.y -= Math.sign(dy);
+
+                    // Check if it was pulled ONTO the head just now
+                    if (s.body[0].x === this.food.x && s.body[0].y === this.food.y) {
+                        ate = true;
+                    }
+                }
+            }
+
+            if (ate) {
                 this.baseSpeed *= 0.99;
                 if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
 
@@ -578,21 +615,6 @@ class Game {
                 this.spawnFood();
                 this.spawnPowerUp();
                 this.updateScoreUI();
-            }
-            // Magnet Logic
-            if (s.magnetTimer > 0) {
-                const head = s.body[0];
-                const dx = this.food.x - head.x;
-                const dy = this.food.y - head.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist < 15 && dist > 0) {
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        this.food.x -= Math.sign(dx);
-                    } else {
-                        this.food.y -= Math.sign(dy);
-                    }
-                }
             }
         });
 
