@@ -886,8 +886,12 @@ class Game {
             this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
         });
 
-        // Draw Food
-        this.drawRect(this.food.x, this.food.y, COLORS.food, true);
+        // Draw Foods (Multi-Food)
+        if (this.foods) {
+            this.foods.forEach(f => {
+                this.drawRect(f.x, f.y, COLORS.food, true);
+            });
+        }
 
         // Draw Snakes
         this.snakes.forEach(snake => {
