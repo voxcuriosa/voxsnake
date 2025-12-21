@@ -1327,6 +1327,24 @@ class Game {
         ctx.shadowBlur = 0;
     }
 
+    broadcastState() {
+        if (!this.isHost || !this.conn || !this.conn.open) return;
+
+        const state = {
+            type: 'state',
+            snakes: this.snakes,
+            foods: this.foods,
+            powerups: this.powerups,
+            walls: this.walls
+        };
+
+        try {
+            this.conn.send(state);
+        } catch (e) {
+            console.error("Broadcast Error:", e);
+        }
+    }
+
     loop(timestamp) {
         if (!this.isRunning) return;
         if (this.isPaused) return;
@@ -1337,6 +1355,11 @@ class Game {
         }
         this.lastTime = timestamp;
         this.update();
+
+        if (this.isHost) {
+            this.broadcastState();
+        }
+
         this.draw();
         if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
     }
