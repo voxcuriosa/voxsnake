@@ -660,7 +660,18 @@ class Game {
         if (h < 300) h = 300;
 
         CANVAS_WIDTH = Math.floor((w - 4) / GRID_SIZE) * GRID_SIZE;
-        CANVAS_HEIGHT = Math.floor((h - 4) / GRID_SIZE) * GRID_SIZE;
+        if (this.multiplayerTargetWidth) {
+            const mw = Math.floor((this.multiplayerTargetWidth - 4) / GRID_SIZE) * GRID_SIZE;
+            const mh = Math.floor((this.multiplayerTargetHeight - 4) / GRID_SIZE) * GRID_SIZE;
+
+            // Use smallest common denominator (min width/height)
+            if (mw < CANVAS_WIDTH) CANVAS_WIDTH = mw;
+            if (mh < CANVAS_HEIGHT) CANVAS_HEIGHT = mh;
+
+            if (typeof log !== 'undefined') log(`RESIZE SYNC: Target=${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight} -> Applied=${CANVAS_WIDTH}x${CANVAS_HEIGHT}`);
+        } else {
+            if (typeof log !== 'undefined') log(`RESIZE: ${CANVAS_WIDTH}x${CANVAS_HEIGHT} (No Sync Target)`);
+        }
 
         // MULTIPLAYER RESOLUTION SYNC
         if (this.gameMode === 'multi' && this.multiplayerTargetWidth) {
@@ -919,6 +930,7 @@ class Game {
         if (typeof log !== 'undefined') log(`SWIPE: ${key}`);
 
         // Simulate "Networkable" Input
+        if (typeof log !== 'undefined') log(`TOUCH -> HANDLE INPUT: ${key}`);
         this.handleInput({ key: key, preventDefault: () => { } });
     }
 
@@ -934,6 +946,7 @@ class Game {
         if (this.isClient) {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 e.preventDefault();
+                if (typeof log !== 'undefined') log(`CLIENT INPUT: ${e.key} Send: ${this.conn && this.conn.open}`);
                 if (this.conn && this.conn.open) {
                     this.conn.send({ type: 'input', key: e.key });
                 }
