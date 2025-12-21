@@ -1008,9 +1008,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (!this.isRunning || this.isPaused) return;
 
-            // Threshold for swipe vs tap
-            if (Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20) {
-                if (typeof log !== 'undefined') log("Tap ignored (<20px)");
+            // Threshold for swipe vs tap (Increased to 30px for stability)
+            if (Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) {
+                if (typeof log !== 'undefined') log("Tap ignored (<30px)");
                 return;
             }
 
@@ -1330,25 +1330,6 @@ window.addEventListener('DOMContentLoaded', () => {
                     const tail = user.body[user.body.length - 1];
                     this.walls.push({ x: tail.x, y: tail.y });
                     break;
-                    // The following code block appears to be a misplaced swipe input handler.
-                    // It is inserted here as per the user's instruction, but it is syntactically
-                    // incorrect within a switch statement without a 'case' label.
-                    // This will cause a syntax error.
-                    if (Math.abs(diffX) > Math.abs(diffY)) {
-                        if (Math.abs(diffX) > 30) { // Increased threshold to 30px
-                            if (diffX > 0) this.handleInput({ key: 'ArrowRight' });
-                            else this.handleInput({ key: 'ArrowLeft' });
-                        }
-                    } else {
-                        if (Math.abs(diffY) > 30) {
-                            if (diffY > 0) this.handleInput({ key: 'ArrowDown' });
-                            else this.handleInput({ key: 'ArrowUp' });
-                        }
-                    }
-                    // Reset to prevent double-firing on small jitters
-                    this.touchStartX = null;
-                    this.touchStartY = null;
-                    break; // This break is now associated with the misplaced code block, not a case.
                 case 'ice':
                     if (isMulti && enemy) enemy.frozenTimer = 2000;
                     break;
@@ -1450,6 +1431,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
             ctx.fillStyle = COLORS.bg;
             ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Draw Stats for Debugging (Sync Proof)
+            // ctx.fillStyle = this.isHost ? '#00ff88' : '#00ccff';
+            // ctx.font = '10px monospace';
+            // ctx.textAlign = 'left';
+            // ctx.fillText(`LOGIC: ${CANVAS_WIDTH}x${CANVAS_HEIGHT}`, 10, 20);
+            // ctx.fillText(`VISUAL: ${canvas.width}x${canvas.height}`, 10, 35);
+            // ctx.fillText(`STYLE: ${canvas.style.width}x${canvas.style.height}`, 10, 50);
+            // if (this.multiplayerTargetWidth) {
+            //      ctx.fillText(`TARGET: ${this.multiplayerTargetWidth}px`, 10, 65);
+            // }
 
             // Draw Walls (Distinct Texture for Placed Walls)
             // Walls in this.walls are placed by powerups. Normal borders are implicit.
