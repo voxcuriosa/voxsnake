@@ -410,6 +410,9 @@ class Game {
     }
 
     spawnFood() {
+        // Limit max foods just in case, but aim for 3-5
+        if (this.foods.length >= 5) return;
+
         let valid = false;
         let attempts = 0;
 
@@ -423,23 +426,26 @@ class Game {
             maxY = 30;
         }
 
+        let newFood = {};
+
         while (!valid && attempts < 100) {
             attempts++;
-            this.food = {
+            newFood = {
                 x: Math.floor(Math.random() * maxX),
                 y: Math.floor(Math.random() * maxY)
             };
-            valid = !this.isOccupied(this.food);
+            valid = !this.isOccupied(newFood);
         }
 
-        // Critical Fix: If validation fails, DO NOT default to center. 
-        // Force a random spot anyway, it's better than static center.
         if (!valid) {
-            this.food = {
+            // Force Random if stuck
+            newFood = {
                 x: Math.floor(Math.random() * maxX),
                 y: Math.floor(Math.random() * maxY)
             };
         }
+
+        this.foods.push(newFood);
     }
 
     // ... spawnPowerUp omitted ...
