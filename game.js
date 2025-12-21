@@ -877,26 +877,10 @@ class Game {
     updateDynamicLegend() {
         if (!dynamicLegend) return;
 
-        // Optimize: Only redraw if the SET of powerups changes, OR if the Ghost Timer needs update.
-        // We will separate the static list from the timer to avoid full innerHTML trashing.
-
-        const currentPowerups = this.powerups.map(p => p.type).sort().join(',');
-        const activeGhost = (this.gameMode === 'single' && this.snakes[0] && this.snakes[0].ghostTimer > 0);
-
-        // Timer Logic
-        let timerText = "";
-        if (activeGhost) {
-            const secondsLeft = Math.ceil(this.snakes[0].ghostTimer / 1000);
-            timerText = `GHOST (${secondsLeft}s)`;
-        }
-
-        const newStateSig = currentPowerups + "|" + timerText;
-        if (this._lastLegendState === newStateSig) return;
-        this._lastLegendState = newStateSig;
-
+        // Force Redraw Every Frame (No Caching)
         dynamicLegend.innerHTML = '';
 
-        // Draw standard icons
+        // 1. Draw Static Powerups (Available on board)
         this.powerups.forEach(p => {
             const def = this.powerUpTypes[p.type];
             const div = document.createElement('div');
@@ -905,12 +889,34 @@ class Game {
             dynamicLegend.appendChild(div);
         });
 
-        // Add Active Ghost Timer
-        if (timerText) {
-            const div = document.createElement('div');
-            div.className = 'legend-item';
-            div.innerHTML = `<span class="dot ghost" style="background-color:${COLORS.ghost}; box-shadow: 0 0 10px ${COLORS.ghost}"></span> ${timerText}`;
-            dynamicLegend.appendChild(div);
+        // 2. Draw Active Timers (Ghost Style: Individual rows)
+        const s1 = this.snakes[0];
+        if (this.gameMode === 'single' && s1) {
+
+            // Helper to add a timer row
+            const addTimer = (type, seconds, labelOverride = null) => {
+                const def = this.powerUpTypes[type];
+                const label = labelOverride || def.label;
+                const div = document.createElement('div');
+                div.className = 'legend-item'; // Use standard class
+                // Add specific styling to make it pop
+                div.style.color = '#fff';
+                div.style.fontWeight = 'bold';
+                div.style.textShadow = '0 0 5px ' + def.color;
+
+                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+                dynamicLegend.appendChild(div);
+            };
+
+            if (s1.ghostTimer > 0) {
+                addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+            }
+            if (s1.shieldTimer > 0) {
+                addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+            }
+            if (s1.magnetTimer > 0) {
+                addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+            }
         }
     }
 
