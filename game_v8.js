@@ -1640,189 +1640,107 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         draw() {
-            if (!this.hasAlertedDraw) {
-                // alert("DEBUG: DRAW LOOP STARTED");
-                this.hasAlertedDraw = true;
-            }
+            try {
+                // 1. BACKGROUND (FIRST!) - NEW COLOR verify v3.9
+                ctx.fillStyle = '#000814'; // Dark Blue/Black
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            // BRUTE FORCE UI CLEANUP (Fixes persistent overlay issues)
-            if (this.isRunning) {
-                // HIDE THE ENTIRE UI LAYER WHILE PLAYING
-                const uiLayer = document.getElementById('ui-layer');
-                if (uiLayer && uiLayer.style.display !== 'none') {
-                    uiLayer.style.setProperty('display', 'none', 'important');
+                // 2. MAIN WORLD RENDER (Protected)
+                try {
+                    let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
+                    let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
+                    let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
+                    let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+
+                    // Walls
+                    renderWalls.forEach(w => {
+                        this.drawRect(w.x, w.y, COLORS.brown);
+                        ctx.strokeStyle = '#ff0000';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+                    });
+
+                    // Powerups
+                    renderPowerups.forEach(p => {
+                        const def = this.powerUpTypes[p.type];
+                        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+                    });
+
+                    // Foods
+                    renderFoods.forEach(f => {
+                        this.drawRect(f.x, f.y, COLORS.food, true);
+                    });
+
+                    // Snakes
+                    renderSnakes.forEach(snake => {
+                        const snakeColor = snake.hasShield ? COLORS.silver :
+                            snake.ghostTimer > 0 ? COLORS.ghost :
+                                snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+                        snake.body.forEach((segment, index) => {
+                            const isHead = index === 0;
+                            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                            else ctx.fillStyle = snakeColor;
+                            this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
+                        });
+                    });
+
+                    // Legend
+                    this.updateDynamicLegend();
+
+                } catch (e) {
+                    console.error("WORLD RENDER CRASH:", e);
                 }
-                // SAFETY: Just in case Join Screen is somehow still outside in a cached HTML
-                const join = document.getElementById('join-screen');
-                if (join && join.style.display !== 'none') {
-                    join.style.setProperty('display', 'none', 'important');
-                }
-            } else {
-                // Ensure it comes back when not running
-                const uiLayer = document.getElementById('ui-layer');
-                if (uiLayer && uiLayer.style.display === 'none') {
-                    uiLayer.style.display = 'block';
-                }
-            }
 
-            // DEBUG HUD (Visual State Inspector)
-            // Displays critical DOM state on canvas to verify Brute Force
-            if (this.isRunning) {
-                const lobby = document.getElementById('lobby-screen');
-                const menu = document.getElementById('main-menu');
+                // 3. UI LAYERS (ON TOP)
 
-                ctx.save();
-                ctx.fillStyle = 'rgba(0,0,0,0.8)';
-                ctx.fillRect(10, 50, 250, 120);
-                ctx.fillStyle = '#0f0';
-                ctx.font = '12px monospace';
-                ctx.textAlign = 'left';
-                let y = 65;
-                const line = (txt) => { ctx.fillText(txt, 15, y); y += 15; };
-
-                line(`VER: v2.3 DEBUG`);
-                line(`RUNNING: ${this.isRunning}`);
-
-                if (lobby) {
-                    const style = window.getComputedStyle(lobby);
-                    line(`LOBBY: ${lobby.style.display} / ${style.display}`);
-                    line(`CLS: ${lobby.className}`);
-                    line(`VIS: ${style.visibility} OP: ${style.opacity}`);
-                } else {
-                    line(`LOBBY: NULL`);
-                }
-
-                ctx.restore();
-            }
-
-            // PERMANENT VERSION STAMP (CENTERED)
-            ctx.save();
-            ctx.fillStyle = this.isRunning ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.8)';
-            ctx.font = '16px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText(`JS: v3.5 | RUN: ${this.isRunning} | PAUSE: ${this.isPaused}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30);
-
-            if (!this.isRunning) {
-                ctx.fillStyle = 'yellow';
-                ctx.font = '20px monospace';
-                ctx.fillText("GAME STOPPED - CHECK MENUS", CANVAS_WIDTH / 2, CANVAS_HEIGHT - 60);
-            }
-            ctx.restore();
-
-            // CLIENT RENDER OVERRIDE
-            let renderSnakes = this.snakes || [];
-            let renderFoods = this.foods || [];
-            let renderPowerups = this.powerups || [];
-            let renderWalls = this.walls || [];
-
-            if (this.isClient && this.clientState) {
-                renderSnakes = this.clientState.snakes || [];
-                renderFoods = this.clientState.foods || [];
-                renderPowerups = this.clientState.powerups || [];
-                renderWalls = this.clientState.walls || [];
-                // Update Score UI from state
-                if (scoreP1El && renderSnakes[0]) scoreP1El.innerText = renderSnakes[0].score;
-                if (scoreP2El && renderSnakes[1]) scoreP2El.innerText = renderSnakes[1].score;
-
-                // Visual Input Feedback (Client Only)
-                if (this.lastClientInputTime && (Date.now() - this.lastClientInputTime < 300)) {
+                // CANVAS GAME OVER (Failsafe UI)
+                if (!this.isRunning && !this.isPaused) {
                     ctx.save();
-                    ctx.globalAlpha = (1 - (Date.now() - this.lastClientInputTime) / 300) * 0.5;
-                    ctx.fillStyle = '#fff';
-                    ctx.font = '100px Arial';
                     ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    let sym = '';
-                    if (this.lastClientInputKey === 'ArrowUp') sym = '↑';
-                    else if (this.lastClientInputKey === 'ArrowDown') sym = '↓';
-                    else if (this.lastClientInputKey === 'ArrowLeft') sym = '←';
-                    else if (this.lastClientInputKey === 'ArrowRight') sym = '→';
-                    ctx.fillText(sym, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+
+                    // Red Box to ensure visibility against any bg
+                    ctx.fillStyle = 'rgba(50, 0, 0, 0.9)';
+                    ctx.fillRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 100, 300, 200);
+
+                    ctx.fillStyle = '#ff0055';
+                    ctx.font = 'bold 30px sans-serif';
+                    ctx.fillText("GAME OVER", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
+
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '16px sans-serif';
+                    ctx.fillText("TAP SCREEN TO RESTART", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 30);
+
+                    this.restartZone = { x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT };
                     ctx.restore();
-                }
-
-                // Debug: Show if I am Client or Host on screen to confirm mode
-                ctx.fillStyle = 'white';
-                ctx.font = '12px monospace';
-                ctx.textAlign = 'right';
-                // ctx.fillText(this.isClient ? "CLIENT MODE" : "HOST MODE", CANVAS_WIDTH - 10, 20);
-            }
-
-            // Blind Effect Logic
-            let isBlinded = false;
-            // Wall Trap Logic (Red Border)
-            let isTrapped = false;
-
-            // Check Local Player Status
-            // Host/Single = Snake[0], Client = Snake[1]
-            const mySnakeIdx = this.isClient ? 1 : 0;
-            if (renderSnakes[mySnakeIdx] && renderSnakes[mySnakeIdx].wallTrapTimer > 0) {
-                isTrapped = true;
-            }
-
-            renderSnakes.forEach(s => {
-                if (s.blindTimer > 0) isBlinded = true;
-            });
-
-            const container = document.querySelector('.game-container');
-            if (container) {
-                if (isBlinded) container.classList.add('blinded');
-                else container.classList.remove('blinded');
-            }
-
-            // Apply Red Border if Trapped
-            if (canvas) {
-                if (isTrapped) {
-                    canvas.style.borderColor = '#ff0000';
-                    canvas.style.boxShadow = '0 0 30px #ff0000';
                 } else {
-                    canvas.style.borderColor = '#00ff88';
-                    canvas.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.2)';
+                    this.restartZone = null;
                 }
+
+                // PERMANENT VERSION STAMP (ALWAYS ON TOP)
+                ctx.save();
+                ctx.fillStyle = this.isRunning ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.8)';
+                ctx.font = '16px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`v3.9 | RUN: ${this.isRunning}`, CANVAS_WIDTH / 2, 30);
+
+                if (!this.isRunning) {
+                    ctx.fillStyle = 'yellow';
+                    ctx.fillText("MENUS CHECK", CANVAS_WIDTH / 2, 50);
+                }
+                ctx.restore();
+
+                // CLEAN UI
+                if (this.isRunning) {
+                    const uiLayer = document.getElementById('ui-layer');
+                    if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
+                    const join = document.getElementById('join-screen');
+                    if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
+                }
+
+            } catch (fatalE) {
+                console.error("FATAL DRAW ERROR:", fatalE);
+                try { ctx.fillStyle = 'blue'; ctx.fillRect(0, 0, 50, 50); } catch (e) { }
             }
-
-            ctx.fillStyle = COLORS.bg;
-            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-            // Draw Walls (Distinct Texture for Placed Walls)
-            // Walls in this.walls are placed by powerups. Normal borders are implicit.
-            renderWalls.forEach(w => {
-                // "Danger" style: Brown with Red X or border
-                this.drawRect(w.x, w.y, COLORS.brown);
-                // Draw a red X or inner square to signify danger
-                ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-            });
-
-            // Draw Powerups
-            renderPowerups.forEach(p => {
-                const def = this.powerUpTypes[p.type];
-                this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-            });
-
-            // Draw Foods (Multi-Food)
-            if (renderFoods) {
-                renderFoods.forEach(f => {
-                    this.drawRect(f.x, f.y, COLORS.food, true);
-                });
-            }
-
-            // Draw Snakes
-            renderSnakes.forEach(snake => {
-                const snakeColor = snake.hasShield ? COLORS.silver :
-                    snake.ghostTimer > 0 ? COLORS.ghost :
-                        snake.blindTimer > 0 ? '#0a0a0a' : snake.color; // Almost black, but slight vis checks allowed? No, make it dark.
-                snake.body.forEach((segment, index) => {
-                    const isHead = index === 0;
-                    if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-                    else ctx.fillStyle = snakeColor;
-
-                    this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
-                });
-            });
-
-            this.updateDynamicLegend();
         }
 
         drawRect(x, y, color, glow = false) {
@@ -1857,10 +1775,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         loop(timestamp) {
-            // ALWAYS RUN LOOP FOR VISUALS (Diagnostics/Game Over Screen)
-            // Logical Update is gated by isRunning
+            // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
+            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
 
-            // 1. UPDATE PHYSICS
+            // 2. LOGIC
             if (this.isRunning && !this.isPaused) {
                 if (timestamp - this.lastTime > this.currentSpeed) {
                     this.lastTime = timestamp;
@@ -1868,25 +1786,16 @@ window.addEventListener('DOMContentLoaded', () => {
                         this.update();
                     } catch (e) {
                         console.error("UPDATE CRASH:", e);
-                        alert("GAME CRASH: " + e.message);
                         this.isRunning = false;
                     }
                     if (this.isHost) {
                         try { this.broadcastState(); } catch (e) { }
                     }
                 }
-                // Request next frame for loop
-                this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-            } else {
-                // Game Stopped/Paused: Just Draw (but slow down slightly?)
-                // Actually we must keep requesting frame to draw the static text/UI
-                this.draw();
-                this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
             }
 
-            if (this.isRunning && !this.isPaused) {
-                this.draw();
-            }
+            // 3. RENDER
+            this.draw();
         }
     }
 
