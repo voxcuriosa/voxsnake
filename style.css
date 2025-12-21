@@ -65,6 +65,8 @@ body {
 
 canvas {
     display: block;
+    box-sizing: content-box;
+    /* FIX: Exclude border from width calculation */
     /* Border moved here to match logic */
     border: 2px solid #00ff88;
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
@@ -512,18 +514,23 @@ scrollbar-color: var(--p1-color) rgba(255, 255, 255, 0.05);
         margin-bottom: 5px;
     }
 
+    /* HIDE LOCAL MULTIPLAYER ON MOBILE */
+    #btn-2p {
+        display: none !important;
+    }
+
     .menu-screen {
         padding: 20px;
         width: 95%;
-        max-height: 85vh;
-        /* Increase slightly */
+        max-height: 90vh;
+        /* Maximize space */
         overflow-y: auto;
     }
 
     .menu-screen.active {
         /* Fix for content being cut off at top in landscape/small screens */
         justify-content: flex-start !important;
-        padding-top: 20px;
+        padding-top: 10px;
     }
 
     .instructions-split-layout {
@@ -534,8 +541,8 @@ scrollbar-color: var(--p1-color) rgba(255, 255, 255, 0.05);
         border-left: none !important;
         padding-left: 0 !important;
         border-top: 1px solid #333;
-        padding-top: 10px;
-        margin-top: 10px;
+        padding-top: 5px;
+        margin-top: 5px;
     }
 }
 
