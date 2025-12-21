@@ -732,7 +732,10 @@ class Game {
                 this.powerups = [];
                 this.walls = [];
                 break;
-            case 'shield': user.hasShield = true; break;
+            case 'shield':
+                user.hasShield = true;
+                user.shieldTimer = 10000; // FIX: Initialize timer!
+                break;
             case 'magnet': user.magnetTimer = 10000; break;
             case 'wall':
                 const tail = user.body[user.body.length - 1];
