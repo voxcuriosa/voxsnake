@@ -555,814 +555,843 @@ class Game {
     }
 
     startGame(mode) {
-        // alert("STARTING GAME: " + mode); // Debug feedback removed
-        console.log("Starting Game Mode:", mode);
-        this.gameMode = mode;
-        this.resize();
-        this.snakes = [];
-        this.powerups = [];
-        this.walls = [];
-        this.baseSpeed = 100; // FIX: Hard reset base speed so it doesn't carry over
-        this.currentSpeed = this.baseSpeed;
-        this.totalFoodEaten = 0;
-        this.isPaused = false;
+        // alert("STARTING GAME: " + mode); 
+        console.log("STARTING GAME MODE:", mode);
 
-        if (mode === 'single') {
-            this.snakes.push(new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
-                { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }));
-        } else {
-            this.snakes = [
-                new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
-                    { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }),
-                new Snake(2, COLORS.p2, { x: (CANVAS_WIDTH / GRID_SIZE) - 6, y: (CANVAS_HEIGHT / GRID_SIZE) - 6 }, { x: -1, y: 0 },
-                    { up: 'w', down: 's', left: 'a', right: 'd' })
-            ];
+        try {
+            this.gameMode = mode;
+            this.resize();
+            this.snakes = [];
+            this.powerups = [];
+            this.walls = [];
+            this.baseSpeed = 100;
+            this.currentSpeed = this.baseSpeed;
+            this.totalFoodEaten = 0;
+            this.isPaused = false;
+            this.lastTime = performance.now();
+
+            console.log("Initializing Snakes...");
+            if (mode === 'single') {
+                const s1 = new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
+                    { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+                this.snakes.push(s1);
+            } else {
+                const s1 = new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
+                    { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+
+                // Ensure valid start pos for P2
+                let p2x = Math.floor(CANVAS_WIDTH / GRID_SIZE) - 6;
+                let p2y = Math.floor(CANVAS_HEIGHT / GRID_SIZE) - 6;
+                if (p2x < 10) p2x = 20;
+                if (p2y < 10) p2y = 20;
+
+                const s2 = new Snake(2, COLORS.p2, { x: p2x, y: p2y }, { x: -1, y: 0 },
+                    { up: 'w', down: 's', left: 'a', right: 'd' });
+
+                this.snakes = [s1, s2];
+            }
+            console.log("Snakes initialized:", this.snakes.length);
+
+            // Force a resize check BEFORE spawning to avoid 0x0 canvas -> Center Spawn Fallback
+            this.resize();
+
+            // Validate Canvas Size
+            if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) {
+                console.error("CRITICAL: Canvas size 0. Forcing defaults.");
+                CANVAS_WIDTH = 800; CANVAS_HEIGHT = 600;
+                canvas.width = 800; canvas.height = 600;
+            }
+
+            // Safety delay for spawn if canvas is somehow still weird, otherwise immediate
+            this.spawnFood();
+            this.spawnFood();
+            this.spawnFood();
+
+            this.isRunning = true;
+
+            mainMenu.classList.remove('active');
+            mainMenu.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            scoreBoard.classList.remove('hidden');
+
+            if (p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
+            this.updateScoreUI();
+
+            if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+            this.loop(this.lastTime);
+
+            console.log("Game Start Sequence Complete.");
+
+        } catch (e) {
+            console.error("START GAME ERROR:", e);
+            alert("START ERROR: " + e.message);
         }
-
-        // Force a resize check BEFORE spawning to avoid 0x0 canvas -> Center Spawn Fallback
-        this.resize();
-
-        // Safety delay for spawn if canvas is somehow still weird, otherwise immediate
-        if (CANVAS_WIDTH > 0 && CANVAS_HEIGHT > 0) {
-            // Spawn 3 Foods initially (User Request: "Mer mat")
-            this.spawnFood();
-            this.spawnFood();
-            this.spawnFood();
-        } else {
-            console.warn("Canvas dimensions invalid at start. Retrying spawn in 100ms");
-            setTimeout(() => {
-                this.spawnFood();
-                this.spawnFood();
-                this.spawnFood();
-            }, 100);
-        }
-
-        this.isRunning = true;
+    }
 
         mainMenu.classList.remove('active');
         mainMenu.classList.add('hidden');
         gameOverScreen.classList.add('hidden');
         scoreBoard.classList.remove('hidden');
 
-        if (p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
+    if(p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
         this.updateScoreUI();
 
-        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-        this.lastTime = performance.now();
-        this.loop(this.lastTime);
+if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+this.lastTime = performance.now();
+this.loop(this.lastTime);
     }
 
-    resize() {
-        const container = canvas.parentElement;
-        // Fallback to window if container is missing or has 0 size
-        let w = container ? container.clientWidth : window.innerWidth;
-        let h = container ? container.clientHeight : window.innerHeight;
+resize() {
+    const container = canvas.parentElement;
+    // Fallback to window if container is missing or has 0 size
+    let w = container ? container.clientWidth : window.innerWidth;
+    let h = container ? container.clientHeight : window.innerHeight;
 
-        // Extra Robustness: If container width is somehow 0 (e.g. collapsed flex),
-        // try window and subtract padding guess.
-        if (!w || w <= 10) w = window.innerWidth - 20;
-        if (!h || h <= 10) h = window.innerHeight - 100; // Account for scoreboard
+    // Extra Robustness: If container width is somehow 0 (e.g. collapsed flex),
+    // try window and subtract padding guess.
+    if (!w || w <= 10) w = window.innerWidth - 20;
+    if (!h || h <= 10) h = window.innerHeight - 100; // Account for scoreboard
 
-        // Final sanity check min sizes
-        if (w < 300) w = 300;
-        if (h < 300) h = 300;
+    // Final sanity check min sizes
+    if (w < 300) w = 300;
+    if (h < 300) h = 300;
 
-        CANVAS_WIDTH = Math.floor((w - 4) / GRID_SIZE) * GRID_SIZE;
-        CANVAS_HEIGHT = Math.floor((h - 4) / GRID_SIZE) * GRID_SIZE;
+    CANVAS_WIDTH = Math.floor((w - 4) / GRID_SIZE) * GRID_SIZE;
+    CANVAS_HEIGHT = Math.floor((h - 4) / GRID_SIZE) * GRID_SIZE;
 
-        canvas.width = CANVAS_WIDTH;
-        canvas.height = CANVAS_HEIGHT;
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
 
-        // FIX: Enforce 1:1 pixel mapping immediately to prevent stretching
-        canvas.style.width = CANVAS_WIDTH + 'px';
-        canvas.style.height = CANVAS_HEIGHT + 'px';
+    // FIX: Enforce 1:1 pixel mapping immediately to prevent stretching
+    canvas.style.width = CANVAS_WIDTH + 'px';
+    canvas.style.height = CANVAS_HEIGHT + 'px';
 
-        this.draw();
+    this.draw();
+}
+
+spawnFood() {
+    // Limit max foods just in case, but aim for 3-5
+    if (this.foods.length >= 5) return;
+
+    let valid = false;
+    let attempts = 0;
+
+    if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) this.resize();
+
+    let maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
+    let maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
+
+    if (maxX <= 1 || maxY <= 1) {
+        maxX = 40;
+        maxY = 30;
     }
 
-    spawnFood() {
-        // Limit max foods just in case, but aim for 3-5
-        if (this.foods.length >= 5) return;
+    let newFood = {};
 
-        let valid = false;
-        let attempts = 0;
-
-        if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) this.resize();
-
-        let maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
-        let maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
-
-        if (maxX <= 1 || maxY <= 1) {
-            maxX = 40;
-            maxY = 30;
-        }
-
-        let newFood = {};
-
-        while (!valid && attempts < 100) {
-            attempts++;
-            newFood = {
-                x: Math.floor(Math.random() * maxX),
-                y: Math.floor(Math.random() * maxY)
-            };
-            valid = !this.isOccupied(newFood);
-        }
-
-        if (!valid) {
-            // Force Random if stuck
-            newFood = {
-                x: Math.floor(Math.random() * maxX),
-                y: Math.floor(Math.random() * maxY)
-            };
-        }
-
-        this.foods.push(newFood);
+    while (!valid && attempts < 100) {
+        attempts++;
+        newFood = {
+            x: Math.floor(Math.random() * maxX),
+            y: Math.floor(Math.random() * maxY)
+        };
+        valid = !this.isOccupied(newFood);
     }
 
-    // ... spawnPowerUp omitted ...
+    if (!valid) {
+        // Force Random if stuck
+        newFood = {
+            x: Math.floor(Math.random() * maxX),
+            y: Math.floor(Math.random() * maxY)
+        };
+    }
 
-    updateDynamicLegend() {
-        if (!dynamicLegend) return;
+    this.foods.push(newFood);
+}
 
-        // Force Redraw Every Frame (No Caching)
-        dynamicLegend.innerHTML = '';
+// ... spawnPowerUp omitted ...
 
-        // 1. Draw Static Powerups (Available on board)
-        renderPowerups.forEach(p => {
-            const def = this.powerUpTypes[p.type];
+updateDynamicLegend() {
+    if (!dynamicLegend) return;
+
+    // Force Redraw Every Frame (No Caching)
+    dynamicLegend.innerHTML = '';
+
+    // 1. Draw Static Powerups (Available on board)
+    renderPowerups.forEach(p => {
+        const def = this.powerUpTypes[p.type];
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+        dynamicLegend.appendChild(div);
+    });
+
+    // 2. Draw Active Timers (Ghost Style: Individual rows)
+    const s1 = this.snakes[0];
+    if (s1) {
+
+        // Helper to add a timer row
+        const addTimer = (type, seconds, labelOverride = null) => {
+            const def = this.powerUpTypes[type];
+            const label = labelOverride || def.label;
             const div = document.createElement('div');
-            div.className = 'legend-item';
-            div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+            div.className = 'legend-item'; // Use standard class
+            // Add specific styling to make it pop
+            div.style.color = '#fff';
+            div.style.fontWeight = 'bold';
+            div.style.textShadow = '0 0 5px ' + def.color;
+
+            div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
             dynamicLegend.appendChild(div);
-        });
+        };
 
-        // 2. Draw Active Timers (Ghost Style: Individual rows)
-        const s1 = this.snakes[0];
-        if (s1) {
-
-            // Helper to add a timer row
-            const addTimer = (type, seconds, labelOverride = null) => {
-                const def = this.powerUpTypes[type];
-                const label = labelOverride || def.label;
-                const div = document.createElement('div');
-                div.className = 'legend-item'; // Use standard class
-                // Add specific styling to make it pop
-                div.style.color = '#fff';
-                div.style.fontWeight = 'bold';
-                div.style.textShadow = '0 0 5px ' + def.color;
-
-                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
-                dynamicLegend.appendChild(div);
-            };
-
-            if (s1.ghostTimer > 0) {
-                addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
-            }
-            if (s1.shieldTimer > 0) {
-                addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
-            }
-            if (s1.magnetTimer > 0) {
-                addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
-            }
+        if (s1.ghostTimer > 0) {
+            addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+        }
+        if (s1.shieldTimer > 0) {
+            addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+        }
+        if (s1.magnetTimer > 0) {
+            addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
         }
     }
+}
 
-    spawnPowerUp() {
-        if (this.powerups.length >= 5) return; // Increased limit slightly
+spawnPowerUp() {
+    if (this.powerups.length >= 5) return; // Increased limit slightly
 
-        const types = Object.keys(this.powerUpTypes);
-        let availableTypes = types;
+    const types = Object.keys(this.powerUpTypes);
+    let availableTypes = types;
 
-        if (this.gameMode === 'single') {
-            availableTypes = types.filter(t => !['eraser', 'blind', 'ice', 'switch'].includes(t));
-        }
-
-        if (this.totalFoodEaten < 10) {
-            availableTypes = availableTypes.filter(t => t !== 'slow');
-        }
-
-        // Logic: Bomb is useless if nothing to destroy
-        // (Check if there are walls OR other powerups to blow up)
-        const hasTargets = (this.walls.length > 0 || this.powerups.length > 0);
-        if (!hasTargets) {
-            availableTypes = availableTypes.filter(t => t !== 'bomb');
-        }
-
-        // Logic: Boost 'Wall' frequency (User Request: "mange flere")
-        // We add 'wall' multiple times to the array to increase probability
-        if (availableTypes.includes('wall')) {
-            availableTypes.push('wall');
-            availableTypes.push('wall');
-            availableTypes.push('wall'); // 4x chance total
-        }
-
-        if (availableTypes.length === 0) return;
-
-        const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-
-        let valid = false;
-        let pos = {};
-        let attempts = 0;
-        while (!valid && attempts < 50) {
-            attempts++;
-            pos = {
-                x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
-                y: Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE)),
-                type: type,
-                createdAt: Date.now()
-            };
-            valid = !this.isOccupied(pos);
-        }
-        if (valid) this.powerups.push(pos);
+    if (this.gameMode === 'single') {
+        availableTypes = types.filter(t => !['eraser', 'blind', 'ice', 'switch'].includes(t));
     }
 
-    isOccupied(pos) {
-        if (this.foods) {
-            for (let f of this.foods) {
-                if (f.x === pos.x && f.y === pos.y) return true;
-            }
-        }
-        for (let snake of this.snakes) {
-            for (let segment of snake.body) {
-                if (pos.x === segment.x && pos.y === segment.y) return true;
-            }
-        }
-        for (let w of this.walls) if (pos.x === w.x && pos.y === w.y) return true;
-        for (let p of this.powerups) if (pos.x === p.x && pos.y === p.y) return true;
-        return false;
+    if (this.totalFoodEaten < 10) {
+        availableTypes = availableTypes.filter(t => t !== 'slow');
     }
 
-    handleTouchStart(e) {
-        // Allow clicks on buttons/inputs/menu to pass through
-        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.menu-screen')) {
-            // Do not prevent default
-        } else {
-            e.preventDefault();
-        }
-
-        const touch = e.changedTouches[0];
-        this.touchStartX = touch.clientX;
-        this.touchStartY = touch.clientY;
-        if (typeof log !== 'undefined') log(`Start: ${Math.floor(this.touchStartX)},${Math.floor(this.touchStartY)}`);
+    // Logic: Bomb is useless if nothing to destroy
+    // (Check if there are walls OR other powerups to blow up)
+    const hasTargets = (this.walls.length > 0 || this.powerups.length > 0);
+    if (!hasTargets) {
+        availableTypes = availableTypes.filter(t => t !== 'bomb');
     }
 
-    handleTouchMove(e) {
-        // Prevent scrolling if NOT inside menu
-        if (!e.target.closest('.menu-screen')) {
-            e.preventDefault();
-        }
-
-        if (!this.isRunning || this.isPaused) return;
-
-        const touch = e.changedTouches[0];
-        const deltaX = touch.clientX - this.touchStartX;
-        const deltaY = touch.clientY - this.touchStartY;
-
-        // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
-        // Let's stick to 30px for "move detected"
-        if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30) {
-            let key = '';
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
-            } else {
-                key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
-            }
-
-            // Trigger Input
-            if (this.snakes.length > 0) {
-                this.snakes[0].handleInput(key);
-            }
-
-            // RESET Start Position to current finger position
-            // This is the key for "Continuous" swiping (Up -> Right without lifting)
-            this.touchStartX = touch.clientX;
-            this.touchStartY = touch.clientY;
-        }
+    // Logic: Boost 'Wall' frequency (User Request: "mange flere")
+    // We add 'wall' multiple times to the array to increase probability
+    if (availableTypes.includes('wall')) {
+        availableTypes.push('wall');
+        availableTypes.push('wall');
+        availableTypes.push('wall'); // 4x chance total
     }
 
-    handleTouchEnd(e) {
-        // Always allow button clicks to finish
-        if (e.target.closest('button') || e.target.closest('input')) {
-            return;
+    if (availableTypes.length === 0) return;
+
+    const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+
+    let valid = false;
+    let pos = {};
+    let attempts = 0;
+    while (!valid && attempts < 50) {
+        attempts++;
+        pos = {
+            x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
+            y: Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE)),
+            type: type,
+            createdAt: Date.now()
+        };
+        valid = !this.isOccupied(pos);
+    }
+    if (valid) this.powerups.push(pos);
+}
+
+isOccupied(pos) {
+    if (this.foods) {
+        for (let f of this.foods) {
+            if (f.x === pos.x && f.y === pos.y) return true;
         }
-
-        if (!e.target.closest('.menu-screen')) {
-            e.preventDefault();
+    }
+    for (let snake of this.snakes) {
+        for (let segment of snake.body) {
+            if (pos.x === segment.x && pos.y === segment.y) return true;
         }
+    }
+    for (let w of this.walls) if (pos.x === w.x && pos.y === w.y) return true;
+    for (let p of this.powerups) if (pos.x === p.x && pos.y === p.y) return true;
+    return false;
+}
 
-        const touch = e.changedTouches[0];
-        const deltaX = touch.clientX - this.touchStartX;
-        const deltaY = touch.clientY - this.touchStartY;
+handleTouchStart(e) {
+    // Allow clicks on buttons/inputs/menu to pass through
+    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.menu-screen')) {
+        // Do not prevent default
+    } else {
+        e.preventDefault();
+    }
 
-        if (typeof log !== 'undefined') log(`End dX:${Math.floor(deltaX)} dY:${Math.floor(deltaY)} Run:${this.isRunning} Paused:${this.isPaused}`);
+    const touch = e.changedTouches[0];
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+    if (typeof log !== 'undefined') log(`Start: ${Math.floor(this.touchStartX)},${Math.floor(this.touchStartY)}`);
+}
 
-        if (!this.isRunning || this.isPaused) return;
+handleTouchMove(e) {
+    // Prevent scrolling if NOT inside menu
+    if (!e.target.closest('.menu-screen')) {
+        e.preventDefault();
+    }
 
-        // Threshold for swipe vs tap
-        if (Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20) {
-            if (typeof log !== 'undefined') log("Tap ignored (<20px)");
-            return;
-        }
+    if (!this.isRunning || this.isPaused) return;
 
-        // Determine Direction
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
+
+    // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
+    // Let's stick to 30px for "move detected"
+    if (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30) {
         let key = '';
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            // Horizontal
             key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
         } else {
-            // Vertical
             key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
         }
 
-        if (typeof log !== 'undefined') log(`SWIPE: ${key}`);
-
-        // Simulate Input for Player 1 only
+        // Trigger Input
         if (this.snakes.length > 0) {
             this.snakes[0].handleInput(key);
         }
+
+        // RESET Start Position to current finger position
+        // This is the key for "Continuous" swiping (Up -> Right without lifting)
+        this.touchStartX = touch.clientX;
+        this.touchStartY = touch.clientY;
+    }
+}
+
+handleTouchEnd(e) {
+    // Always allow button clicks to finish
+    if (e.target.closest('button') || e.target.closest('input')) {
+        return;
     }
 
-
-
-    handleInput(e) {
-        if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
-            this.togglePause();
-            return;
-        }
-
-        // Network Client Input
-        if (this.isClient) {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                e.preventDefault();
-                if (this.conn && this.conn.open) {
-                    this.conn.send({ type: 'input', key: e.key });
-                }
-            }
-            return; // Client ONLY sends input, does not move locally
-        }
-
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
-        this.snakes.forEach(s => s.handleInput(e.key));
+    if (!e.target.closest('.menu-screen')) {
+        e.preventDefault();
     }
 
-    togglePause() {
-        this.isPaused = !this.isPaused;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
 
-        if (this.isPaused) {
-            mainMenu.classList.remove('hidden');
-            mainMenu.classList.add('active');
-            if (btnResume) btnResume.classList.remove('hidden');
-        } else {
-            mainMenu.classList.add('hidden');
-            mainMenu.classList.remove('active');
-            if (btnResume) btnResume.classList.add('hidden');
+    if (typeof log !== 'undefined') log(`End dX:${Math.floor(deltaX)} dY:${Math.floor(deltaY)} Run:${this.isRunning} Paused:${this.isPaused}`);
 
-            this.lastTime = performance.now();
-            this.loop(this.lastTime);
-        }
+    if (!this.isRunning || this.isPaused) return;
+
+    // Threshold for swipe vs tap
+    if (Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20) {
+        if (typeof log !== 'undefined') log("Tap ignored (<20px)");
+        return;
     }
 
-    gameOver(winnerIndex, skipNameEntry = false) {
-        try {
-            this.isRunning = false;
-            this.isPaused = false;
-
-            mainMenu.classList.remove('active');
-            mainMenu.classList.add('hidden');
-            nameEntryScreen.classList.add('hidden');
-
-            if (this.gameMode === 'single' && !skipNameEntry) {
-                const score = this.snakes[0].score;
-                if (score > 0 && this.checkHighScore(score)) {
-                    this.currentPendingScore = score;
-                    if (playerNameInput) playerNameInput.value = "";
-                    nameEntryScreen.classList.remove('hidden');
-                    nameEntryScreen.classList.add('active');
-                    if (playerNameInput) playerNameInput.focus();
-                    return;
-                }
-            }
-
-            let msg = "GAME OVER";
-            let color = COLORS.p1;
-            if (this.gameMode === 'multi') {
-                if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
-                else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
-                else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
-            }
-
-            if (winnerText) {
-                winnerText.innerText = msg;
-                winnerText.style.color = color;
-            }
-
-            gameOverScreen.classList.remove('hidden');
-            gameOverScreen.classList.add('active');
-
-            if (btnResume) btnResume.classList.add('hidden');
-            if (dynamicLegend) dynamicLegend.innerHTML = '';
-        } catch (err) {
-            console.error(err);
-            alert("Game Over!");
-        }
+    // Determine Direction
+    let key = '';
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Horizontal
+        key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
+    } else {
+        // Vertical
+        key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
     }
 
-    triggerShieldEffect(x, y) {
-        // Visual Flare
-        const div = document.createElement('div');
-        div.innerText = "SHIELD BLOCKED!";
-        div.style.position = 'absolute';
-        div.style.left = (x * GRID_SIZE) + 'px';
-        div.style.top = (y * GRID_SIZE) + 'px';
-        div.style.color = '#fff';
-        div.style.fontWeight = 'bold';
-        div.style.textShadow = '0 0 5px #000';
-        div.style.zIndex = '100';
-        div.style.pointerEvents = 'none';
-        div.className = 'shield-broken-msg'; // Add class for animation
-        document.body.appendChild(div);
+    if (typeof log !== 'undefined') log(`SWIPE: ${key}`);
 
-        // Animate up and fade
-        let op = 1;
-        let top = y * GRID_SIZE;
-        const anim = setInterval(() => {
-            op -= 0.05;
-            top -= 1;
-            div.style.opacity = op;
-            div.style.top = top + 'px';
-            if (op <= 0) {
-                clearInterval(anim);
-                div.remove();
-            }
-        }, 50);
+    // Simulate Input for Player 1 only
+    if (this.snakes.length > 0) {
+        this.snakes[0].handleInput(key);
+    }
+}
 
-        // Flash Screen
-        const flash = document.createElement('div');
-        flash.style.position = 'fixed';
-        flash.style.top = '0'; flash.style.left = '0';
-        flash.style.width = '100vw'; flash.style.height = '100vh';
-        flash.style.background = 'rgba(255, 255, 255, 0.3)';
-        flash.style.zIndex = '99';
-        flash.style.pointerEvents = 'none';
-        document.body.appendChild(flash);
-        setTimeout(() => flash.remove(), 100);
+
+
+handleInput(e) {
+    if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
+        this.togglePause();
+        return;
     }
 
-    update() {
-        if (this.isPaused) return;
-
-        const now = Date.now();
-        // Use true delta time for smoother timers if framerate dips
-        const delta = now - this.lastTime;
-        // Note: this.lastTime is updated at end of loop(), but here we need delta for logic. 
-        // Actually, main loop passes timestamp. Let's stick to fixed time steps or just robust decrement.
-        // Simple fix: Decrement by `this.currentSpeed` (which is tick rate) or roughly 16ms?
-        // Actually, the loop runs at `currentSpeed` interval! 
-        // Standard loop: requestAnimationFrame runs freely? 
-        // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;` 
-        // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms). 
-        // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower! 
-        // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
-
-        const tickRate = this.currentSpeed;
-
-        if (this.speedEffectTimer > 0) {
-            this.speedEffectTimer -= tickRate;
-            if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+    // Network Client Input
+    if (this.isClient) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            e.preventDefault();
+            if (this.conn && this.conn.open) {
+                this.conn.send({ type: 'input', key: e.key });
+            }
         }
+        return; // Client ONLY sends input, does not move locally
+    }
 
-        this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+    this.snakes.forEach(s => s.handleInput(e.key));
+}
 
-        // Update Snakes (Collision & Movement)
-        this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate, (x, y) => this.triggerShieldEffect(x, y)));
+togglePause() {
+    this.isPaused = !this.isPaused;
 
-        // Game Over Checks...
-        if (this.gameMode === 'single') {
-            if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
-                this.gameOver();
+    if (this.isPaused) {
+        mainMenu.classList.remove('hidden');
+        mainMenu.classList.add('active');
+        if (btnResume) btnResume.classList.remove('hidden');
+    } else {
+        mainMenu.classList.add('hidden');
+        mainMenu.classList.remove('active');
+        if (btnResume) btnResume.classList.add('hidden');
+
+        this.lastTime = performance.now();
+        this.loop(this.lastTime);
+    }
+}
+
+gameOver(winnerIndex, skipNameEntry = false) {
+    try {
+        this.isRunning = false;
+        this.isPaused = false;
+
+        mainMenu.classList.remove('active');
+        mainMenu.classList.add('hidden');
+        nameEntryScreen.classList.add('hidden');
+
+        if (this.gameMode === 'single' && !skipNameEntry) {
+            const score = this.snakes[0].score;
+            if (score > 0 && this.checkHighScore(score)) {
+                this.currentPendingScore = score;
+                if (playerNameInput) playerNameInput.value = "";
+                nameEntryScreen.classList.remove('hidden');
+                nameEntryScreen.classList.add('active');
+                if (playerNameInput) playerNameInput.focus();
                 return;
             }
-        } else if (this.gameMode === 'multi') {
-            let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-            let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-
-
-            // Head-to-Head/Body collision logic (omitted for brevity, assume same)
-            const h1 = this.snakes[0].body[0];
-            const h2 = this.snakes[1].body[0];
-            this.snakes[1].body.forEach((seg, i) => { if (h1.x === seg.x && h1.y === seg.y) { if (i >= this.snakes[1].body.length - 2) p2d = true; else p1d = true; } });
-            this.snakes[0].body.forEach((seg, i) => { if (h2.x === seg.x && h2.y === seg.y) { if (i >= this.snakes[0].body.length - 2) p1d = true; else p2d = true; } });
-            if (h1.x === h2.x && h1.y === h2.y) { p1d = true; p2d = true; }
-
-            if (p1d && p2d) { this.gameOver(-1); return; }
-            if (p1d) { this.gameOver(1); return; }
-            if (p2d) { this.gameOver(0); return; }
         }
 
-        // Timed Powerup Spawning (Independent of eating)
-        if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
-            this.spawnPowerUp();
-            this.lastPowerUpTime = now;
-            // Randomize next delay: 5s to 15s
-            this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+        let msg = "GAME OVER";
+        let color = COLORS.p1;
+        if (this.gameMode === 'multi') {
+            if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
+            else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
+            else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
         }
 
-        // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
-        this.snakes.forEach(s => {
-            let ate = false;
-            let ateIndex = -1;
+        if (winnerText) {
+            winnerText.innerText = msg;
+            winnerText.style.color = color;
+        }
 
-            for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
-                const f = this.foods[fIdx];
+        gameOverScreen.classList.remove('hidden');
+        gameOverScreen.classList.add('active');
 
-                // Regular Eat
-                if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                    ate = true;
-                    ateIndex = fIdx;
-                    break;
-                }
+        if (btnResume) btnResume.classList.add('hidden');
+        if (dynamicLegend) dynamicLegend.innerHTML = '';
+    } catch (err) {
+        console.error(err);
+        alert("Game Over!");
+    }
+}
 
-                // Magnet Logic (Pull closest food)
-                else if (s.magnetTimer > 0) {
-                    const head = s.body[0];
-                    const dx = f.x - head.x;
-                    const dy = f.y - head.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
+triggerShieldEffect(x, y) {
+    // Visual Flare
+    const div = document.createElement('div');
+    div.innerText = "SHIELD BLOCKED!";
+    div.style.position = 'absolute';
+    div.style.left = (x * GRID_SIZE) + 'px';
+    div.style.top = (y * GRID_SIZE) + 'px';
+    div.style.color = '#fff';
+    div.style.fontWeight = 'bold';
+    div.style.textShadow = '0 0 5px #000';
+    div.style.zIndex = '100';
+    div.style.pointerEvents = 'none';
+    div.className = 'shield-broken-msg'; // Add class for animation
+    document.body.appendChild(div);
 
-                    if (dist < 15 && dist > 0) {
-                        // Pull food closer
-                        if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
-                        else f.y -= Math.sign(dy);
+    // Animate up and fade
+    let op = 1;
+    let top = y * GRID_SIZE;
+    const anim = setInterval(() => {
+        op -= 0.05;
+        top -= 1;
+        div.style.opacity = op;
+        div.style.top = top + 'px';
+        if (op <= 0) {
+            clearInterval(anim);
+            div.remove();
+        }
+    }, 50);
 
-                        // Check capture
-                        if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                            ate = true;
-                            ateIndex = fIdx;
-                            break;
-                        }
+    // Flash Screen
+    const flash = document.createElement('div');
+    flash.style.position = 'fixed';
+    flash.style.top = '0'; flash.style.left = '0';
+    flash.style.width = '100vw'; flash.style.height = '100vh';
+    flash.style.background = 'rgba(255, 255, 255, 0.3)';
+    flash.style.zIndex = '99';
+    flash.style.pointerEvents = 'none';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 100);
+}
+
+update() {
+    if (this.isPaused) return;
+
+    const now = Date.now();
+    // Use true delta time for smoother timers if framerate dips
+    const delta = now - this.lastTime;
+    // Note: this.lastTime is updated at end of loop(), but here we need delta for logic. 
+    // Actually, main loop passes timestamp. Let's stick to fixed time steps or just robust decrement.
+    // Simple fix: Decrement by `this.currentSpeed` (which is tick rate) or roughly 16ms?
+    // Actually, the loop runs at `currentSpeed` interval! 
+    // Standard loop: requestAnimationFrame runs freely? 
+    // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;` 
+    // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms). 
+    // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower! 
+    // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
+
+    const tickRate = this.currentSpeed;
+
+    if (this.speedEffectTimer > 0) {
+        this.speedEffectTimer -= tickRate;
+        if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+    }
+
+    this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
+
+    // Update Snakes (Collision & Movement)
+    this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate, (x, y) => this.triggerShieldEffect(x, y)));
+
+    // Game Over Checks...
+    if (this.gameMode === 'single') {
+        if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
+            this.gameOver();
+            return;
+        }
+    } else if (this.gameMode === 'multi') {
+        let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+        let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+
+
+        // Head-to-Head/Body collision logic (omitted for brevity, assume same)
+        const h1 = this.snakes[0].body[0];
+        const h2 = this.snakes[1].body[0];
+        this.snakes[1].body.forEach((seg, i) => { if (h1.x === seg.x && h1.y === seg.y) { if (i >= this.snakes[1].body.length - 2) p2d = true; else p1d = true; } });
+        this.snakes[0].body.forEach((seg, i) => { if (h2.x === seg.x && h2.y === seg.y) { if (i >= this.snakes[0].body.length - 2) p1d = true; else p2d = true; } });
+        if (h1.x === h2.x && h1.y === h2.y) { p1d = true; p2d = true; }
+
+        if (p1d && p2d) { this.gameOver(-1); return; }
+        if (p1d) { this.gameOver(1); return; }
+        if (p2d) { this.gameOver(0); return; }
+    }
+
+    // Timed Powerup Spawning (Independent of eating)
+    if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
+        this.spawnPowerUp();
+        this.lastPowerUpTime = now;
+        // Randomize next delay: 5s to 15s
+        this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+    }
+
+    // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
+    this.snakes.forEach(s => {
+        let ate = false;
+        let ateIndex = -1;
+
+        for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
+            const f = this.foods[fIdx];
+
+            // Regular Eat
+            if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                ate = true;
+                ateIndex = fIdx;
+                break;
+            }
+
+            // Magnet Logic (Pull closest food)
+            else if (s.magnetTimer > 0) {
+                const head = s.body[0];
+                const dx = f.x - head.x;
+                const dy = f.y - head.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 15 && dist > 0) {
+                    // Pull food closer
+                    if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
+                    else f.y -= Math.sign(dy);
+
+                    // Check capture
+                    if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                        ate = true;
+                        ateIndex = fIdx;
+                        break;
                     }
                 }
             }
-
-            if (ate && ateIndex !== -1) {
-                // Remove the eaten piece
-                this.foods.splice(ateIndex, 1);
-
-                this.baseSpeed *= 0.99;
-                if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
-
-                s.growPending++;
-                s.score++;
-                this.totalFoodEaten++;
-
-                // Spawn Replacement right away to keep map full
-                this.spawnFood();
-                // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
-                // User asked for "random", not "just when eaten".
-                // But maybe small chance?
-                if (Math.random() < 0.2) this.spawnPowerUp();
-
-                this.updateScoreUI();
-            }
-        });
-
-        // Eat Powerups
-        this.snakes.forEach((s, sIdx) => {
-            const head = s.body[0];
-            for (let i = 0; i < this.powerups.length; i++) {
-                const p = this.powerups[i];
-                if (head.x === p.x && head.y === p.y) {
-                    this.applyPowerUp(s, p.type, sIdx);
-                    this.powerups.splice(i, 1);
-                    break;
-                }
-            }
-        });
-    }
-
-    applyPowerUp(user, type, userIdx) {
-        const enemy = this.snakes[userIdx === 0 ? 1 : 0];
-        const isMulti = this.gameMode === 'multi';
-
-        switch (type) {
-            case 'ghost': user.ghostTimer = 5000; break;
-            case 'speed':
-                this.currentSpeed = 50;
-                this.speedEffectTimer = 3000;
-                break;
-            case 'slow':
-                this.baseSpeed = this.baseSpeed * 1.10;
-                this.currentSpeed = this.baseSpeed;
-                break;
-            case 'bomb':
-                this.spawnFood();
-                this.powerups = [];
-                this.walls = [];
-                break;
-            case 'shield':
-                user.hasShield = true;
-                user.shieldTimer = 10000; // FIX: Initialize timer!
-                break;
-            case 'magnet': user.magnetTimer = 10000; break;
-            case 'wall':
-                const tail = user.body[user.body.length - 1];
-                this.walls.push({ x: tail.x, y: tail.y });
-                break;
-            case 'eraser':
-                if (isMulti && enemy) {
-                    const newLen = Math.max(1, Math.floor(enemy.body.length / 2));
-                    enemy.body = enemy.body.slice(0, newLen);
-                }
-                break;
-            case 'blind':
-                if (isMulti && enemy) {
-                    enemy.blindTimer = 2000;
-                }
-                break;
-            case 'ice':
-                if (isMulti && enemy) enemy.frozenTimer = 2000;
-                break;
-            case 'switch':
-                if (isMulti && enemy) {
-                    const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
-                    const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
-                }
-                break;
         }
+
+        if (ate && ateIndex !== -1) {
+            // Remove the eaten piece
+            this.foods.splice(ateIndex, 1);
+
+            this.baseSpeed *= 0.99;
+            if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+
+            s.growPending++;
+            s.score++;
+            this.totalFoodEaten++;
+
+            // Spawn Replacement right away to keep map full
+            this.spawnFood();
+            // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
+            // User asked for "random", not "just when eaten".
+            // But maybe small chance?
+            if (Math.random() < 0.2) this.spawnPowerUp();
+
+            this.updateScoreUI();
+        }
+    });
+
+    // Eat Powerups
+    this.snakes.forEach((s, sIdx) => {
+        const head = s.body[0];
+        for (let i = 0; i < this.powerups.length; i++) {
+            const p = this.powerups[i];
+            if (head.x === p.x && head.y === p.y) {
+                this.applyPowerUp(s, p.type, sIdx);
+                this.powerups.splice(i, 1);
+                break;
+            }
+        }
+    });
+}
+
+applyPowerUp(user, type, userIdx) {
+    const enemy = this.snakes[userIdx === 0 ? 1 : 0];
+    const isMulti = this.gameMode === 'multi';
+
+    switch (type) {
+        case 'ghost': user.ghostTimer = 5000; break;
+        case 'speed':
+            this.currentSpeed = 50;
+            this.speedEffectTimer = 3000;
+            break;
+        case 'slow':
+            this.baseSpeed = this.baseSpeed * 1.10;
+            this.currentSpeed = this.baseSpeed;
+            break;
+        case 'bomb':
+            this.spawnFood();
+            this.powerups = [];
+            this.walls = [];
+            break;
+        case 'shield':
+            user.hasShield = true;
+            user.shieldTimer = 10000; // FIX: Initialize timer!
+            break;
+        case 'magnet': user.magnetTimer = 10000; break;
+        case 'wall':
+            const tail = user.body[user.body.length - 1];
+            this.walls.push({ x: tail.x, y: tail.y });
+            break;
+        case 'eraser':
+            if (isMulti && enemy) {
+                const newLen = Math.max(1, Math.floor(enemy.body.length / 2));
+                enemy.body = enemy.body.slice(0, newLen);
+            }
+            break;
+        case 'blind':
+            if (isMulti && enemy) {
+                enemy.blindTimer = 2000;
+            }
+            break;
+        case 'ice':
+            if (isMulti && enemy) enemy.frozenTimer = 2000;
+            break;
+        case 'switch':
+            if (isMulti && enemy) {
+                const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
+                const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
+            }
+            break;
     }
+}
 
-    updateScoreUI() {
-        if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
-        if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
-    }
+updateScoreUI() {
+    if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
+    if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
+}
 
-    updateDynamicLegend() {
-        if (!dynamicLegend) return;
+updateDynamicLegend() {
+    if (!dynamicLegend) return;
 
-        // Force Redraw Every Frame (No Caching)
-        dynamicLegend.innerHTML = '';
+    // Force Redraw Every Frame (No Caching)
+    dynamicLegend.innerHTML = '';
 
-        // 1. Draw Static Powerups (Available on board)
-        renderPowerups.forEach(p => {
-            const def = this.powerUpTypes[p.type];
+    // 1. Draw Static Powerups (Available on board)
+    renderPowerups.forEach(p => {
+        const def = this.powerUpTypes[p.type];
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+        dynamicLegend.appendChild(div);
+    });
+
+    // 2. Draw Active Timers (Ghost Style: Individual rows)
+    const s1 = this.snakes[0];
+    if (this.gameMode === 'single' && s1) {
+
+        // Helper to add a timer row
+        const addTimer = (type, seconds, labelOverride = null) => {
+            const def = this.powerUpTypes[type];
+            const label = labelOverride || def.label;
             const div = document.createElement('div');
-            div.className = 'legend-item';
-            div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+            div.className = 'legend-item'; // Use standard class
+            // Add specific styling to make it pop
+            div.style.color = '#fff';
+            div.style.fontWeight = 'bold';
+            div.style.textShadow = '0 0 5px ' + def.color;
+
+            div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
             dynamicLegend.appendChild(div);
-        });
-
-        // 2. Draw Active Timers (Ghost Style: Individual rows)
-        const s1 = this.snakes[0];
-        if (this.gameMode === 'single' && s1) {
-
-            // Helper to add a timer row
-            const addTimer = (type, seconds, labelOverride = null) => {
-                const def = this.powerUpTypes[type];
-                const label = labelOverride || def.label;
-                const div = document.createElement('div');
-                div.className = 'legend-item'; // Use standard class
-                // Add specific styling to make it pop
-                div.style.color = '#fff';
-                div.style.fontWeight = 'bold';
-                div.style.textShadow = '0 0 5px ' + def.color;
-
-                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
-                dynamicLegend.appendChild(div);
-            };
-
-            if (s1.ghostTimer > 0) {
-                addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
-            }
-            if (s1.shieldTimer > 0) {
-                addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
-            }
-            if (s1.magnetTimer > 0) {
-                addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
-            }
-        }
-    }
-
-    draw() {
-        // CLIENT RENDER OVERRIDE
-        let renderSnakes = this.snakes;
-        let renderFoods = this.foods;
-        let renderPowerups = this.powerups;
-        let renderWalls = this.walls;
-
-        if (this.isClient && this.clientState) {
-            renderSnakes = this.clientState.snakes;
-            renderFoods = this.clientState.foods;
-            renderPowerups = this.clientState.powerups;
-            renderWalls = this.clientState.walls;
-            // Update Score UI from state
-            if (scoreP1El && renderSnakes[0]) scoreP1El.innerText = renderSnakes[0].score;
-            if (scoreP2El && renderSnakes[1]) scoreP2El.innerText = renderSnakes[1].score;
-        }
-
-        // Blind Effect Logic
-        let isBlinded = false;
-        renderSnakes.forEach(s => {
-            if (s.blindTimer > 0) isBlinded = true;
-        });
-
-        const container = document.querySelector('.game-container');
-        if (container) {
-            if (isBlinded) container.classList.add('blinded');
-            else container.classList.remove('blinded');
-        }
-
-        ctx.fillStyle = COLORS.bg;
-        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        // Draw Walls (Distinct Texture for Placed Walls)
-        // Walls in this.walls are placed by powerups. Normal borders are implicit.
-        renderWalls.forEach(w => {
-            // "Danger" style: Brown with Red X or border
-            this.drawRect(w.x, w.y, COLORS.brown);
-            // Draw a red X or inner square to signify danger
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-        });
-
-        // Draw Powerups
-        renderPowerups.forEach(p => {
-            const def = this.powerUpTypes[p.type];
-            this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-        });
-
-        // Draw Foods (Multi-Food)
-        if (renderFoods) {
-            renderFoods.forEach(f => {
-                this.drawRect(f.x, f.y, COLORS.food, true);
-            });
-        }
-
-        // Draw Snakes
-        renderSnakes.forEach(snake => {
-            const snakeColor = snake.hasShield ? COLORS.silver :
-                snake.ghostTimer > 0 ? COLORS.ghost :
-                    snake.blindTimer > 0 ? '#0a0a0a' : snake.color; // Almost black, but slight vis checks allowed? No, make it dark.
-            snake.body.forEach((segment, index) => {
-                const isHead = index === 0;
-                if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-                else ctx.fillStyle = snakeColor;
-
-                this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
-            });
-        });
-
-        this.updateDynamicLegend();
-    }
-
-    drawRect(x, y, color, glow = false) {
-        ctx.fillStyle = color;
-        if (glow) {
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = color;
-        } else {
-            ctx.shadowBlur = 0;
-        }
-        ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
-        ctx.shadowBlur = 0;
-    }
-
-    broadcastState() {
-        if (!this.isHost || !this.conn || !this.conn.open) return;
-
-        const state = {
-            type: 'state',
-            snakes: this.snakes,
-            foods: this.foods,
-            powerups: this.powerups,
-            walls: this.walls
         };
 
-        try {
-            this.conn.send(state);
-        } catch (e) {
-            console.error("Broadcast Error:", e);
+        if (s1.ghostTimer > 0) {
+            addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+        }
+        if (s1.shieldTimer > 0) {
+            addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+        }
+        if (s1.magnetTimer > 0) {
+            addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
         }
     }
+}
 
-    loop(timestamp) {
-        if (!this.isRunning) return;
-        if (this.isPaused) return;
+draw() {
+    // CLIENT RENDER OVERRIDE
+    let renderSnakes = this.snakes;
+    let renderFoods = this.foods;
+    let renderPowerups = this.powerups;
+    let renderWalls = this.walls;
 
-        if (timestamp - this.lastTime < this.currentSpeed) {
-            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-            return;
-        }
-        this.lastTime = timestamp;
-        this.update();
-
-        if (this.isHost) {
-            this.broadcastState();
-        }
-
-        this.draw();
-        if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+    if (this.isClient && this.clientState) {
+        renderSnakes = this.clientState.snakes;
+        renderFoods = this.clientState.foods;
+        renderPowerups = this.clientState.powerups;
+        renderWalls = this.clientState.walls;
+        // Update Score UI from state
+        if (scoreP1El && renderSnakes[0]) scoreP1El.innerText = renderSnakes[0].score;
+        if (scoreP2El && renderSnakes[1]) scoreP2El.innerText = renderSnakes[1].score;
     }
+
+    // Blind Effect Logic
+    let isBlinded = false;
+    renderSnakes.forEach(s => {
+        if (s.blindTimer > 0) isBlinded = true;
+    });
+
+    const container = document.querySelector('.game-container');
+    if (container) {
+        if (isBlinded) container.classList.add('blinded');
+        else container.classList.remove('blinded');
+    }
+
+    ctx.fillStyle = COLORS.bg;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Draw Walls (Distinct Texture for Placed Walls)
+    // Walls in this.walls are placed by powerups. Normal borders are implicit.
+    renderWalls.forEach(w => {
+        // "Danger" style: Brown with Red X or border
+        this.drawRect(w.x, w.y, COLORS.brown);
+        // Draw a red X or inner square to signify danger
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+    });
+
+    // Draw Powerups
+    renderPowerups.forEach(p => {
+        const def = this.powerUpTypes[p.type];
+        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+    });
+
+    // Draw Foods (Multi-Food)
+    if (renderFoods) {
+        renderFoods.forEach(f => {
+            this.drawRect(f.x, f.y, COLORS.food, true);
+        });
+    }
+
+    // Draw Snakes
+    renderSnakes.forEach(snake => {
+        const snakeColor = snake.hasShield ? COLORS.silver :
+            snake.ghostTimer > 0 ? COLORS.ghost :
+                snake.blindTimer > 0 ? '#0a0a0a' : snake.color; // Almost black, but slight vis checks allowed? No, make it dark.
+        snake.body.forEach((segment, index) => {
+            const isHead = index === 0;
+            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+            else ctx.fillStyle = snakeColor;
+
+            this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
+        });
+    });
+
+    this.updateDynamicLegend();
+}
+
+drawRect(x, y, color, glow = false) {
+    ctx.fillStyle = color;
+    if (glow) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = color;
+    } else {
+        ctx.shadowBlur = 0;
+    }
+    ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+    ctx.shadowBlur = 0;
+}
+
+broadcastState() {
+    if (!this.isHost || !this.conn || !this.conn.open) return;
+
+    const state = {
+        type: 'state',
+        snakes: this.snakes,
+        foods: this.foods,
+        powerups: this.powerups,
+        walls: this.walls
+    };
+
+    try {
+        this.conn.send(state);
+    } catch (e) {
+        console.error("Broadcast Error:", e);
+    }
+}
+
+loop(timestamp) {
+    if (!this.isRunning) return;
+    if (this.isPaused) return;
+
+    if (timestamp - this.lastTime < this.currentSpeed) {
+        this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+        return;
+    }
+    this.lastTime = timestamp;
+    this.update();
+
+    if (this.isHost) {
+        this.broadcastState();
+    }
+
+    this.draw();
+    if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+}
 }
 
 // Initialize Game
