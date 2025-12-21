@@ -38,7 +38,7 @@ window.addEventListener('unhandledrejection', function (event) {
     log("UNHANDLED PROMISE: " + event.reason);
 });
 
-log("v3.8 INITIALIZING...");
+log("v4.1 INITIALIZING...");
 log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
 // FORCE TOUCH ACTION
@@ -796,6 +796,8 @@ class Game {
 
         // Force Redraw Every Frame (No Caching)
         dynamicLegend.innerHTML = '';
+
+        let renderPowerups = this.powerups || []; // Default to empty array
 
         // 1. Draw Static Powerups (Available on board)
         renderPowerups.forEach(p => {

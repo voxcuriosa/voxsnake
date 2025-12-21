@@ -43,120 +43,125 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v3.10</span></h3>
+                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v4.2</span></h3>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
                         </div>
-                        <div class="instructions-split-layout"
-                            style="display: flex; gap: 20px; font-size: 0.75rem; text-align: left;">
-                            <!-- Global Items -->
-                            <div style="flex: 1;">
-                                <h4
-                                    style="margin: 5px 0; color: #fff; border-bottom: 1px solid #444; margin-bottom: 10px;">
-                                    GLOBAL (ALL MODES)</h4>
-                                <div style="display: flex; flex-direction: column; gap: 6px;">
-                                    <div><span class="dot normal"></span> <strong>Eat:</strong> Grow snake & get +1
-                                        Score.</div>
-                                    <div><span class="dot purple"></span> <strong>Ghost:</strong> Clip through walls &
-                                        bodies (5s).</div>
-                                    <div><span class="dot orange"></span> <strong>Speed:</strong> Super fast movement
-                                        (3s).</div>
-                                    <div><span class="dot blue"></span> <strong>Slow:</strong> Slow down time/speed
-                                        (5s).</div>
-                                    <div><span class="dot red"></span> <strong>Bomb:</strong> Destroy current
-                                        food/items.</div>
-                                    <div><span class="dot silver"></span> <strong>Shield:</strong> Survive one
-                                        collision/crash.</div>
-                                    <div><span class="dot pink"></span> <strong>Magnet:</strong> Attract food from close
-                                        range.</div>
-                                    <div><span class="dot brown"></span> <strong>Wall:</strong> Drops an obstacle block.
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Combat Items -->
-                            <div style="flex: 1; border-left: 1px solid #333; padding-left: 20px;">
-                                <h4
-                                    style="margin: 5px 0; color: #ff0055; border-bottom: 1px solid #444; margin-bottom: 10px;">
-                                    COMBAT (2P ONLY)</h4>
-                                <div style="display: flex; flex-direction: column; gap: 6px;">
-                                    <div><span class="dot white"></span> <strong>Eraser:</strong> Cut enemy's size in
-                                        half.</div>
-                                    <div><span class="dot black"></span> <strong>Blind:</strong> Hide enemy screen (2s).
-                                    </div>
-                                    <div><span class="dot cyan"></span> <strong>Ice:</strong> Freeze enemy in place
-                                        (2s).</div>
-                                    <div><span class="dot green"></span> <strong>Switch:</strong> Swap bodies with
-                                        enemy.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                        <!-- ... -->
+                        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+                        <meta http-equiv="Pragma" content="no-cache">
+                        <meta http-equiv="Expires" content="0">
+                        <script src="game_v2.js?v=4.2"></script>
+</body>
 
-                    <div class="menu-options">
-                        <button id="btn-resume" class="neon-btn hidden">RESUME</button>
-                        <button id="btn-1p" class="neon-btn">1 PLAYER</button>
-                        <button id="btn-2p" class="neon-btn">2 PLAYERS (SAME KEYBOARD)</button>
-                        <div style="width:100%; height:1px; background:#333; margin:10px 0;"></div>
-                        <button id="btn-host" class="neon-btn" style="color:#00ffff; border-color:#00ffff;">HOST
-                            ONLINE</button>
-                        <button id="btn-join" class="neon-btn secondary">JOIN ONLINE</button>
-                        <div style="font-size: 0.7rem; color: #888; margin-top: 5px;">PLAY ON 2 DEVICES (REQ. INTERNET)
-                        </div>
-                    </div>
-
-                    <div id="high-scores" class="mt-4">
-                        <h2>TOP SCORES</h2>
-                        <ul id="high-score-list">
-                            <!-- Populated by JS -->
-                        </ul>
-                    </div>
-                </div> <!-- END MAIN MENU -->
-
-                <!-- Game Over Screen (Sibling now) -->
-                <div id="game-over-screen" class="menu-screen hidden">
-                    <h1 id="winner-text">GAME OVER</h1>
-                    <div class="menu-options">
-                        <button id="restart-btn" class="neon-btn">RESTART</button>
-                        <button id="menu-btn" class="neon-btn secondary">MENU</button>
-                    </div>
-                </div>
-
-                <!-- Name Entry Screen (Sibling now) -->
-                <div id="name-entry-screen" class="menu-screen hidden">
-                    <h2 class="neon-title" style="font-size: 2rem;">NEW HIGH SCORE!</h2>
-                    <input type="text" id="player-name-input" maxlength="10" placeholder="ENTER NAME">
-                    <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
-                </div>
-
-                <!-- Online Lobby Screen -->
-                <div id="lobby-screen" class="menu-screen hidden">
-                    <h2 class="neon-title" style="font-size: 2rem;">HOSTING GAME</h2>
-                    <div id="qrcode" style="background:white; padding:10px; margin:20px auto; width: fit-content;">
-                    </div>
-                    <p style="color:#aaa; margin-bottom:10px;">SCAN QR OR JOIN WITH CODE:</p>
-                    <h1 id="host-id-display" style="color:#00ffff; letter-spacing:5px; font-size:3rem; margin:10px 0;">
-                        ...</h1>
-                    <div style="color:#666; font-size:0.8rem;" id="host-status">WAITING FOR PLAYER 2...</div>
-                    <button id="lobby-back-btn" class="neon-btn secondary" style="margin-top:20px;">CANCEL</button>
-                </div>
-
-                <!-- Join Game Screen -->
-                <div id="join-screen" class="menu-screen hidden">
-                    <h2 class="neon-title">JOIN GAME</h2>
-                    <input type="text" id="join-id-input" placeholder="ENTER 4-LETTER CODE" maxlength="4"
-                        style="text-transform:uppercase;">
-                    <button id="connect-btn" class="neon-btn">CONNECT</button>
-                    <button id="join-back-btn" class="neon-btn secondary">BACK</button>
-                </div>
-
+</html>
+<div class="instructions-split-layout" style="display: flex; gap: 20px; font-size: 0.75rem; text-align: left;">
+    <!-- Global Items -->
+    <div style="flex: 1;">
+        <h4 style="margin: 5px 0; color: #fff; border-bottom: 1px solid #444; margin-bottom: 10px;">
+            GLOBAL (ALL MODES)</h4>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div><span class="dot normal"></span> <strong>Eat:</strong> Grow snake & get +1
+                Score.</div>
+            <div><span class="dot purple"></span> <strong>Ghost:</strong> Clip through walls &
+                bodies (5s).</div>
+            <div><span class="dot orange"></span> <strong>Speed:</strong> Super fast movement
+                (3s).</div>
+            <div><span class="dot blue"></span> <strong>Slow:</strong> Slow down time/speed
+                (5s).</div>
+            <div><span class="dot red"></span> <strong>Bomb:</strong> Destroy current
+                food/items.</div>
+            <div><span class="dot silver"></span> <strong>Shield:</strong> Survive one
+                collision/crash.</div>
+            <div><span class="dot pink"></span> <strong>Magnet:</strong> Attract food from close
+                range.</div>
+            <div><span class="dot brown"></span> <strong>Wall:</strong> Drops an obstacle block.
             </div>
         </div>
     </div>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <script src="game_v2.js?v=4.0"></script>
+    <!-- Combat Items -->
+    <div style="flex: 1; border-left: 1px solid #333; padding-left: 20px;">
+        <h4 style="margin: 5px 0; color: #ff0055; border-bottom: 1px solid #444; margin-bottom: 10px;">
+            COMBAT (2P ONLY)</h4>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div><span class="dot white"></span> <strong>Eraser:</strong> Cut enemy's size in
+                half.</div>
+            <div><span class="dot black"></span> <strong>Blind:</strong> Hide enemy screen (2s).
+            </div>
+            <div><span class="dot cyan"></span> <strong>Ice:</strong> Freeze enemy in place
+                (2s).</div>
+            <div><span class="dot green"></span> <strong>Switch:</strong> Swap bodies with
+                enemy.</div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="menu-options">
+    <button id="btn-resume" class="neon-btn hidden">RESUME</button>
+    <button id="btn-1p" class="neon-btn">1 PLAYER</button>
+    <button id="btn-2p" class="neon-btn">2 PLAYERS (SAME KEYBOARD)</button>
+    <div style="width:100%; height:1px; background:#333; margin:10px 0;"></div>
+    <button id="btn-host" class="neon-btn" style="color:#00ffff; border-color:#00ffff;">HOST
+        ONLINE</button>
+    <button id="btn-join" class="neon-btn secondary">JOIN ONLINE</button>
+    <div style="font-size: 0.7rem; color: #888; margin-top: 5px;">PLAY ON 2 DEVICES (REQ. INTERNET)
+    </div>
+</div>
+
+<div id="high-scores" class="mt-4">
+    <h2>TOP SCORES</h2>
+    <ul id="high-score-list">
+        <!-- Populated by JS -->
+    </ul>
+</div>
+</div> <!-- END MAIN MENU -->
+
+<!-- Game Over Screen (Sibling now) -->
+<div id="game-over-screen" class="menu-screen hidden">
+    <h1 id="winner-text">GAME OVER</h1>
+    <div class="menu-options">
+        <button id="restart-btn" class="neon-btn">RESTART</button>
+        <button id="menu-btn" class="neon-btn secondary">MENU</button>
+    </div>
+</div>
+
+<!-- Name Entry Screen (Sibling now) -->
+<div id="name-entry-screen" class="menu-screen hidden">
+    <h2 class="neon-title" style="font-size: 2rem;">NEW HIGH SCORE!</h2>
+    <input type="text" id="player-name-input" maxlength="10" placeholder="ENTER NAME">
+    <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
+</div>
+
+<!-- Online Lobby Screen -->
+<div id="lobby-screen" class="menu-screen hidden">
+    <h2 class="neon-title" style="font-size: 2rem;">HOSTING GAME</h2>
+    <div id="qrcode" style="background:white; padding:10px; margin:20px auto; width: fit-content;">
+    </div>
+    <p style="color:#aaa; margin-bottom:10px;">SCAN QR OR JOIN WITH CODE:</p>
+    <h1 id="host-id-display" style="color:#00ffff; letter-spacing:5px; font-size:3rem; margin:10px 0;">
+        ...</h1>
+    <div style="color:#666; font-size:0.8rem;" id="host-status">WAITING FOR PLAYER 2...</div>
+    <button id="lobby-back-btn" class="neon-btn secondary" style="margin-top:20px;">CANCEL</button>
+</div>
+
+<!-- Join Game Screen -->
+<div id="join-screen" class="menu-screen hidden">
+    <h2 class="neon-title">JOIN GAME</h2>
+    <input type="text" id="join-id-input" placeholder="ENTER 4-LETTER CODE" maxlength="4"
+        style="text-transform:uppercase;">
+    <button id="connect-btn" class="neon-btn">CONNECT</button>
+    <button id="join-back-btn" class="neon-btn secondary">BACK</button>
+</div>
+
+</div>
+</div>
+</div>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script src="game_v2.js?v=4.0"></script>
 </body>
 
 </html>
