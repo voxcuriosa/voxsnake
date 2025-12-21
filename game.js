@@ -619,17 +619,18 @@ class Game {
         this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
 
         // Update Snakes (Collision & Movement)
-        this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate));
+        this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate, (x, y) => this.triggerShieldEffect(x, y)));
 
         // Game Over Checks...
         if (this.gameMode === 'single') {
-            if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision()) {
+            if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
                 this.gameOver();
                 return;
             }
         } else if (this.gameMode === 'multi') {
-            let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision();
-            let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision();
+            let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+            let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+
 
             // Head-to-Head/Body collision logic (omitted for brevity, assume same)
             const h1 = this.snakes[0].body[0];
