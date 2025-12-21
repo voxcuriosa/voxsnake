@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v5.6 (STRICT SYNC CHECK)...");
+    log("v5.7 (RESIZED FORCED)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
@@ -725,74 +725,50 @@ window.addEventListener('DOMContentLoaded', () => {
 
         resize() {
             const container = canvas.parentElement;
-            // Fallback to window if container is missing or has 0 size
-            let w = container ? container.clientWidth : window.innerWidth;
-            let h = container ? container.clientHeight : window.innerHeight;
+            // Native Window/Container Dimensions
+            let availableW = container ? container.clientWidth : window.innerWidth;
+            let availableH = container ? container.clientHeight : window.innerHeight;
 
-            // Extra Robustness: If container width is somehow 0 (e.g. collapsed flex),
-            // try window and subtract padding guess.
-            if (!w || w <= 10) w = window.innerWidth - 20;
-            if (!h || h <= 10) h = window.innerHeight - 100; // Account for scoreboard
+            // Robustness
+            if (!availableW || availableW <= 10) availableW = window.innerWidth - 20;
+            if (!availableH || availableH <= 10) availableH = window.innerHeight - 100;
+            if (availableW < 300) availableW = 300;
+            if (availableH < 300) availableH = 300;
 
-            // Final sanity check min sizes
-            if (w < 300) w = 300;
-            if (h < 300) h = 300;
+            // 1. Determine LOGICAL Resolution
+            // Default: Fit to available space
+            let logicalW = availableW;
+            let logicalH = availableH;
 
-            CANVAS_WIDTH = Math.floor((w - 4) / GRID_SIZE) * GRID_SIZE;
-            if (this.multiplayerTargetWidth) {
-                const mw = Math.floor((this.multiplayerTargetWidth - 4) / GRID_SIZE) * GRID_SIZE;
-                const mh = Math.floor((this.multiplayerTargetHeight - 4) / GRID_SIZE) * GRID_SIZE;
-
-                // Use smallest common denominator (min width/height)
-                if (mw < CANVAS_WIDTH) CANVAS_WIDTH = mw;
-                if (mh < CANVAS_HEIGHT) CANVAS_HEIGHT = mh;
-
-                if (typeof log !== 'undefined') log(`RESIZE SYNC: Target=${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight} -> Applied=${CANVAS_WIDTH}x${CANVAS_HEIGHT}`);
-            } else {
-                if (typeof log !== 'undefined') log(`RESIZE: ${CANVAS_WIDTH}x${CANVAS_HEIGHT} (No Sync Target)`);
+            // Multiplayer Override: Force SYNC
+            if (this.gameMode === 'multi' && this.multiplayerTargetWidth) {
+                if (typeof log !== 'undefined') log(`FORCE SYNC: Using Target ${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight}`);
+                // Use the smallest constraint to ensure it fits on ALL screens
+                // Host typically has larger screen, so we cap to Client's size.
+                // Client has already sent us their max window size.
+                logicalW = Math.min(availableW, this.multiplayerTargetWidth);
+                logicalH = Math.min(availableH, this.multiplayerTargetHeight);
             }
 
-            // MULTIPLAYER RESOLUTION SYNC
-            if (this.gameMode === 'multi') {
-                if (this.isHost && this.multiplayerTargetWidth) {
-                    // HOST: Must shrink to fit Client
-                    const mw = Math.floor((this.multiplayerTargetWidth - 4) / GRID_SIZE) * GRID_SIZE;
-                    const mh = Math.floor((this.multiplayerTargetHeight - 4) / GRID_SIZE) * GRID_SIZE;
+            // Snap to Grid
+            CANVAS_WIDTH = Math.floor((logicalW - 4) / GRID_SIZE) * GRID_SIZE;
+            CANVAS_HEIGHT = Math.floor((logicalH - 4) / GRID_SIZE) * GRID_SIZE;
 
-                    if (mw < CANVAS_WIDTH) CANVAS_WIDTH = mw;
-                    if (mh < CANVAS_HEIGHT) CANVAS_HEIGHT = mh;
-
-                    // log("HOST SYNC: Shrinking to " + CANVAS_WIDTH + "x" + CANVAS_HEIGHT);
-                }
-                else if (this.isClient && this.multiplayerTargetWidth) {
-                    // CLIENT: Must MATCH Host exactly (Host has already calculated the Min)
-                    // NOTE: We trust the Host's 'dims' broadcast implicitly
-                    CANVAS_WIDTH = this.multiplayerTargetWidth;
-                    CANVAS_HEIGHT = this.multiplayerTargetHeight;
-                    // log("CLIENT SYNC: Forcing " + CANVAS_WIDTH + "x" + CANVAS_HEIGHT);
-                }
-            }
-
+            // Update Canvas Logical Size
             canvas.width = CANVAS_WIDTH;
             canvas.height = CANVAS_HEIGHT;
 
-            // FIX: Enforce 1:1 pixel mapping logic, but SCALE visually
-            // canvas.style.width = CANVAS_WIDTH + 'px';
-            // canvas.style.height = CANVAS_HEIGHT + 'px';
-
-            // VISUAL SCALING (Fit to Window)
-            const scaleX = window.innerWidth / CANVAS_WIDTH;
-            const scaleY = window.innerHeight / CANVAS_HEIGHT;
-            const scale = Math.min(scaleX, scaleY) * 0.95; // 95% to leave margin
+            // 2. Visual Scaling (Fit to Window via CSS)
+            // We want the canvas to be as big as possible on screen, but locked to aspect ratio.
+            const scaleX = availableW / CANVAS_WIDTH;
+            const scaleY = availableH / CANVAS_HEIGHT;
+            const scale = Math.min(scaleX, scaleY) * 0.95; // 95% margin
 
             canvas.style.width = Math.floor(CANVAS_WIDTH * scale) + 'px';
             canvas.style.height = Math.floor(CANVAS_HEIGHT * scale) + 'px';
 
-            // DEBUG DISPLAY (Temporary - Remove if distracting, but good for user proof)
-            if (ctx) {
-                // We can't draw here because draw() clears it.
-                // We rely on log() or just the fact it works.
-            }
+            // Center the canvas if needed (flex does this usually, but good to be sure)
+            // canvas.style.marginTop = ... handled by flex center
 
             this.draw();
         }
