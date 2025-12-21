@@ -98,6 +98,11 @@ class Snake {
         }
 
         this.direction = this.nextDirection;
+
+        // FIX: If snake is stopped (e.g. after Shield hit), DO NOT simulate movement
+        // This prevents "Self Collision" (Head hitting Head) or weird visual states.
+        if (this.direction.x === 0 && this.direction.y === 0) return;
+
         const head = this.body[0];
         const newHead = { x: head.x + this.direction.x, y: head.y + this.direction.y };
 
