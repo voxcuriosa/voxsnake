@@ -1641,8 +1641,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         draw() {
             try {
-                // 1. BACKGROUND (FIRST!) - NEW COLOR verify v3.9
-                ctx.fillStyle = '#000814'; // Dark Blue/Black
+                // 1. BACKGROUND
+                ctx.fillStyle = COLORS.bg;
                 ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
                 // 2. MAIN WORLD RENDER (Protected)
@@ -1693,42 +1693,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 // 3. UI LAYERS (ON TOP)
 
-                // CANVAS GAME OVER (Failsafe UI)
-                if (!this.isRunning && !this.isPaused) {
-                    ctx.save();
-                    ctx.textAlign = 'center';
-
-                    // Red Box to ensure visibility against any bg
-                    ctx.fillStyle = 'rgba(50, 0, 0, 0.9)';
-                    ctx.fillRect(CANVAS_WIDTH / 2 - 150, CANVAS_HEIGHT / 2 - 100, 300, 200);
-
-                    ctx.fillStyle = '#ff0055';
-                    ctx.font = 'bold 30px sans-serif';
-                    ctx.fillText("GAME OVER", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
-
-                    ctx.fillStyle = '#fff';
-                    ctx.font = '16px sans-serif';
-                    ctx.fillText("TAP SCREEN TO RESTART", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 30);
-
-                    this.restartZone = { x: 0, y: 0, w: CANVAS_WIDTH, h: CANVAS_HEIGHT };
-                    ctx.restore();
-                } else {
-                    this.restartZone = null;
-                }
-
-                // PERMANENT VERSION STAMP (ALWAYS ON TOP)
-                ctx.save();
-                ctx.fillStyle = this.isRunning ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.8)';
-                ctx.font = '16px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText(`v3.9 | RUN: ${this.isRunning}`, CANVAS_WIDTH / 2, 30);
-
-                if (!this.isRunning) {
-                    ctx.fillStyle = 'yellow';
-                    ctx.fillText("MENUS CHECK", CANVAS_WIDTH / 2, 50);
-                }
-                ctx.restore();
-
                 // CLEAN UI
                 if (this.isRunning) {
                     const uiLayer = document.getElementById('ui-layer');
@@ -1739,7 +1703,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
             } catch (fatalE) {
                 console.error("FATAL DRAW ERROR:", fatalE);
-                try { ctx.fillStyle = 'blue'; ctx.fillRect(0, 0, 50, 50); } catch (e) { }
             }
         }
 
