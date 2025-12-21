@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v3.0 (SW KILLER + NEW FILE game_v8.js)...");
+    log("v3.1 (ERROR ALERTS + CENTERED STAMP)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1670,12 +1670,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 ctx.restore();
             }
 
-            // PERMANENT VERSION STAMP (User Request: "Hvordan vet vi?")
+            // PERMANENT VERSION STAMP (CENTERED)
             ctx.save();
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.font = '14px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText("JS: v2.6 (ACTIVE)", CANVAS_WIDTH - 5, CANVAS_HEIGHT - 5);
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText("JS: v3.1 (ACTIVE)", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
             ctx.restore();
 
             // CLIENT RENDER OVERRIDE
