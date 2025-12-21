@@ -38,7 +38,7 @@ window.addEventListener('unhandledrejection', function (event) {
     log("UNHANDLED PROMISE: " + event.reason);
 });
 
-log("v4.1 INITIALIZING...");
+log("v4.3 INITIALIZING...");
 log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
 // FORCE TOUCH ACTION
@@ -398,9 +398,13 @@ class Game {
             if (!btn) return;
             const handler = (e) => {
                 // Prevent double-firing (e.g. touchend then click)
-                e.preventDefault();
-                e.stopPropagation();
+                if (e.type !== 'touchstart') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
                 log("ACTION: " + mode + " via " + e.type);
+                // ALERT FOR DEBUGGING
+                // alert("STARTING: " + mode); 
                 this.startGame(mode);
             };
 
@@ -408,7 +412,7 @@ class Game {
             btn.addEventListener('touchstart', (e) => { e.stopPropagation(); log("BTN TOUCHSTART"); }, { passive: false });
             btn.addEventListener('touchend', handler, { passive: false });
             btn.addEventListener('click', handler);
-            btn.addEventListener('mousedown', handler);
+            // btn.addEventListener('mousedown', handler); // REMOVED to prevent conflicts
         };
 
         bindStartButton(btn1P, 'single');
