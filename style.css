@@ -195,7 +195,6 @@ canvas {
     max-width: 900px;
     /* Restore constraint */
 
-    animation: fadeIn 0.3s ease-out;
 }
 
 @keyframes fadeIn {
