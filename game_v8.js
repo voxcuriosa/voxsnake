@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v3.6 (NAME ENTRY VISIBILITY FIX)...");
+    log("v3.7 (PERMANENT DRAW LOOP & FAILSAFE UI)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1111,6 +1111,12 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         handleTouchStart(e) {
+            // FAILSAFE RESTART (Tap Screen if Game Over)
+            if (!this.isRunning && this.restartZone) {
+                location.reload(); // Simple restart
+                return;
+            }
+
             // Allow clicks on buttons/inputs/menu to pass through
             if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.menu-screen')) {
                 // Do not prevent default
@@ -1851,37 +1857,36 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         loop(timestamp) {
-            if (!this.isRunning) return;
-            if (this.isPaused) return;
+            // ALWAYS RUN LOOP FOR VISUALS (Diagnostics/Game Over Screen)
+            // Logical Update is gated by isRunning
 
-            if (timestamp - this.lastTime < this.currentSpeed) {
+            // 1. UPDATE PHYSICS
+            if (this.isRunning && !this.isPaused) {
+                if (timestamp - this.lastTime > this.currentSpeed) {
+                    this.lastTime = timestamp;
+                    try {
+                        this.update();
+                    } catch (e) {
+                        console.error("UPDATE CRASH:", e);
+                        alert("GAME CRASH: " + e.message);
+                        this.isRunning = false;
+                    }
+                    if (this.isHost) {
+                        try { this.broadcastState(); } catch (e) { }
+                    }
+                }
+                // Request next frame for loop
                 this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-                return;
-            }
-            this.lastTime = timestamp;
-
-            try {
-                this.update();
-            } catch (e) {
-                console.error("UPDATE CRASH:", e);
-                alert("GAME UPDATE CRASH:\n" + e.message);
-                this.isRunning = false;
-                return;
-            }
-
-            if (this.isHost) {
-                try { this.broadcastState(); } catch (e) { console.error(e); }
-            }
-
-            try {
+            } else {
+                // Game Stopped/Paused: Just Draw (but slow down slightly?)
+                // Actually we must keep requesting frame to draw the static text/UI
                 this.draw();
-            } catch (e) {
-                console.error("DRAW CRASH:", e);
-                this.isRunning = false;
-                return;
+                this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
             }
 
-            if (this.isRunning) this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+            if (this.isRunning && !this.isPaused) {
+                this.draw();
+            }
         }
     }
 
