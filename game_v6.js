@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.38 (UI FORCE HIDE)...");
+    log("v1.39 (HIDE ALL SCREENS FIX)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -312,12 +312,23 @@ window.addEventListener('DOMContentLoaded', () => {
             const lobbyBack = document.getElementById('lobby-back-btn');
             const joinBack = document.getElementById('join-back-btn');
 
-            if (btnHost) btnHost.onclick = () => this.startHost();
-            if (btnJoin) btnJoin.onclick = () => {
-                document.getElementById('main-menu').classList.remove('active');
-                document.getElementById('main-menu').classList.add('hidden');
+            if (btnHost) {
+                btnHost.onclick = (e) => {
+                    if (e) e.preventDefault();
+                    this.startHost();
+                };
+                btnHost.ontouchend = (e) => {
+                    if (e) e.preventDefault();
+                    this.startHost();
+                };
+            }
+
+            if (btnJoin) btnJoin.onclick = (e) => {
+                if (e) e.preventDefault();
+                this.hideAllScreens();
                 document.getElementById('join-screen').classList.remove('hidden');
                 document.getElementById('join-screen').classList.add('active');
+                document.getElementById('join-screen').style.display = 'flex';
             };
 
             if (lobbyBack) lobbyBack.onclick = () => location.reload();
@@ -536,10 +547,13 @@ window.addEventListener('DOMContentLoaded', () => {
             this.isRunning = false;
             this.isPaused = false;
             this.gameMode = null;
+
+            this.hideAllScreens();
+
             if (mainMenu) {
                 mainMenu.classList.remove('hidden');
                 mainMenu.classList.add('active');
-                mainMenu.style.display = ''; // RESET FORCE HIDE
+                mainMenu.style.display = 'flex'; // Reset to flex
             }
             if (gameOverScreen) {
                 gameOverScreen.classList.remove('active');
