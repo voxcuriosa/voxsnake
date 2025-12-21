@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.46 (FINAL LOBBY FIX?)...");
+    log("v1.47 (NUCLEAR OPTION + CLEANUP)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -326,9 +326,11 @@ window.addEventListener('DOMContentLoaded', () => {
             if (btnJoin) btnJoin.onclick = (e) => {
                 if (e) e.preventDefault();
                 this.hideAllScreens();
-                document.getElementById('join-screen').classList.remove('hidden');
-                document.getElementById('join-screen').classList.add('active');
-                document.getElementById('join-screen').style.display = 'flex';
+                const js = document.getElementById('join-screen');
+                js.classList.remove('hidden');
+                js.classList.remove('nuclear-hidden');
+                js.classList.add('active');
+                js.style.display = 'flex';
             };
 
             if (lobbyBack) lobbyBack.onclick = () => location.reload();
@@ -363,11 +365,19 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         hideAllScreens() {
+            // Ensure Nuclear Class Exists
+            if (!document.getElementById('nuclear-style')) {
+                const style = document.createElement('style');
+                style.id = 'nuclear-style';
+                style.innerHTML = '.nuclear-hidden { display: none !important; opacity: 0 !important; pointer-events: none !important; }';
+                document.head.appendChild(style);
+            }
+
             const screens = document.querySelectorAll('.menu-screen');
             screens.forEach(s => {
                 s.classList.add('hidden');
+                s.classList.add('nuclear-hidden'); // NUKE IT
                 s.classList.remove('active');
-                s.style.display = 'none'; // Force Hard Hide
             });
         }
 
@@ -379,6 +389,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const lobby = document.getElementById('lobby-screen');
             if (lobby) {
                 lobby.classList.remove('hidden');
+                lobby.classList.remove('nuclear-hidden'); // UN-NUKE
                 lobby.classList.add('active');
                 lobby.style.display = 'flex'; // Force Flex
             }
@@ -564,6 +575,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (mainMenu) {
                 mainMenu.classList.remove('hidden');
+                mainMenu.classList.remove('nuclear-hidden');
                 mainMenu.classList.add('active');
                 mainMenu.style.display = 'flex'; // Reset to flex
             }
