@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.23 (DVH FIX)...");
+    log("v1.25 (WALL TRAP)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -125,6 +125,7 @@ window.addEventListener('DOMContentLoaded', () => {
             this.shieldTimer = 0;
             this.magnetTimer = 0;
             this.blindTimer = 0;
+            this.wallTrapTimer = 0; // New v1.25 (Replaces Ghost in 2P)
         }
 
         handleInput(key) {
@@ -147,6 +148,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (this.magnetTimer > 0) this.magnetTimer -= tickRate;
             if (this.shieldTimer > 0) this.shieldTimer -= tickRate;
             if (this.blindTimer > 0) this.blindTimer -= tickRate;
+            if (this.wallTrapTimer > 0) this.wallTrapTimer -= tickRate;
 
             // Disable expired effects
             if (this.shieldTimer <= 0) this.hasShield = false;
@@ -169,7 +171,14 @@ window.addEventListener('DOMContentLoaded', () => {
             if (newHead.x < 0 || newHead.x >= CANVAS_WIDTH / GRID_SIZE ||
                 newHead.y < 0 || newHead.y >= CANVAS_HEIGHT / GRID_SIZE) {
 
-                if (this.ghostTimer > 0) {
+                // v1.25: Start Wrapping Logic
+                // Single Player: Wraps ONLY with Ghost
+                // Multiplayer: Wraps ALWAYS UNLESS Wall Trapped
+                const isMulti = !isSingleMode;
+                const canWrap = (isSingleMode && this.ghostTimer > 0) ||
+                    (isMulti && this.wallTrapTimer <= 0);
+
+                if (canWrap) {
                     // Wrap around
                     if (newHead.x < 0) newHead.x = (CANVAS_WIDTH / GRID_SIZE) - 1;
                     else if (newHead.x >= CANVAS_WIDTH / GRID_SIZE) newHead.x = 0;
@@ -1374,7 +1383,14 @@ window.addEventListener('DOMContentLoaded', () => {
             const isMulti = this.gameMode === 'multi';
 
             switch (type) {
-                case 'ghost': user.ghostTimer = 5000; break;
+                case 'ghost':
+                    if (isMulti && enemy) {
+                        enemy.wallTrapTimer = 10000;
+                        // Feedback? Done in Draw/Legend
+                    } else {
+                        user.ghostTimer = 5000;
+                    }
+                    break;
                 case 'speed':
                     this.currentSpeed = 50;
                     this.speedEffectTimer = 3000;
@@ -1509,6 +1525,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // Blind Effect Logic
             let isBlinded = false;
+            // Wall Trap Logic (Red Border)
+            let isTrapped = false;
+
+            // Check Local Player Status
+            // Host/Single = Snake[0], Client = Snake[1]
+            const mySnakeIdx = this.isClient ? 1 : 0;
+            if (renderSnakes[mySnakeIdx] && renderSnakes[mySnakeIdx].wallTrapTimer > 0) {
+                isTrapped = true;
+            }
+
             renderSnakes.forEach(s => {
                 if (s.blindTimer > 0) isBlinded = true;
             });
@@ -1517,6 +1543,17 @@ window.addEventListener('DOMContentLoaded', () => {
             if (container) {
                 if (isBlinded) container.classList.add('blinded');
                 else container.classList.remove('blinded');
+            }
+
+            // Apply Red Border if Trapped
+            if (canvas) {
+                if (isTrapped) {
+                    canvas.style.borderColor = '#ff0000';
+                    canvas.style.boxShadow = '0 0 30px #ff0000';
+                } else {
+                    canvas.style.borderColor = '#00ff88';
+                    canvas.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.2)';
+                }
             }
 
             ctx.fillStyle = COLORS.bg;
