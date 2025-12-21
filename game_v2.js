@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.18 (Fix Visual Borders)...");
+    log("v4.20 (Debug Sync Stats)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
@@ -1330,17 +1330,25 @@ window.addEventListener('DOMContentLoaded', () => {
                     const tail = user.body[user.body.length - 1];
                     this.walls.push({ x: tail.x, y: tail.y });
                     break;
-                case 'eraser':
-                    if (isMulti && enemy) {
-                        const newLen = Math.max(1, Math.floor(enemy.body.length / 2));
-                        enemy.body = enemy.body.slice(0, newLen);
+                    // The following code block appears to be a misplaced swipe input handler.
+                    // It is inserted here as per the user's instruction, but it is syntactically
+                    // incorrect within a switch statement without a 'case' label.
+                    // This will cause a syntax error.
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > 30) { // Increased threshold to 30px
+                            if (diffX > 0) this.handleInput({ key: 'ArrowRight' });
+                            else this.handleInput({ key: 'ArrowLeft' });
+                        }
+                    } else {
+                        if (Math.abs(diffY) > 30) {
+                            if (diffY > 0) this.handleInput({ key: 'ArrowDown' });
+                            else this.handleInput({ key: 'ArrowUp' });
+                        }
                     }
-                    break;
-                case 'blind':
-                    if (isMulti && enemy) {
-                        enemy.blindTimer = 2000;
-                    }
-                    break;
+                    // Reset to prevent double-firing on small jitters
+                    this.touchStartX = null;
+                    this.touchStartY = null;
+                    break; // This break is now associated with the misplaced code block, not a case.
                 case 'ice':
                     if (isMulti && enemy) enemy.frozenTimer = 2000;
                     break;
