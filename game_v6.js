@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.47 (NUCLEAR OPTION + CLEANUP)...");
+    log("v1.48 (STOP GAME FIX)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -364,6 +364,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        stopGame() {
+            this.isRunning = false;
+            this.isPaused = false;
+            if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+            // Optional: Clear canvas?
+            // const ctx = canvas.getContext('2d');
+            // ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            // Better to leave it as background or explicitly clear if desired.
+        }
+
         hideAllScreens() {
             // Ensure Nuclear Class Exists
             if (!document.getElementById('nuclear-style')) {
@@ -382,6 +392,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         startHost() {
+            this.stopGame(); // KILL ANY RUNNING GAME
+
             // 1. Reset UI State completely
             this.hideAllScreens();
 
