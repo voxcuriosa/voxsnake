@@ -2,5 +2,13 @@
     {
         "name": "VOX",
         "score": 100
+    },
+    {
+        "name": "SNAKE",
+        "score": 50
+    },
+    {
+        "name": "TEST",
+        "score": 10
     }
 ]

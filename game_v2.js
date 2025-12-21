@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v5.7 (RESIZED FORCED)...");
+    log("v6.0 (SYNC HEARTBEAT)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
@@ -378,9 +378,17 @@ window.addEventListener('DOMContentLoaded', () => {
                             // RESOLUTION SYNC
                             // alert("HOST RX HELLO: " + data.width + "x" + data.height); // DEBUG
                             console.log("Client Resolution:", data.width, data.height);
+                            // Lock it in
                             this.multiplayerTargetWidth = data.width;
                             this.multiplayerTargetHeight = data.height;
                             this.resize();
+
+                            // Visual Confirmation of Sync
+                            const status = document.getElementById('host-status');
+                            if (status) {
+                                status.innerText = `SYNCED WITH CLIENT (${data.width}x${data.height})`;
+                                status.style.color = "#00ff88";
+                            }
                         } else if (data.type === 'restart') {
                             this.startGame('multi');
                         } else if (data.type === 'gameover') {
@@ -502,18 +510,20 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.conn = this.peer.connect(hostId);
 
                     this.conn.on('open', () => {
-                        statusEl.innerText = "CONNECTED! GETTING READY...";
+                        statusEl.innerText = "CONNECTED! SYNCING...";
                         statusEl.style.color = "#00ff00";
                         this.isClient = true;
 
-                        // Send Resolution Hello
-                        setTimeout(() => {
-                            this.conn.send({
-                                type: 'hello',
-                                width: window.innerWidth,
-                                height: window.innerHeight
-                            });
-                        }, 200);
+                        // Start Hello Loop (Keep Alive & Sync Enforcer)
+                        this.helloInterval = setInterval(() => {
+                            if (this.conn && this.conn.open) {
+                                this.conn.send({
+                                    type: 'hello',
+                                    width: window.innerWidth,
+                                    height: window.innerHeight
+                                });
+                            }
+                        }, 1000);
                     });
 
                     this.conn.on('data', (data) => {
