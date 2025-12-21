@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.35 (SHARE BUTTON)...");
+    log("v1.36 (SHARE UI FIX)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -297,10 +297,15 @@ window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => this.resize(), 50);
             window.addEventListener('resize', () => this.resize());
             this.loadHighScores();
-            this.showMainMenu();
+
+            // ONLY show main menu if NOT auto-joining
+            if (!this.autoJoining) {
+                this.showMainMenu();
+            }
         }
 
         initMultiplayer() {
+            // ... variables check ...
             const btnHost = document.getElementById('btn-host');
             const btnJoin = document.getElementById('btn-join');
             const btnConnect = document.getElementById('connect-btn');
@@ -334,7 +339,14 @@ window.addEventListener('DOMContentLoaded', () => {
             const joinCode = urlParams.get('join');
             if (joinCode) {
                 console.log("Auto-Joining:", joinCode);
-                // Wait a sec for UI init
+                this.autoJoining = true; // Flag to prevent Main Menu
+                // Ensure Main Menu is hidden
+                const mm = document.getElementById('main-menu');
+                if (mm) { mm.classList.add('hidden'); mm.classList.remove('active'); }
+
+                // Show JOIN screen immediately to indicate activity (or Lobby if we had one for client)
+                // Actually joinGame handles UI switch, so just call it.
+                // Wait a tiny bit for PeerJS to be ready? No, new Peer() is in joinGame.
                 setTimeout(() => this.joinGame(joinCode), 500);
             }
         }
@@ -376,8 +388,8 @@ window.addEventListener('DOMContentLoaded', () => {
                             if (navigator.share) {
                                 try {
                                     await navigator.share({
-                                        title: 'VoxSnake Game',
-                                        text: 'Join my VoxSnake game!',
+                                        title: 'Neon Snake Game',
+                                        text: 'Join my Neon Snake game!',
                                         url: url
                                     });
                                     console.log('Shared successfully');
