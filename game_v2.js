@@ -1,17 +1,51 @@
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-// DEBUG: Touch logger removed for production
-// const debugDiv = ...
+// --- GLOBAL DEBUG OVERLAY (v3.4) ---
+const debugOverlay = document.createElement('ul');
+debugOverlay.id = 'debug-log';
+debugOverlay.style.position = 'fixed';
+debugOverlay.style.top = '0';
+debugOverlay.style.left = '0';
+debugOverlay.style.width = '100%';
+debugOverlay.style.height = '150px';
+debugOverlay.style.overflowY = 'scroll';
+debugOverlay.style.background = 'rgba(0,0,0,0.85)';
+debugOverlay.style.color = '#0f0';
+debugOverlay.style.fontSize = '12px';
+debugOverlay.style.zIndex = '999999';
+debugOverlay.style.pointerEvents = 'none';
+debugOverlay.style.padding = '5px';
+debugOverlay.style.fontFamily = 'monospace';
+document.body.appendChild(debugOverlay);
 
 function log(msg) {
+    const li = document.createElement('li');
+    li.innerText = msg;
+    debugOverlay.appendChild(li);
+    debugOverlay.scrollTop = debugOverlay.scrollHeight;
     console.log(msg);
-    // debugDiv.innerText = ...
 }
 
+// Trap Global Errors
 window.onerror = function (msg, url, line) {
-    console.error("ERROR: " + msg + " @ " + line);
+    log("CRITICAL ERROR: " + msg + " @ " + line);
+    return false;
 };
+
+// Trap Unhandled Promises
+window.addEventListener('unhandledrejection', function (event) {
+    log("UNHANDLED PROMISE: " + event.reason);
+});
+
+log("v3.4 INITIALIZING...");
+log("Screen: " + window.innerWidth + "x" + window.innerHeight);
+
+// FORCE TOUCH ACTION
+document.documentElement.style.touchAction = 'none';
+document.body.style.touchAction = 'none';
+if (canvas) canvas.style.touchAction = 'none';
+// -----------------------------------
 
 // Game Constants
 const GRID_SIZE = 20;
