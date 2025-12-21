@@ -114,7 +114,13 @@ class Snake {
             } else {
                 if (this.hasShield) {
                     this.hasShield = false;
-                    this.shieldTimer = 0; // Shield consumed on hit
+                    this.shieldTimer = 0;
+                    if (onShieldBreak) onShieldBreak(head.x, head.y);
+
+                    // CRITICAL FIX: Stop the snake! 
+                    // Otherwise it hits the wall again in next frame and dies.
+                    this.direction = { x: 0, y: 0 };
+                    this.nextDirection = { x: 0, y: 0 };
                     return;
                 }
                 this.isDead = true;
@@ -129,8 +135,13 @@ class Snake {
                     if (this.ghostTimer > 0) break; // Ghost passes through
                     if (this.hasShield) {
                         this.hasShield = false;
-                        this.shieldTimer = 0; // Shield consumed
-                        return; // Bounce/Stop
+                        this.shieldTimer = 0;
+                        if (onShieldBreak) onShieldBreak(newHead.x, newHead.y);
+
+                        // CRITICAL FIX: Stop the snake!
+                        this.direction = { x: 0, y: 0 };
+                        this.nextDirection = { x: 0, y: 0 };
+                        return;
                     }
                     this.isDead = true;
                     return;
