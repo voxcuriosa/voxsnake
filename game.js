@@ -254,7 +254,13 @@ class Game {
 
                 let foundHighlight = false;
 
-                data.forEach((s, i) => {
+                // User Request: Limit to top 5 visibly
+                const displayData = data.slice(0, 5);
+
+                // If the user's new score is outside top 5, we should maybe show it?
+                // For now, strict top 5 as requested by "skulle bare vise de 5 øverste".
+
+                displayData.forEach((s, i) => {
                     const li = document.createElement('li');
                     li.innerHTML = `<span>#${i + 1} ${s.name}</span> <span>${s.score} pts</span>`;
 
@@ -262,12 +268,14 @@ class Game {
                     if (highlightName && highlightScore && s.name === highlightName && s.score == highlightScore && !foundHighlight) {
                         li.classList.add('highlight');
                         foundHighlight = true; // Only highlight first match
-                        // Use setTimeout to ensure DOM render before scroll
-                        setTimeout(() => li.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
                     }
 
                     highScoreList.appendChild(li);
                 });
+
+                // If user just submitted a score that isn't in top 5, maybe show a "You are #23" message?
+                // Keeping it simple per "only top 5".
+
                 localStorage.setItem('snake_highscores_cache', JSON.stringify(data));
             })
             .catch(() => highScoreList.innerHTML = '<li>Offline Mode</li>');
@@ -391,7 +399,6 @@ class Game {
         let maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
 
         if (maxX <= 1 || maxY <= 1) {
-            // Should not happen with resize fix, but safety fallback
             maxX = 40;
             maxY = 30;
         }
@@ -405,8 +412,66 @@ class Game {
             valid = !this.isOccupied(this.food);
         }
 
+        // Critical Fix: If validation fails, DO NOT default to center. 
+        // Force a random spot anyway, it's better than static center.
         if (!valid) {
-            this.food = { x: Math.floor(maxX / 2), y: Math.floor(maxY / 2) };
+            this.food = {
+                x: Math.floor(Math.random() * maxX),
+                y: Math.floor(Math.random() * maxY)
+            };
+        }
+    }
+
+    // ... spawnPowerUp omitted ...
+
+    updateDynamicLegend() {
+        if (!dynamicLegend) return;
+
+        // Optimize: Only redraw if the SET of powerups changes, OR if timers change significantly
+        const currentPowerups = this.powerups.map(p => p.type).sort().join(',');
+        const s1 = this.snakes[0];
+        const activeGhost = (this.gameMode === 'single' && s1 && s1.ghostTimer > 0);
+        const activeShield = (this.gameMode === 'single' && s1 && s1.hasShield);
+        const activeMagnet = (this.gameMode === 'single' && s1 && s1.magnetTimer > 0);
+
+        let timerText = "";
+        if (activeGhost) timerText += ` G:${Math.ceil(s1.ghostTimer / 1000)}`;
+        if (activeShield) timerText += ` S:${s1.shieldTimer > 0 ? Math.ceil(s1.shieldTimer / 1000) : "∞"}`;
+        if (activeMagnet) timerText += ` M:${Math.ceil(s1.magnetTimer / 1000)}`;
+
+        const newStateSig = currentPowerups + "|" + timerText;
+        if (this._lastLegendState === newStateSig) return;
+        this._lastLegendState = newStateSig;
+
+        dynamicLegend.innerHTML = '';
+
+        // Draw standard icons
+        this.powerups.forEach(p => {
+            const def = this.powerUpTypes[p.type];
+            const div = document.createElement('div');
+            div.className = 'legend-item';
+            div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+            dynamicLegend.appendChild(div);
+        });
+
+        // Add Active Timers (CompactRow)
+        if (activeGhost || activeMagnet || activeShield) {
+            const div = document.createElement('div');
+            div.className = 'legend-timers';
+            let html = "";
+
+            if (activeGhost) {
+                html += `<span style="color:${COLORS.ghost}">GHOST ${Math.ceil(s1.ghostTimer / 1000)}s</span> `;
+            }
+            if (activeShield) {
+                const t = s1.shieldTimer > 0 ? Math.ceil(s1.shieldTimer / 1000) + "s" : "";
+                html += `<span style="color:${COLORS.silver}">SHIELD ${t}</span> `;
+            }
+            if (activeMagnet) {
+                html += `<span style="color:${COLORS.pink}">MAGNET ${Math.ceil(s1.magnetTimer / 1000)}s</span> `;
+            }
+            div.innerHTML = html;
+            dynamicLegend.appendChild(div);
         }
     }
 
