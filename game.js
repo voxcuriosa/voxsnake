@@ -174,7 +174,7 @@ class Snake {
 class Game {
     constructor() {
         this.snakes = [];
-        this.food = {};
+        this.foods = []; // Converted to Array for Multi-Food
         this.powerups = []; // Array of {x, y, type, createdAt}
         this.walls = []; // Array of {x, y}
         this.isRunning = false;
@@ -187,6 +187,10 @@ class Game {
         this.speedEffectTimer = 0;
         this.currentPendingScore = 0;
         this.totalFoodEaten = 0;
+
+        // Spawning Timers
+        this.lastPowerUpTime = 0;
+        this.nextPowerUpDelay = 5000;
 
         // Power Up Types Definition
         this.powerUpTypes = {
@@ -536,7 +540,11 @@ class Game {
     }
 
     isOccupied(pos) {
-        if (this.food && this.food.x === pos.x && this.food.y === pos.y) return true;
+        if (this.foods) {
+            for (let f of this.foods) {
+                if (f.x === pos.x && f.y === pos.y) return true;
+            }
+        }
         for (let snake of this.snakes) {
             for (let segment of snake.body) {
                 if (pos.x === segment.x && pos.y === segment.y) return true;
@@ -670,33 +678,55 @@ class Game {
             if (p2d) { this.gameOver(0); return; }
         }
 
-        // Eat Food (Combined Magnet & Regular)
+        // Timed Powerup Spawning (Independent of eating)
+        if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
+            this.spawnPowerUp();
+            this.lastPowerUpTime = now;
+            // Randomize next delay: 5s to 15s
+            this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+        }
+
+        // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
         this.snakes.forEach(s => {
             let ate = false;
-            // Regular Eat
-            if (s.body[0].x === this.food.x && s.body[0].y === this.food.y) {
-                ate = true;
-            }
-            // Magnet Logic
-            else if (s.magnetTimer > 0) {
-                const head = s.body[0];
-                const dx = this.food.x - head.x;
-                const dy = this.food.y - head.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+            let ateIndex = -1;
 
-                if (dist < 15 && dist > 0) {
-                    // Pull food closer
-                    if (Math.abs(dx) > Math.abs(dy)) this.food.x -= Math.sign(dx);
-                    else this.food.y -= Math.sign(dy);
+            for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
+                const f = this.foods[fIdx];
 
-                    // Check if it was pulled ONTO the head just now
-                    if (s.body[0].x === this.food.x && s.body[0].y === this.food.y) {
-                        ate = true;
+                // Regular Eat
+                if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                    ate = true;
+                    ateIndex = fIdx;
+                    break;
+                }
+
+                // Magnet Logic (Pull closest food)
+                else if (s.magnetTimer > 0) {
+                    const head = s.body[0];
+                    const dx = f.x - head.x;
+                    const dy = f.y - head.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 15 && dist > 0) {
+                        // Pull food closer
+                        if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
+                        else f.y -= Math.sign(dy);
+
+                        // Check capture
+                        if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                            ate = true;
+                            ateIndex = fIdx;
+                            break;
+                        }
                     }
                 }
             }
 
-            if (ate) {
+            if (ate && ateIndex !== -1) {
+                // Remove the eaten piece
+                this.foods.splice(ateIndex, 1);
+
                 this.baseSpeed *= 0.99;
                 if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
 
@@ -704,8 +734,13 @@ class Game {
                 s.score++;
                 this.totalFoodEaten++;
 
+                // Spawn Replacement right away to keep map full
                 this.spawnFood();
-                this.spawnPowerUp();
+                // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
+                // User asked for "random", not "just when eaten".
+                // But maybe small chance?
+                if (Math.random() < 0.2) this.spawnPowerUp();
+
                 this.updateScoreUI();
             }
         });
