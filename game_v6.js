@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v6.3 (ALERT CONFIRMATION)...");
+    log("v6.4 (MAXIMIZED HEIGHT)...");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
@@ -751,8 +751,8 @@ window.addEventListener('DOMContentLoaded', () => {
             let availableH = container ? container.clientHeight : window.innerHeight;
 
             // Robustness
-            if (!availableW || availableW <= 10) availableW = window.innerWidth - 20;
-            if (!availableH || availableH <= 10) availableH = window.innerHeight - 100;
+            if (!availableW || availableW <= 10) availableW = window.innerWidth;
+            if (!availableH || availableH <= 10) availableH = window.innerHeight; // Take FULL height
             if (availableW < 300) availableW = 300;
             if (availableH < 300) availableH = 300;
 
