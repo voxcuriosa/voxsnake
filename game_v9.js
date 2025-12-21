@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.2 (Blue BG Restored)...");
+    log("v4.3 (Mobile Draw Fix - Merged Listeners)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -666,6 +666,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     });
 
                     this.conn.on('data', (data) => {
+                        // 1. STATE UPATE
                         if (data.type === 'state') {
                             this.clientState = data;
 
@@ -684,7 +685,6 @@ window.addEventListener('DOMContentLoaded', () => {
                                     canvas.height = CANVAS_HEIGHT;
                                     canvas.style.width = CANVAS_WIDTH + 'px';
                                     canvas.style.height = CANVAS_HEIGHT + 'px';
-                                    log("SYNC APPLIED: " + CANVAS_WIDTH + "x" + CANVAS_HEIGHT); // User visible log
                                 }
                             }
 
@@ -694,11 +694,9 @@ window.addEventListener('DOMContentLoaded', () => {
                                 this.startGame('multi');
                             }
                         }
-                    });
-
-                    // Handle Game Over on Client
-                    this.conn.on('data', (data) => {
-                        if (data.type === 'gameover') {
+                        // 2. GAME OVER
+                        else if (data.type === 'gameover') {
+                            console.log("CLIENT RX GAMEOVER:", data.winner); // Debug
                             this.gameOver(data.winner);
                         }
                     });
