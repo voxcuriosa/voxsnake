@@ -43,7 +43,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.7 INITIALIZING (DOM READY)...");
+    log("v4.11 (Fix Iterables & Btns)...");
     log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION
@@ -399,42 +399,40 @@ window.addEventListener('DOMContentLoaded', () => {
         initListeners() {
             document.addEventListener('keydown', (e) => this.handleInput(e));
 
-            const bindStartButton = (btn, mode) => {
-                if (!btn) {
-                    log("ERROR: Button for " + mode + " not found!");
-                    return;
-                }
-                log("BINDING: " + mode);
-
-                // SIMPLEST POSSIBLE BINDING
+            // Helper for reliable button clicks (Touch + Mouse)
+            const bindButton = (btn, callback) => {
+                if (!btn) return;
                 btn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    log("CLICK: " + mode);
-                    this.startGame(mode);
+                    e.preventDefault(); e.stopPropagation();
+                    callback(e);
                 };
-
                 btn.ontouchend = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    log("TOUCHEND: " + mode);
-                    this.startGame(mode);
+                    e.preventDefault(); e.stopPropagation();
+                    callback(e);
                 };
             };
 
-            bindStartButton(btn1P, 'single');
-            bindStartButton(btn2P, 'multi');
+            bindButton(btn1P, () => { log("START: Single"); this.startGame('single'); });
+            bindButton(btn2P, () => { log("START: Multi"); this.startGame('multi'); });
 
-            if (restartBtn) restartBtn.addEventListener('click', () => {
+            bindButton(restartBtn, () => {
+                log("RESTART CLICK");
                 if (this.isClient && this.conn && this.conn.open) {
                     this.conn.send({ type: 'restart' });
                 } else {
                     this.startGame(this.gameMode);
                 }
             });
-            if (menuBtn) menuBtn.addEventListener('click', () => location.reload()); // Full reload for safety
-            if (submitScoreBtn) submitScoreBtn.addEventListener('click', () => this.submitHighScore());
-            if (btnResume) btnResume.addEventListener('click', () => this.togglePause());
+
+            bindButton(menuBtn, () => location.reload());
+            bindButton(btnResume, () => this.togglePause());
+
+            // Host/Join Buttons too (defined in initMultiplayer, but we can grab them here or leave them default?)
+            // Let's rely on initMultiplayer for those, or re-bind them if we can access them.
+            // Better to just fix them in initMultiplayer if they are broken.
+            // Actually, initMultiplayer does `btnHost.onclick`. We should upgrade that too.
+
+            if (submitScoreBtn) bindButton(submitScoreBtn, () => this.submitHighScore());
 
             // Global Touch Listeners (Window) for maximum reliability
             window.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
@@ -1147,17 +1145,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const now = Date.now();
             // Use true delta time for smoother timers if framerate dips
-            const delta = now - this.lastTime;
             // Note: this.lastTime is updated at end of loop(), but here we need delta for logic. 
-            // Actually, main loop passes timestamp. Let's stick to fixed time steps or just robust decrement.
-            // Simple fix: Decrement by `this.currentSpeed` (which is tick rate) or roughly 16ms?
             // Actually, the loop runs at `currentSpeed` interval! 
             // Standard loop: requestAnimationFrame runs freely? 
             // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;` 
             // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms). 
             // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower! 
             // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
-
             const tickRate = this.currentSpeed;
 
             if (this.speedEffectTimer > 0) {
@@ -1385,16 +1379,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
         draw() {
             // CLIENT RENDER OVERRIDE
-            let renderSnakes = this.snakes;
-            let renderFoods = this.foods;
-            let renderPowerups = this.powerups;
-            let renderWalls = this.walls;
+            let renderSnakes = this.snakes || [];
+            let renderFoods = this.foods || [];
+            let renderPowerups = this.powerups || [];
+            let renderWalls = this.walls || [];
 
             if (this.isClient && this.clientState) {
-                renderSnakes = this.clientState.snakes;
-                renderFoods = this.clientState.foods;
-                renderPowerups = this.clientState.powerups;
-                renderWalls = this.clientState.walls;
+                renderSnakes = this.clientState.snakes || [];
+                renderFoods = this.clientState.foods || [];
+                renderPowerups = this.clientState.powerups || [];
+                renderWalls = this.clientState.walls || [];
                 // Update Score UI from state
                 if (scoreP1El && renderSnakes[0]) scoreP1El.innerText = renderSnakes[0].score;
                 if (scoreP2El && renderSnakes[1]) scoreP2El.innerText = renderSnakes[1].score;
