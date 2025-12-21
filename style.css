@@ -540,6 +540,14 @@ h2 {
         padding-top: 5px;
         margin-top: 5px;
     }
+
+    #high-score-list {
+        max-height: none !important;
+        /* Expand fully */
+        overflow: visible !important;
+        /* Let parent scroll */
+        touch-action: pan-y !important;
+    }
 }
 
 #player-name-input {
