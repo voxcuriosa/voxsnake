@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v6.0 (SYNC HEARTBEAT)...");
+    log("v6.1 (MENU FIX + SYNC LOGS)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
@@ -370,8 +370,14 @@ window.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('host-status').innerText = "PLAYER 2 CONNECTED! STARTING...";
                     document.getElementById('host-status').style.color = "#00ff00";
 
-                    // Setup Data Listener
+                    // Setup Data Listener (Robus Re-implementation)
+                    // If conn was already open, 'data' might fire immediately
+                    // If not, we wait.
+
+                    // Clear previous to avoid duplicates? (PeerJS usually handles this per conn instance)
+
                     conn.on('data', (data) => {
+                        console.log("RX:", data); // Global Data Debug
                         if (data.type === 'input') {
                             this.handleRemoteInput(data.key);
                         } else if (data.type === 'hello') {
@@ -381,13 +387,17 @@ window.addEventListener('DOMContentLoaded', () => {
                             // Lock it in
                             this.multiplayerTargetWidth = data.width;
                             this.multiplayerTargetHeight = data.height;
-                            this.resize();
+
+                            try {
+                                this.resize();
+                            } catch (e) { console.error("Resize Error:", e); }
 
                             // Visual Confirmation of Sync
                             const status = document.getElementById('host-status');
                             if (status) {
                                 status.innerText = `SYNCED WITH CLIENT (${data.width}x${data.height})`;
                                 status.style.color = "#00ff88";
+                                status.style.textShadow = "0 0 10px #00ff88";
                             }
                         } else if (data.type === 'restart') {
                             this.startGame('multi');

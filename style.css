@@ -56,7 +56,7 @@ body {
     /* Border removed from container to avoid "Invisible Wall" confusion */
     /* border: 2px solid #00ff88; */
     /* box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); */
-    width: 100vw; 
+    width: 100vw;
     height: 100vh;
     padding: 0;
     margin: 0;
@@ -69,10 +69,11 @@ canvas {
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
     /* Centering handled by flex parent */
 }
-    /* Fill remaining space */
-    min-height: 0;
-    margin-bottom: 5px;
-    transition: filter 0.2s ease;
+
+/* Fill remaining space */
+min-height: 0;
+margin-bottom: 5px;
+transition: filter 0.2s ease;
 }
 
 /* BLIND EFFECT */
@@ -212,12 +213,18 @@ canvas {
 
 .menu-screen.active {
     opacity: 1;
+    opacity: 1;
     display: flex;
     /* Kept for child layout stability */
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    /* Changed from center to allow scrolling */
     text-align: center;
+    overflow-y: auto;
+    /* Allow scrolling if content is too tall */
+    max-height: 95vh;
+    /* Limit height to viewport */
     /* Force text center */
 
     /* FORCE CENTER OVERRIDE */
