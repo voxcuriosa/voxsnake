@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.34 (PC LAYOUT FIX)...");
+    log("v1.35 (SHARE BUTTON)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -368,6 +368,33 @@ window.addEventListener('DOMContentLoaded', () => {
                     const url = location.protocol + '//' + location.host + location.pathname + '?join=' + id;
                     document.getElementById('qrcode').innerHTML = "";
                     new QRCode(document.getElementById("qrcode"), { text: url, width: 128, height: 128 });
+
+                    // Share Button Handler
+                    const shareBtn = document.getElementById('lobby-share-btn');
+                    if (shareBtn) {
+                        shareBtn.onclick = async () => {
+                            if (navigator.share) {
+                                try {
+                                    await navigator.share({
+                                        title: 'VoxSnake Game',
+                                        text: 'Join my VoxSnake game!',
+                                        url: url
+                                    });
+                                    console.log('Shared successfully');
+                                } catch (err) {
+                                    console.error('Share failed:', err);
+                                }
+                            } else {
+                                // Fallback: Copy to Clipboard
+                                try {
+                                    await navigator.clipboard.writeText(url);
+                                    alert("Link copied to clipboard!");
+                                } catch (err) {
+                                    prompt("Copy this link:", url);
+                                }
+                            }
+                        };
+                    }
                 });
 
                 this.peer.on('error', (err) => {
