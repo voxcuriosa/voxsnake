@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.17 (PERM + SCROLL)...");
+    log("v1.19 (BORDER FIX)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -775,19 +775,22 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         resize() {
-            const container = canvas.parentElement;
             // Native Window/Container Dimensions
             let availableW = container ? container.clientWidth : window.innerWidth;
             let availableH = container ? container.clientHeight : window.innerHeight;
 
+            // BORDER & SAFETY (CSS applies 2px border = 4px total)
+            availableW -= 4;
+            availableH -= 4;
+
             // Robustness
-            if (!availableW || availableW <= 10) availableW = window.innerWidth;
-            if (!availableH || availableH <= 10) availableH = window.innerHeight; // Take FULL height
+            if (!availableW || availableW <= 10) availableW = window.innerWidth - 4;
+            if (!availableH || availableH <= 10) availableH = window.innerHeight - 4;
 
             // MOBILE SAFE AREA (Bottom Bar)
             // If on mobile (height > width usually), subtract a tiny bit to avoid the white bar covering grid
             // But only if we are using full window height
-            if (availableH === window.innerHeight && availableH > availableW) {
+            if (availableH >= window.innerHeight - 30 && availableH > availableW) {
                 availableH -= 20; // 20px safety for swipe bar
             }
 
