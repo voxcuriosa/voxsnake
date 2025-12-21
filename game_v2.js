@@ -38,7 +38,7 @@ window.addEventListener('unhandledrejection', function (event) {
     log("UNHANDLED PROMISE: " + event.reason);
 });
 
-log("v4.3 INITIALIZING...");
+log("v4.5 INITIALIZING...");
 log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
 // FORCE TOUCH ACTION
@@ -395,28 +395,30 @@ class Game {
         document.addEventListener('keydown', (e) => this.handleInput(e));
 
         const bindStartButton = (btn, mode) => {
-            if (!btn) return;
-            const handler = (e) => {
-                // Prevent double-firing (e.g. touchend then click)
-                if (e.type !== 'touchstart') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-                log("ACTION: " + mode + " via " + e.type);
-                // ALERT FOR DEBUGGING
-                // alert("STARTING: " + mode); 
+            if (!btn) {
+                log("ERROR: Button for " + mode + " not found!");
+                return;
+            }
+            log("BINDING: " + mode);
+
+            // SIMPLEST POSSIBLE BINDING
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                log("CLICK: " + mode);
                 this.startGame(mode);
             };
 
-            // Listen to EVERYTHING
-            btn.addEventListener('touchstart', (e) => { e.stopPropagation(); log("BTN TOUCHSTART"); }, { passive: false });
-            btn.addEventListener('touchend', handler, { passive: false });
-            btn.addEventListener('click', handler);
-            // btn.addEventListener('mousedown', handler); // REMOVED to prevent conflicts
+            btn.ontouchend = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                log("TOUCHEND: " + mode);
+                this.startGame(mode);
+            };
         };
 
         bindStartButton(btn1P, 'single');
-        bindStartButton(btn2P, 'multi'); // Local handling
+        bindStartButton(btn2P, 'multi');
 
         if (restartBtn) restartBtn.addEventListener('click', () => {
             if (this.isClient && this.conn && this.conn.open) {
