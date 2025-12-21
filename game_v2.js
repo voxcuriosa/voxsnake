@@ -504,6 +504,20 @@ class Game {
                 this.conn.on('data', (data) => {
                     if (data.type === 'state') {
                         this.clientState = data;
+
+                        // SYNC DIMENSIONS (New v3.5 Fix)
+                        if (data.dims) {
+                            if (CANVAS_WIDTH !== data.dims.w || CANVAS_HEIGHT !== data.dims.h) {
+                                console.log("SYNC DIMS:", data.dims);
+                                CANVAS_WIDTH = data.dims.w;
+                                CANVAS_HEIGHT = data.dims.h;
+                                canvas.width = CANVAS_WIDTH;
+                                canvas.height = CANVAS_HEIGHT;
+                                canvas.style.width = CANVAS_WIDTH + 'px';
+                                canvas.style.height = CANVAS_HEIGHT + 'px';
+                            }
+                        }
+
                         if (!this.isRunning) {
                             lobby.classList.add('hidden');
                             lobby.classList.remove('active');
@@ -1429,7 +1443,8 @@ class Game {
             snakes: this.snakes,
             foods: this.foods,
             powerups: this.powerups,
-            walls: this.walls
+            walls: this.walls,
+            dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
         };
 
         try {
