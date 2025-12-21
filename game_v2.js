@@ -38,7 +38,7 @@ window.addEventListener('unhandledrejection', function (event) {
     log("UNHANDLED PROMISE: " + event.reason);
 });
 
-log("v3.4 INITIALIZING...");
+log("v3.8 INITIALIZING...");
 log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
 // FORCE TOUCH ACTION
@@ -505,16 +505,22 @@ class Game {
                     if (data.type === 'state') {
                         this.clientState = data;
 
-                        // SYNC DIMENSIONS (New v3.5 Fix)
+                        // SYNC DIMENSIONS (New v3.8 Fix)
                         if (data.dims) {
                             if (CANVAS_WIDTH !== data.dims.w || CANVAS_HEIGHT !== data.dims.h) {
                                 console.log("SYNC DIMS:", data.dims);
+                                // PERSIST TARGETS so resize() uses them!
+                                this.multiplayerTargetWidth = data.dims.w;
+                                this.multiplayerTargetHeight = data.dims.h;
+
+                                // Apply immediately
                                 CANVAS_WIDTH = data.dims.w;
                                 CANVAS_HEIGHT = data.dims.h;
                                 canvas.width = CANVAS_WIDTH;
                                 canvas.height = CANVAS_HEIGHT;
                                 canvas.style.width = CANVAS_WIDTH + 'px';
                                 canvas.style.height = CANVAS_HEIGHT + 'px';
+                                log("SYNC APPLIED: " + CANVAS_WIDTH + "x" + CANVAS_HEIGHT); // User visible log
                             }
                         }
 
@@ -983,6 +989,7 @@ class Game {
     }
 
     handleRemoteInput(key) {
+        if (typeof log !== 'undefined') log("HOST RX: " + key); // DEBUG INPUT
         // FIX: Route remote input to Player 2
         if (this.snakes.length > 1 && this.snakes[1]) {
             // Basic validation
