@@ -185,10 +185,9 @@ canvas {
     /* Force text center */
 
     /* FORCE CENTER OVERRIDE */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    /* Flexbox handled by parent */
+    position: relative;
+    margin: 0 auto;
     margin: 0;
     width: 100%;
     /* Ensure width allows centering */
