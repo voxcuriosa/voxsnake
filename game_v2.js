@@ -43,7 +43,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.11 (Fix Iterables & Btns)...");
+    log("v4.13 (Fix Remote Input)...");
     log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION
@@ -1003,16 +1003,21 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         handleRemoteInput(key) {
-            if (typeof log !== 'undefined') log("HOST RX: " + key); // DEBUG INPUT
-            // FIX: Route remote input to Player 2
+            if (typeof log !== 'undefined') log("HOST RX: " + key);
+
             if (this.snakes.length > 1 && this.snakes[1]) {
-                // Basic validation
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(key)) {
-                    this.snakes[1].handleInput(key);
-                }
+                const p2 = this.snakes[1];
+
+                // MAP Arrows (from Client Touch) to WASD (Player 2 Local)
+                let mappedKey = key;
+                if (key === 'ArrowUp') mappedKey = 'w';
+                if (key === 'ArrowDown') mappedKey = 's';
+                if (key === 'ArrowLeft') mappedKey = 'a';
+                if (key === 'ArrowRight') mappedKey = 'd';
+
+                p2.handleInput(mappedKey);
             }
         }
-
 
 
         handleInput(e) {
