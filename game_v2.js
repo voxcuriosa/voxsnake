@@ -1,5 +1,8 @@
 // CANVAS MOVED TO SCOPE
 // --- GLOBAL DEBUG OVERLAY (v3.4) ---
+// --- GLOBAL DEBUG OVERLAY (v3.4) ---
+// HIDDEN FOR PRODUCTION
+/*
 const debugOverlay = document.createElement('ul');
 debugOverlay.id = 'debug-log';
 debugOverlay.style.position = 'fixed';
@@ -16,13 +19,11 @@ debugOverlay.style.pointerEvents = 'none';
 debugOverlay.style.padding = '5px';
 debugOverlay.style.fontFamily = 'monospace';
 document.body.appendChild(debugOverlay);
+*/
 
 function log(msg) {
-    const li = document.createElement('li');
-    li.innerText = msg;
-    debugOverlay.appendChild(li);
-    debugOverlay.scrollTop = debugOverlay.scrollHeight;
-    console.log(msg);
+    // console.log(msg); // Reduced noise
+    // if (typeof debugOverlay !== 'undefined') { ... }
 }
 
 // Trap Global Errors
@@ -43,8 +44,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.13 (Fix Remote Input)...");
-    log("Screen: " + window.innerWidth + "x" + window.innerHeight);
+    // log("v4.14 (Visual Polish)...");
+    // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION
     document.documentElement.style.touchAction = 'none';
@@ -752,9 +753,17 @@ window.addEventListener('DOMContentLoaded', () => {
             canvas.width = CANVAS_WIDTH;
             canvas.height = CANVAS_HEIGHT;
 
-            // FIX: Enforce 1:1 pixel mapping immediately to prevent stretching
-            canvas.style.width = CANVAS_WIDTH + 'px';
-            canvas.style.height = CANVAS_HEIGHT + 'px';
+            // FIX: Enforce 1:1 pixel mapping logic, but SCALE visually
+            // canvas.style.width = CANVAS_WIDTH + 'px';
+            // canvas.style.height = CANVAS_HEIGHT + 'px';
+
+            // VISUAL SCALING (Fit to Window)
+            const scaleX = window.innerWidth / CANVAS_WIDTH;
+            const scaleY = window.innerHeight / CANVAS_HEIGHT;
+            const scale = Math.min(scaleX, scaleY) * 0.95; // 95% to leave margin
+
+            canvas.style.width = Math.floor(CANVAS_WIDTH * scale) + 'px';
+            canvas.style.height = Math.floor(CANVAS_HEIGHT * scale) + 'px';
 
             this.draw();
         }
