@@ -741,11 +741,10 @@ window.addEventListener('DOMContentLoaded', () => {
             let logicalH = availableH;
 
             // Multiplayer Override: Force SYNC
-            if (this.gameMode === 'multi' && this.multiplayerTargetWidth) {
-                if (typeof log !== 'undefined') log(`FORCE SYNC: Using Target ${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight}`);
+            // Ensure we use target width anytime it is available (Host or Client Logic already sets it)
+            if (this.multiplayerTargetWidth) {
+                if (typeof log !== 'undefined') log(`FORCE SYNC: Using Target ${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight} (Mode: ${this.gameMode})`);
                 // Use the smallest constraint to ensure it fits on ALL screens
-                // Host typically has larger screen, so we cap to Client's size.
-                // Client has already sent us their max window size.
                 logicalW = Math.min(availableW, this.multiplayerTargetWidth);
                 logicalH = Math.min(availableH, this.multiplayerTargetHeight);
             }
