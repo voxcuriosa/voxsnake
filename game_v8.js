@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v3.4 (DOM STRUCTURE FIX)...");
+    log("v3.5 (STATE DEBUG + FORCE OPACITY)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1307,6 +1307,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 gameOverScreen.classList.remove('nuclear-hidden'); // UN-NUKE
                 gameOverScreen.classList.add('active');
                 gameOverScreen.style.display = 'flex';
+                // FORCE VISIBILITY
+                gameOverScreen.style.opacity = '1';
+                gameOverScreen.style.visibility = 'visible';
+                gameOverScreen.style.pointerEvents = 'auto';
 
                 if (btnResume) btnResume.classList.add('hidden');
                 if (dynamicLegend) dynamicLegend.innerHTML = '';
@@ -1682,10 +1686,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // PERMANENT VERSION STAMP (CENTERED)
             ctx.save();
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-            ctx.font = '24px sans-serif';
+            ctx.fillStyle = this.isRunning ? 'rgba(0, 255, 0, 0.5)' : 'rgba(255, 0, 0, 0.8)';
+            ctx.font = '16px monospace';
             ctx.textAlign = 'center';
-            ctx.fillText("JS: v3.1 (ACTIVE)", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+            ctx.fillText(`JS: v3.5 | RUN: ${this.isRunning} | PAUSE: ${this.isPaused}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30);
+
+            if (!this.isRunning) {
+                ctx.fillStyle = 'yellow';
+                ctx.font = '20px monospace';
+                ctx.fillText("GAME STOPPED - CHECK MENUS", CANVAS_WIDTH / 2, CANVAS_HEIGHT - 60);
+            }
             ctx.restore();
 
             // CLIENT RENDER OVERRIDE
