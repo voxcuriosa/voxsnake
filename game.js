@@ -476,7 +476,7 @@ class Game {
     }
 
     spawnPowerUp() {
-        if (this.powerups.length >= 3) return;
+        if (this.powerups.length >= 5) return; // Increased limit slightly
 
         const types = Object.keys(this.powerUpTypes);
         let availableTypes = types;
@@ -487,6 +487,21 @@ class Game {
 
         if (this.totalFoodEaten < 10) {
             availableTypes = availableTypes.filter(t => t !== 'slow');
+        }
+
+        // Logic: Bomb is useless if nothing to destroy
+        // (Check if there are walls OR other powerups to blow up)
+        const hasTargets = (this.walls.length > 0 || this.powerups.length > 0);
+        if (!hasTargets) {
+            availableTypes = availableTypes.filter(t => t !== 'bomb');
+        }
+
+        // Logic: Boost 'Wall' frequency (User Request: "mange flere")
+        // We add 'wall' multiple times to the array to increase probability
+        if (availableTypes.includes('wall')) {
+            availableTypes.push('wall');
+            availableTypes.push('wall');
+            availableTypes.push('wall'); // 4x chance total
         }
 
         if (availableTypes.length === 0) return;
