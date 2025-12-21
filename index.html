@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css?v=1.5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -97,11 +97,13 @@
                     <div class="menu-options">
                         <button id="btn-resume" class="neon-btn hidden">RESUME</button>
                         <button id="btn-1p" class="neon-btn">1 PLAYER</button>
-                        <button id="btn-2p" class="neon-btn">2 PLAYERS (LOCAL)</button>
+                        <button id="btn-2p" class="neon-btn">2 PLAYERS (SAME KEYBOARD)</button>
                         <div style="width:100%; height:1px; background:#333; margin:10px 0;"></div>
                         <button id="btn-host" class="neon-btn" style="color:#00ffff; border-color:#00ffff;">HOST
                             ONLINE</button>
                         <button id="btn-join" class="neon-btn secondary">JOIN ONLINE</button>
+                        <div style="font-size: 0.7rem; color: #888; margin-top: 5px;">PLAY ON 2 DEVICES (REQ. INTERNET)
+                        </div>
                     </div>
 
                     <div id="high-scores" class="mt-4">
@@ -152,8 +154,8 @@
             </div>
         </div>
     </div>
-    <script src="game.js?v=1.0"></script>
-    </script>
+    <div style="position:fixed; bottom:5px; right:5px; color:#333; font-size:0.8rem;">v1.5</div>
+    <script src="game.js?v=1.5"></script>
 </body>
 
 </html>

@@ -245,29 +245,32 @@ class Game {
     }
 
     initMultiplayer() {
-        // 1. Bind UI Buttons
         const btnHost = document.getElementById('btn-host');
         const btnJoin = document.getElementById('btn-join');
         const btnConnect = document.getElementById('connect-btn');
         const lobbyBack = document.getElementById('lobby-back-btn');
         const joinBack = document.getElementById('join-back-btn');
 
-        if (btnHost) btnHost.addEventListener('click', () => this.startHost());
-        if (btnJoin) btnJoin.addEventListener('click', () => {
-            document.getElementById('main-menu').classList.add('hidden');
+        if (btnHost) btnHost.onclick = () => this.startHost();
+        if (btnJoin) btnJoin.onclick = () => {
             document.getElementById('main-menu').classList.remove('active');
+            document.getElementById('main-menu').classList.add('hidden');
             document.getElementById('join-screen').classList.remove('hidden');
             document.getElementById('join-screen').classList.add('active');
-        });
+        };
 
-        if (lobbyBack) lobbyBack.addEventListener('click', () => location.reload()); // Simple reset
-        if (joinBack) joinBack.addEventListener('click', () => location.reload());
+        if (lobbyBack) lobbyBack.onclick = () => location.reload();
+        if (joinBack) joinBack.onclick = () => location.reload();
 
         if (btnConnect) {
-            btnConnect.addEventListener('click', () => {
-                const code = document.getElementById('join-id-input').value;
-                if (code) this.joinGame(code);
-            });
+            btnConnect.onclick = () => {
+                const codeInput = document.getElementById('join-id-input');
+                if (codeInput && codeInput.value) {
+                    this.joinGame(codeInput.value);
+                } else {
+                    alert("Please enter a code!");
+                }
+            };
         }
 
         // 2. Check URL for Auto-Join (?join=CODE)
@@ -277,6 +280,71 @@ class Game {
             console.log("Auto-Joining:", joinCode);
             // Wait a sec for UI init
             setTimeout(() => this.joinGame(joinCode), 500);
+        }
+    }
+
+    startHost() {
+        // UI Swith
+        document.getElementById('main-menu').classList.remove('active');
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('lobby-screen').classList.add('active');
+
+        // Reset Status
+        document.getElementById('host-id-display').innerText = "...";
+        document.getElementById('host-status').innerText = "CONNECTING TO SERVER...";
+        document.getElementById('host-status').style.color = "#ffff00";
+
+        // Generate Random ID (4 letters)
+        const hostId = Math.random().toString(36).substring(2, 6).toUpperCase();
+
+        try {
+            // Init Peer
+            this.peer = new Peer(hostId);
+
+            this.peer.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+                document.getElementById('host-id-display').innerText = id;
+                document.getElementById('host-status').innerText = "WAITING FOR PLAYER 2...";
+                document.getElementById('host-status').style.color = "#aaa";
+
+                // Gen QR
+                const url = location.protocol + '//' + location.host + location.pathname + '?join=' + id;
+                document.getElementById('qrcode').innerHTML = "";
+                new QRCode(document.getElementById("qrcode"), { text: url, width: 128, height: 128 });
+            });
+
+            this.peer.on('error', (err) => {
+                console.error("PeerJS Error:", err);
+                alert("Online Error: " + err.type + "\nTry refreshing or check internet.");
+                document.getElementById('host-status').innerText = "ERROR: " + err.type;
+                document.getElementById('host-status').style.color = "#ff0000";
+            });
+
+            this.peer.on('connection', (conn) => {
+                console.log("Client connected!");
+                this.conn = conn;
+                this.isHost = true;
+                document.getElementById('host-status').innerText = "PLAYER 2 CONNECTED! STARTING...";
+                document.getElementById('host-status').style.color = "#00ff00";
+
+                // Setup Data Listener
+                conn.on('data', (data) => {
+                    if (data.type === 'input') {
+                        // Map input to P2 Controls
+                        this.handleRemoteInput(data.key);
+                    }
+                });
+
+                // Start Game after delay
+                setTimeout(() => {
+                    document.getElementById('lobby-screen').classList.add('hidden');
+                    document.getElementById('lobby-screen').classList.remove('active');
+                    this.startGame('multi');
+                }, 1500);
+            });
+        } catch (e) {
+            alert("PeerJS Init Failed: " + e);
         }
     }
 
@@ -1216,4 +1284,7 @@ class Game {
     }
 }
 
+// Initialize Game
 const game = new Game();
+game.initMultiplayer(); // Explicitly call this!
+game.loop(0);
