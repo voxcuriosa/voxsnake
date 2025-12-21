@@ -81,7 +81,7 @@ class Snake {
         else if (key === right && this.direction.x === 0) this.nextDirection = { x: 1, y: 0 };
     }
 
-    move(walls, isSingleMode, tickRate) {
+    move(walls, isSingleMode, tickRate, onShieldBreak) {
         if (this.isDead) return;
 
         // Handle Timers (Use actual tick rate, usually ~100ms, not 16ms)
