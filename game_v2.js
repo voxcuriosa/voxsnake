@@ -320,7 +320,6 @@ class Game {
             });
 
             this.peer.on('connection', (conn) => {
-                // alert("HOST: Connection Request Received!"); // Removed to be less annoying, but kept logic
                 console.log("Client connected!");
                 this.conn = conn;
                 this.isHost = true;
@@ -332,17 +331,25 @@ class Game {
                 conn.on('data', (data) => {
                     if (data.type === 'input') {
                         this.handleRemoteInput(data.key);
+                    } else if (data.type === 'hello') {
+                        // RESOLUTION SYNC
+                        console.log("Client Resolution:", data.width, data.height);
+                        this.multiplayerTargetWidth = data.width;
+                        this.multiplayerTargetHeight = data.height;
+                        this.resize(); // Force resize to min dimensions
+                    } else if (data.type === 'restart') {
+                        // RESTART GAME
+                        this.startGame('multi');
                     }
                 });
 
                 conn.on('open', () => {
-                    // alert("HOST: Connection Fully Open!");
                     // Start Game after delay
                     setTimeout(() => {
                         document.getElementById('lobby-screen').classList.add('hidden');
                         document.getElementById('lobby-screen').classList.remove('active');
                         this.startGame('multi');
-                    }, 500); // reduced delay
+                    }, 500);
                 });
             });
         } catch (e) {
@@ -373,7 +380,13 @@ class Game {
         bindStartButton(btn1P, 'single');
         bindStartButton(btn2P, 'multi'); // Local handling
 
-        if (restartBtn) restartBtn.addEventListener('click', () => this.startGame(this.gameMode));
+        if (restartBtn) restartBtn.addEventListener('click', () => {
+            if (this.isClient && this.conn && this.conn.open) {
+                this.conn.send({ type: 'restart' });
+            } else {
+                this.startGame(this.gameMode);
+            }
+        });
         if (menuBtn) menuBtn.addEventListener('click', () => location.reload()); // Full reload for safety
         if (submitScoreBtn) submitScoreBtn.addEventListener('click', () => this.submitHighScore());
         if (btnResume) btnResume.addEventListener('click', () => this.togglePause());
@@ -450,6 +463,15 @@ class Game {
                     statusEl.innerText = "CONNECTED! GETTING READY...";
                     statusEl.style.color = "#00ff00";
                     this.isClient = true;
+
+                    // Send Resolution Hello
+                    setTimeout(() => {
+                        this.conn.send({
+                            type: 'hello',
+                            width: window.innerWidth,
+                            height: window.innerHeight
+                        });
+                    }, 200);
                 });
 
                 this.conn.on('data', (data) => {
@@ -646,6 +668,16 @@ class Game {
 
         CANVAS_WIDTH = Math.floor((w - 4) / GRID_SIZE) * GRID_SIZE;
         CANVAS_HEIGHT = Math.floor((h - 4) / GRID_SIZE) * GRID_SIZE;
+
+        // MULTIPLAYER RESOLUTION SYNC
+        if (this.gameMode === 'multi' && this.multiplayerTargetWidth) {
+            const mw = Math.floor((this.multiplayerTargetWidth - 4) / GRID_SIZE) * GRID_SIZE;
+            const mh = Math.floor((this.multiplayerTargetHeight - 4) / GRID_SIZE) * GRID_SIZE;
+
+            // Use smallest common denominator (min width/height)
+            if (mw < CANVAS_WIDTH) CANVAS_WIDTH = mw;
+            if (mh < CANVAS_HEIGHT) CANVAS_HEIGHT = mh;
+        }
 
         canvas.width = CANVAS_WIDTH;
         canvas.height = CANVAS_HEIGHT;
@@ -893,10 +925,8 @@ class Game {
 
         if (typeof log !== 'undefined') log(`SWIPE: ${key}`);
 
-        // Simulate Input for Player 1 only
-        if (this.snakes.length > 0) {
-            this.snakes[0].handleInput(key);
-        }
+        // Simulate "Networkable" Input
+        this.handleInput({ key: key, preventDefault: () => { } });
     }
 
 
