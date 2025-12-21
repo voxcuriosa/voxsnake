@@ -412,8 +412,13 @@ class Game {
         CANVAS_WIDTH = Math.floor((w - 4) / GRID_SIZE) * GRID_SIZE;
         CANVAS_HEIGHT = Math.floor((h - 4) / GRID_SIZE) * GRID_SIZE;
 
-        canvas.width = CANVAS_WIDTH;
-        canvas.height = CANVAS_HEIGHT;
+        this.canvas.width = CANVAS_WIDTH;
+        this.canvas.height = CANVAS_HEIGHT;
+
+        // FIX: Enforce 1:1 pixel mapping immediately to prevent stretching
+        this.canvas.style.width = CANVAS_WIDTH + 'px';
+        this.canvas.style.height = CANVAS_HEIGHT + 'px';
+
         this.draw();
     }
 
