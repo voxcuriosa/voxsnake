@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v2.0 (NEW FILENAME game_v7.js)...");
+    log("v2.1 (FIXED UN-NUKE & JOIN OVERLAY)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1242,7 +1242,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (this.isPaused) {
                 mainMenu.classList.remove('hidden');
+                mainMenu.classList.remove('nuclear-hidden'); // UN-NUKE
                 mainMenu.classList.add('active');
+                mainMenu.style.display = 'flex';
                 if (btnResume) btnResume.classList.remove('hidden');
             } else {
                 mainMenu.classList.add('hidden');
@@ -1289,7 +1291,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 gameOverScreen.classList.remove('hidden');
+                gameOverScreen.classList.remove('nuclear-hidden'); // UN-NUKE
                 gameOverScreen.classList.add('active');
+                gameOverScreen.style.display = 'flex';
 
                 if (btnResume) btnResume.classList.add('hidden');
                 if (dynamicLegend) dynamicLegend.innerHTML = '';
@@ -1609,20 +1613,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
         draw() {
             // BRUTE FORCE UI CLEANUP (Fixes persistent overlay issues)
+            // BRUTE FORCE UI CLEANUP (Fixes persistent overlay issues)
             if (this.isRunning) {
                 const lobby = document.getElementById('lobby-screen');
                 const menu = document.getElementById('main-menu');
+                const join = document.getElementById('join-screen');
+
                 if (lobby && lobby.style.display !== 'none') {
-                    // console.log("BRUTE FORCE HIDING LOBBY");
                     lobby.style.setProperty('display', 'none', 'important');
                     lobby.classList.add('hidden', 'nuclear-hidden');
                     lobby.classList.remove('active');
                 }
                 if (menu && menu.style.display !== 'none') {
-                    // console.log("BRUTE FORCE HIDING MENU");
                     menu.style.setProperty('display', 'none', 'important');
                     menu.classList.add('hidden', 'nuclear-hidden');
                     menu.classList.remove('active');
+                }
+                if (join && join.style.display !== 'none') {
+                    join.style.setProperty('display', 'none', 'important');
+                    join.classList.add('hidden', 'nuclear-hidden');
+                    join.classList.remove('active');
                 }
             }
 
