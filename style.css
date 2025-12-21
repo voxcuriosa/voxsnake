@@ -357,6 +357,80 @@ canvas {
     box-shadow: 0 0 5px currentColor;
 }
 
+/* Static Instruction Colors */
+.dot.normal {
+    background-color: #ff0055;
+    color: #ff0055;
+}
+
+/* Food */
+.dot.purple,
+.dot.ghost {
+    background-color: #8800ff;
+    color: #8800ff;
+}
+
+.dot.orange,
+.dot.speed {
+    background-color: #ff6600;
+    color: #ff6600;
+}
+
+.dot.blue,
+.dot.slow {
+    background-color: #0000ff;
+    color: #0000ff;
+}
+
+.dot.red,
+.dot.bomb {
+    background-color: #ff0000;
+    color: #ff0000;
+}
+
+.dot.silver,
+.dot.shield {
+    background-color: #c0c0c0;
+    color: #c0c0c0;
+}
+
+.dot.pink,
+.dot.magnet {
+    background-color: #ff69b4;
+    color: #ff69b4;
+}
+
+.dot.brown,
+.dot.wall {
+    background-color: #8b4513;
+    color: #8b4513;
+}
+
+.dot.white,
+.dot.eraser {
+    background-color: #ffffff;
+    color: #ffffff;
+}
+
+.dot.black,
+.dot.blind {
+    background-color: #333333;
+    color: #333333;
+    border: 1px solid #555;
+}
+
+.dot.cyan,
+.dot.ice {
+    background-color: #00ffff;
+    color: #00ffff;
+}
+
+.dot.green,
+.dot.switch {
+    background-color: #00ff00;
+    color: #00ff00;
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
     .neon-title {
