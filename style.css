@@ -21,7 +21,7 @@
     padding: 0;
     box-sizing: border-box;
     user-select: none;
-    touch-action: none;
+    /* touch-action: none; REMOVED from generic wildcard */
 }
 
 body {
@@ -34,17 +34,11 @@ body {
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
+    touch-action: none;
+    /* Block scrolling/zooming globally on body */
 }
 
-.main-wrapper {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0;
-    /* Remove padding to maximize canvas size */
-}
+/* ... main-wrapper skipped ... */
 
 .game-container {
     position: relative;
@@ -61,6 +55,8 @@ body {
     height: 100vh;
     padding: 0;
     margin: 0;
+    touch-action: none;
+    /* Ensure game touches don't scroll */
 }
 
 canvas {
@@ -71,6 +67,7 @@ canvas {
     border: 2px solid #00ff88;
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
     /* Centering handled by flex parent */
+    touch-action: none;
 }
 
 /* BLIND EFFECT */
@@ -208,7 +205,7 @@ canvas {
     transition: opacity 0.3s ease;
     z-index: 200;
     /* FIX: Allow scrolling on menu even with global touch-action: none */
-    touch-action: pan-y !important;
+    touch-action: auto !important;
 }
 
 .menu-screen.active {
@@ -546,7 +543,7 @@ h2 {
         /* Expand fully */
         overflow: visible !important;
         /* Let parent scroll */
-        touch-action: pan-y !important;
+        touch-action: auto !important;
     }
 }
 

@@ -2,7 +2,7 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-$file = 'scores.json';
+$file = 'scores_db.json';
 
 // Initialize file if not exists
 if (!file_exists($file)) {
