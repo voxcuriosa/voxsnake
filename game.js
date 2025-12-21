@@ -461,11 +461,10 @@ class Game {
     updateDynamicLegend() {
         if (!dynamicLegend) return;
 
-        // Force Redraw Every Frame (Remove Caching to fix timer glitches)
-
+        // Force Redraw Every Frame (No Caching)
         dynamicLegend.innerHTML = '';
 
-        // 1. Draw Static Powerups (What is on the board to pick up)
+        // 1. Draw Static Powerups (Available on board)
         this.powerups.forEach(p => {
             const def = this.powerUpTypes[p.type];
             const div = document.createElement('div');
@@ -474,32 +473,33 @@ class Game {
             dynamicLegend.appendChild(div);
         });
 
-        // 2. Draw Active Timers (What you have active)
+        // 2. Draw Active Timers (Ghost Style: Individual rows)
         const s1 = this.snakes[0];
-        // Note: We show timers even in Multi if we want, but sticking to Single for now to avoid clutter
         if (this.gameMode === 'single' && s1) {
-            const activeGhost = s1.ghostTimer > 0;
-            const activeShield = s1.hasShield;
-            const activeMagnet = s1.magnetTimer > 0;
 
-            if (activeGhost || activeShield || activeMagnet) {
+            // Helper to add a timer row
+            const addTimer = (type, seconds, labelOverride = null) => {
+                const def = this.powerUpTypes[type];
+                const label = labelOverride || def.label;
                 const div = document.createElement('div');
-                div.className = 'legend-timers';
-                let html = "";
+                div.className = 'legend-item'; // Use standard class
+                // Add specific styling to make it pop
+                div.style.color = '#fff';
+                div.style.fontWeight = 'bold';
+                div.style.textShadow = '0 0 5px ' + def.color;
 
-                if (activeGhost) {
-                    html += `<span style="color:${COLORS.ghost}">GHOST ${Math.ceil(s1.ghostTimer / 1000)}s</span> `;
-                }
-                if (activeShield) {
-                    const t = s1.shieldTimer > 0 ? Math.ceil(s1.shieldTimer / 1000) + "s" : "∞";
-                    html += `<span style="color:${COLORS.silver}">SHIELD ${t}</span> `;
-                }
-                if (activeMagnet) {
-                    html += `<span style="color:${COLORS.pink}">MAGNET ${Math.ceil(s1.magnetTimer / 1000)}s</span> `;
-                }
-
-                div.innerHTML = html;
+                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
                 dynamicLegend.appendChild(div);
+            };
+
+            if (s1.ghostTimer > 0) {
+                addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+            }
+            if (s1.shieldTimer > 0) {
+                addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+            }
+            if (s1.magnetTimer > 0) {
+                addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
             }
         }
     }
