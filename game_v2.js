@@ -1219,14 +1219,21 @@ class Game {
         // Force Redraw Every Frame (No Caching)
         dynamicLegend.innerHTML = '';
 
+        let renderPowerups = this.powerups;
+        if (this.isClient && this.clientState) {
+            renderPowerups = this.clientState.powerups;
+        }
+
         // 1. Draw Static Powerups (Available on board)
-        renderPowerups.forEach(p => {
-            const def = this.powerUpTypes[p.type];
-            const div = document.createElement('div');
-            div.className = 'legend-item';
-            div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
-            dynamicLegend.appendChild(div);
-        });
+        if (renderPowerups) {
+            renderPowerups.forEach(p => {
+                const def = this.powerUpTypes[p.type];
+                const div = document.createElement('div');
+                div.className = 'legend-item';
+                div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+                dynamicLegend.appendChild(div);
+            });
+        }
 
         // 2. Draw Active Timers (Ghost Style: Individual rows)
         const s1 = this.snakes[0];
