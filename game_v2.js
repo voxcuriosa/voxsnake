@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.16 (Strict Sync & NoJump)...");
+    log("v4.18 (Fix Visual Borders)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
