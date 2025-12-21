@@ -550,6 +550,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             this.hideAllScreens();
 
+            this.hideAllScreens();
+
             if (mainMenu) {
                 mainMenu.classList.remove('hidden');
                 mainMenu.classList.add('active');
