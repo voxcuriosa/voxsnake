@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.3 (Mobile Draw Fix - Merged Listeners)...");
+    log("v4.4 (Redundant Game Over Broadcast)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -1337,7 +1337,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
         broadcastGameOver(winnerIndex) {
             if (!this.isHost || !this.conn || !this.conn.open) return;
-            this.conn.send({ type: 'gameover', winner: winnerIndex });
+
+            // REDUNDANT BROADCAST (Fix for Mobile Packet Loss)
+            // Send 10 times over 1 second to ensure delivery
+            let count = 0;
+            const spam = setInterval(() => {
+                if (this.conn && this.conn.open) {
+                    try {
+                        this.conn.send({ type: 'gameover', winner: winnerIndex });
+                    } catch (e) { }
+                }
+                count++;
+                if (count >= 10) clearInterval(spam);
+            }, 100);
         }
 
         // Fix Restart Button visibility for Client
