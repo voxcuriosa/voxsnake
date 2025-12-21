@@ -232,7 +232,7 @@ class Game {
         this.draw();
     }
 
-    loadHighScores() {
+    loadHighScores(highlightName = null, highlightScore = null) {
         if (!highScoreList) return;
         highScoreList.innerHTML = '<li>Loading...</li>';
         fetch('api.php')
@@ -243,9 +243,21 @@ class Game {
                     highScoreList.innerHTML = '<li>No High Scores (Yet)</li>';
                     return;
                 }
+
+                let foundHighlight = false;
+
                 data.forEach((s, i) => {
                     const li = document.createElement('li');
                     li.innerHTML = `<span>#${i + 1} ${s.name}</span> <span>${s.score} pts</span>`;
+
+                    // Check for highlight match (strict name & score match)
+                    if (highlightName && highlightScore && s.name === highlightName && s.score == highlightScore && !foundHighlight) {
+                        li.classList.add('highlight');
+                        foundHighlight = true; // Only highlight first match
+                        // Use setTimeout to ensure DOM render before scroll
+                        setTimeout(() => li.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+                    }
+
                     highScoreList.appendChild(li);
                 });
                 localStorage.setItem('snake_highscores_cache', JSON.stringify(data));
@@ -258,7 +270,7 @@ class Game {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, score })
-        }).then(() => this.loadHighScores()).catch(console.error);
+        }).then(() => this.loadHighScores(name, score)).catch(console.error);
     }
 
     checkHighScore(score) {
@@ -277,10 +289,16 @@ class Game {
     submitHighScore() {
         if (!playerNameInput) return;
         const name = playerNameInput.value.trim() || "ANON";
-        this.saveHighScore(name, this.currentPendingScore);
+
+        // Hide entry screen first
         nameEntryScreen.classList.add('hidden');
         nameEntryScreen.classList.remove('active');
-        this.gameOver(-1, true);
+
+        // Save and trigger Menu w/ Highlight
+        this.saveHighScore(name, this.currentPendingScore);
+
+        // Show main menu immediately (loading will happen)
+        this.showMainMenu();
     }
 
     startGame(mode) {

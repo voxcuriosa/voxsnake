@@ -234,12 +234,37 @@ h2 {
 
 #high-score-list {
     list-style: none;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     width: 100%;
-    max-width: 400px;
+    max-width: 450px;
     text-align: center;
     margin-left: auto;
     margin-right: auto;
+
+    /* Scrollable */
+    max-height: 240px;
+    /* Approx 5 rows (40px each + gap) */
+    overflow-y: auto;
+    padding-right: 5px;
+    /* Space for scrollbar */
+
+    /* Scrollbar Styling */
+    scrollbar-width: thin;
+    scrollbar-color: var(--p1-color) rgba(255, 255, 255, 0.05);
+}
+
+/* Webkit Scrollbar */
+#high-score-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#high-score-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#high-score-list::-webkit-scrollbar-thumb {
+    background-color: var(--p1-color);
+    border-radius: 3px;
 }
 
 #high-score-list li {
@@ -251,6 +276,31 @@ h2 {
     border-radius: 4px;
     font-size: 1.1rem;
     color: var(--p1-color);
+    border: 1px solid transparent;
+    /* Prepare for border highlight */
+}
+
+#high-score-list li.highlight {
+    background: rgba(0, 255, 136, 0.2);
+    border-color: var(--p1-color);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    font-weight: bold;
+    color: #fff;
+    animation: pulseHighlight 2s infinite;
+}
+
+@keyframes pulseHighlight {
+    0% {
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+    }
+
+    100% {
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    }
 }
 
 .legend-item {
