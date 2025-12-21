@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v5.5 (Touch Sensitive + Visuals)...");
+    log("v5.6 (STRICT SYNC CHECK)...");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
     // FORCE TOUCH ACTION & NO SCROLL
@@ -1452,6 +1452,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     ctx.fillText(sym, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
                     ctx.restore();
                 }
+
+                // Debug: Show if I am Client or Host on screen to confirm mode
+                ctx.fillStyle = 'white';
+                ctx.font = '12px monospace';
+                ctx.textAlign = 'right';
+                // ctx.fillText(this.isClient ? "CLIENT MODE" : "HOST MODE", CANVAS_WIDTH - 10, 20);
             }
 
             // Blind Effect Logic
@@ -1565,5 +1571,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Game();
     game.initMultiplayer(); // Explicitly call this!
     game.loop(0);
+
+    // Hard Reload if version mismatch (Simple check)
+    if (location.search.indexOf('v=5.6') === -1) {
+        // console.log("Updating URL version...");
+        // history.replaceState({}, '', location.pathname + '?v=5.6');
+    }
 
 }); // MAIN WRAPPER END
