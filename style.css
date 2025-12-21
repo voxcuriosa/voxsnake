@@ -53,6 +53,8 @@ body {
     /* box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); */
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
+    /* FIX: Respect mobile browser bars */
     padding: 0;
     margin: 0;
     touch-action: none;

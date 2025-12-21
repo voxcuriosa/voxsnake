@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v1.21 (CONTAINER FIX)...");
+    log("v1.23 (DVH FIX)...");
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
@@ -791,8 +791,8 @@ window.addEventListener('DOMContentLoaded', () => {
             // MOBILE SAFE AREA (Bottom Bar)
             // If on mobile (height > width usually), subtract a tiny bit to avoid the white bar covering grid
             // But only if we are using full window height
-            if (availableH >= window.innerHeight - 30 && availableH > availableW) {
-                availableH -= 20; // 20px safety for swipe bar
+            if (availableH >= window.innerHeight - 50 && availableH > availableW) {
+                availableH -= 40; // 40px safety for swipe bar/notch
             }
 
             if (availableW < 300) availableW = 300;
