@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v7.5 (FORCE SYNC START)...");
+    log("v7.7 (SPAWN FIX)...");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
 
@@ -710,11 +710,17 @@ window.addEventListener('DOMContentLoaded', () => {
                     const s1 = new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
                         { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
 
-                    // Ensure valid start pos for P2
-                    let p2x = Math.floor(CANVAS_WIDTH / GRID_SIZE) - 6;
-                    let p2y = Math.floor(CANVAS_HEIGHT / GRID_SIZE) - 6;
-                    if (p2x < 10) p2x = 20;
-                    if (p2y < 10) p2y = 20;
+                    // Ensure valid start pos for P2 (Relative to Grid Size)
+                    const gridW = Math.floor(CANVAS_WIDTH / GRID_SIZE);
+                    const gridH = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
+
+                    let p2x = gridW - 5;
+                    let p2y = gridH - 5;
+
+                    // Safety Bounds (ensure at least inside map)
+                    if (p2x < 2) p2x = gridW - 2;
+                    if (p2y < 2) p2y = gridH - 2;
+                    if (p2x >= gridW) p2x = gridW - 1; // Strict Clamp
 
                     const s2 = new Snake(2, COLORS.p2, { x: p2x, y: p2y }, { x: -1, y: 0 },
                         { up: 'w', down: 's', left: 'a', right: 'd' });
