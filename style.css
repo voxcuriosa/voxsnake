@@ -98,13 +98,6 @@ canvas {
 }
 
 @keyframes flashBlind {
-    0% {
-        filter: brightness(1);
-    }
-
-    10% {
-        filter: brightness(5);
-    }
 
     /* Flash white first */
     100% {

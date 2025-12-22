@@ -317,14 +317,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // ROBUST SCROLLING FIX:
-            // Explicitly trap touchmove on the list and stop it from reaching the game loop.
-            if (this.highScoreList) {
-                this.highScoreList.addEventListener('touchmove', (e) => {
-                    e.stopPropagation();
-                    // Do NOT preventDefault(). Let browser scroll.
-                }, { passive: true }); // Passive TRUE allows scrolling optimization
-            }
+            // Removed manual touchmove trap.
+            // We rely on Global handleTouchMove + CSS touch-action: pan-y now.
+
+            // --- GAME CONTROLS ---
         }
 
         initMultiplayer() {
