@@ -594,16 +594,26 @@ window.addEventListener('DOMContentLoaded', () => {
             const btnBackHighScores = document.getElementById('btn-back-highscores');
             const highScoreScreen = document.getElementById('high-score-screen');
 
-            bindButton(btnHighScores, () => {
-                if (mainMenu) mainMenu.classList.add('hidden'); // Hide Main Menu
-                if (highScoreScreen) {
-                    highScoreScreen.classList.remove('hidden');
-                    highScoreScreen.classList.remove('nuclear-hidden');
-                    highScoreScreen.classList.add('active');
-                    highScoreScreen.style.display = 'flex'; // Ensure flex layout
-                    this.loadHighScores(); // Reload fresh
-                }
-            });
+            if (btnHighScores) {
+                console.log("High Score Button FOUND");
+                bindButton(btnHighScores, () => {
+                    console.log("High Score Button CLICKED");
+                    // alert("Button Clicked"); // User feedback
+                    if (mainMenu) mainMenu.classList.add('hidden');
+                    if (highScoreScreen) {
+                        highScoreScreen.classList.remove('hidden');
+                        highScoreScreen.classList.remove('nuclear-hidden');
+                        highScoreScreen.classList.add('active');
+                        highScoreScreen.style.display = 'flex';
+                        this.loadHighScores();
+                    } else {
+                        console.error("High Score Screen NOT FOUND");
+                        alert("Error: High Score Screen missing");
+                    }
+                });
+            } else {
+                console.error("High Score Button NOT FOUND");
+            }
 
             bindButton(btnBackHighScores, () => {
                 if (highScoreScreen) {
@@ -1826,7 +1836,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Game
     const game = new Game();
-    game.initMultiplayer(); // Explicitly call this!
+    // game.initMultiplayer(); // REMOVED REDUNDANT CALL
     game.loop(0);
 
     // Hard Reload if version mismatch (Simple check)
