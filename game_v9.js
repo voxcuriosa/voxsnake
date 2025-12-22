@@ -789,7 +789,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
 
                     let foundHighlight = false;
-                    const displayData = data.slice(0, 5);
+                    // SHOW ALL SCORES (Scrollable) - Removed slice(0,5)
+                    const displayData = data;
 
                     displayData.forEach((s, i) => {
                         const li = document.createElement('li');
@@ -823,7 +824,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const raw = localStorage.getItem('snake_highscores_cache');
                 const scores = JSON.parse(raw || '[]');
                 if (!Array.isArray(scores)) return true;
-                if (scores.length < 20) return true;
+                if (scores.length < 50) return true; // Updated limit to 50
                 return score > scores[scores.length - 1].score;
             } catch (e) {
                 console.error("HighScore Check Error", e);
@@ -1340,6 +1341,24 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (score > 5 && this.checkHighScore(score)) {
                         this.currentPendingScore = score;
                         if (playerNameInput) playerNameInput.value = "";
+
+                        // CALCULATE DISPLAY RANK
+                        try {
+                            const raw = localStorage.getItem('snake_highscores_cache');
+                            const scores = JSON.parse(raw || '[]');
+                            // Count how many scores are better or equal (simple rank)
+                            // Actually, if we insert this score, where would it land?
+                            // It lands after everyone with GREATER OR EQUAL score? No, usually after greater.
+                            // Let's count how many are STRICTLY greater.
+                            const better = scores.filter(s => s.score >= score).length;
+                            const rank = better + 1;
+
+                            const rankMsg = document.getElementById('rank-msg');
+                            if (rankMsg) {
+                                rankMsg.innerText = `CONGRATULATIONS, YOU ARE NUMBER ${rank}`;
+                            }
+                        } catch (e) { }
+
                         nameEntryScreen.classList.remove('hidden');
                         nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
                         nameEntryScreen.classList.add('active');

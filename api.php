@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         return $b['score'] - $a['score'];
     });
 
-    echo json_encode(array_slice($scores, 0, 20));
+    echo json_encode(array_slice($scores, 0, 50));
     exit;
 }
 
@@ -36,12 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $scores[] = ["name" => $name, "score" => $score];
         
-        // Sort and Keep Top 20
+        // Sort and Keep Top 50
         usort($scores, function($a, $b) {
             return $b['score'] - $a['score'];
         });
         
-        $scores = array_slice($scores, 0, 20);
+        $scores = array_slice($scores, 0, 50);
         
         if (file_put_contents($file, json_encode($scores))) {
             echo json_encode(["message" => "Score saved", "success" => true]);
