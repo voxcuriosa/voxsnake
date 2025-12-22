@@ -257,6 +257,7 @@ window.addEventListener('DOMContentLoaded', () => {
             this.foods = []; // Converted to Array for Multi-Food
             this.powerups = []; // Array of {x, y, type, createdAt}
             this.walls = []; // Array of {x, y}
+            this.projectiles = []; // Array of {x, y, dx, dy, ownerId, createdAt}
             this.isRunning = false;
             this.isPaused = false;
             this.lastTime = 0;
@@ -284,7 +285,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 'magnet': { color: COLORS.pink, label: 'Magnet' },
                 'switch': { color: COLORS.green, label: 'Switch' },
                 'wall': { color: COLORS.brown, label: 'Wall' },
-                'slow': { color: COLORS.blue, label: 'Slow' }
+                'switch': { color: COLORS.green, label: 'Switch' },
+                'wall': { color: COLORS.brown, label: 'Wall' },
+                'slow': { color: COLORS.blue, label: 'Slow' },
+                'torpedo': { color: '#FFD700', label: 'TORPEDO' } // New Golden Torpedo
             };
 
             // Multiplayer Props
@@ -852,6 +856,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 this.snakes = [];
                 this.powerups = [];
                 this.walls = [];
+                this.projectiles = [];
                 this.baseSpeed = 100;
                 this.currentSpeed = this.baseSpeed;
                 this.totalFoodEaten = 0;
@@ -1097,7 +1102,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let availableTypes = types;
 
             if (this.gameMode === 'single') {
-                availableTypes = types.filter(t => !['eraser', 'blind', 'ice', 'switch'].includes(t));
+                availableTypes = availableTypes.filter(t => !['eraser', 'blind', 'ice', 'switch', 'torpedo'].includes(t)); // Exclude torpedo in single player
             }
 
             if (this.totalFoodEaten < 10) {
@@ -1152,6 +1157,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             for (let w of this.walls) if (pos.x === w.x && pos.y === w.y) return true;
             for (let p of this.powerups) if (pos.x === p.x && pos.y === p.y) return true;
+            for (let proj of this.projectiles) if (pos.x === proj.x && pos.y === proj.y) return true; // Check projectiles
             return false;
         }
 
@@ -1449,12 +1455,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const now = Date.now();
             // Use true delta time for smoother timers if framerate dips
-            // Note: this.lastTime is updated at end of loop(), but here we need delta for logic. 
-            // Actually, the loop runs at `currentSpeed` interval! 
-            // Standard loop: requestAnimationFrame runs freely? 
-            // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;` 
-            // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms). 
-            // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower! 
+            // Note: this.lastTime is updated at end of loop(), but here we need delta for logic.
+            // Actually, the loop runs at `currentSpeed` interval!
+            // Standard loop: requestAnimationFrame runs freely?
+            // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
+            // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
+            // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower!
             // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
             const tickRate = this.currentSpeed;
 
@@ -1470,9 +1476,14 @@ window.addEventListener('DOMContentLoaded', () => {
             const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
 
             // Update Snakes (Collision & Movement)
-            this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', tickRate, (x, y) => this.triggerShieldEffect(x, y)));
+            this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
+                // Shield Break Callback (Particles?)
+                this.triggerShieldEffect(x, y);
+            }));
 
-            // GAME OVER CHECKS - ROBUST MODE
+            this.updateProjectiles(this.currentSpeed); // Move projectiles
+
+            this.checkCollisions();    // GAME OVER CHECKS - ROBUST MODE
             // Use snake count to ensure Multi physics runs even if gameMode string is glitchy
             if (this.snakes.length === 1) {
                 if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
@@ -1596,6 +1607,72 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        checkCollisions() {
+            // 5. Check Projectile Collisions
+            if (this.projectiles.length > 0) {
+                for (let pIndex = this.projectiles.length - 1; pIndex >= 0; pIndex--) {
+                    const p = this.projectiles[pIndex];
+                    let projectileHit = false;
+
+                    for (let s of this.snakes) {
+                        // Don't hit owner
+                        if (s.id === p.ownerId) continue;
+
+                        // Check Head Collision
+                        const head = s.body[0];
+                        if (head.x === p.x && head.y === p.y) {
+                            // Hit!
+                            if (s.hasShield) {
+                                s.hasShield = false;
+                                projectileHit = true;
+                                this.triggerShieldEffect(p.x, p.y);
+                            } else {
+                                s.isDead = true;
+                                projectileHit = true;
+                            }
+                        }
+                        // Check Body Collision? (Optional: Destroy projectile if it hits body?)
+                        // "Dreper motstanderen hvis den treffer motstanderen" usually means any part.
+                        for (let i = 1; i < s.body.length; i++) {
+                            if (s.body[i].x === p.x && s.body[i].y === p.y) {
+                                if (s.hasShield) {
+                                    s.hasShield = false;
+                                    projectileHit = true;
+                                    this.triggerShieldEffect(p.x, p.y);
+                                } else {
+                                    s.isDead = true;
+                                    projectileHit = true;
+                                }
+                            }
+                        }
+                    }
+                    if (projectileHit) {
+                        this.projectiles.splice(pIndex, 1); // Destroy projectile
+                    }
+                }
+            }
+
+            // 6. Check Deaths
+            const deadSnakes = this.snakes.filter(s => s.isDead);
+            if (deadSnakes.length > 0) {
+                // Determine winner based on who is dead
+                if (this.snakes.length === 1) {
+                    this.gameOver(0); // Single player, player 1 died
+                } else if (this.snakes.length > 1) {
+                    const p1Dead = this.snakes[0].isDead;
+                    const p2Dead = this.snakes[1].isDead;
+
+                    if (p1Dead && p2Dead) {
+                        this.gameOver(-1); // Draw
+                    } else if (p1Dead) {
+                        this.gameOver(1); // Player 1 died, Player 2 wins
+                    } else if (p2Dead) {
+                        this.gameOver(0); // Player 2 died, Player 1 wins
+                    }
+                }
+            }
+        }
+
         applyPowerUp(user, type, userIdx) {
             const enemy = this.snakes[userIdx === 0 ? 1 : 0];
             const isMulti = this.gameMode === 'multi';
@@ -1640,6 +1717,64 @@ window.addEventListener('DOMContentLoaded', () => {
                         const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
                     }
                     break;
+                case 'torpedo':
+                    this.fireTorpedo(user);
+                    break;
+            }
+        }
+
+        fireTorpedo(user) {
+            const head = user.body[0];
+            const dirs = [
+                { x: 0, y: -1 }, // Up
+                { x: 0, y: 1 },  // Down
+                { x: -1, y: 0 }, // Left
+                { x: 1, y: 0 }   // Right
+            ];
+
+            dirs.forEach(d => {
+                this.projectiles.push({
+                    x: head.x + d.x,
+                    y: head.y + d.y,
+                    dx: d.x,
+                    dy: d.y,
+                    ownerId: user.id,
+                    createdAt: Date.now()
+                });
+            });
+        }
+
+        updateProjectiles(tickRate) {
+            const now = Date.now();
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                const p = this.projectiles[i];
+
+                // Move (Grid based movement?)
+                // To make it smooth/fast, maybe move every tick?
+                // Let's move 1 grid per tick for now.
+                p.x += p.dx;
+                p.y += p.dy;
+
+                // WRAPPING LOGIC (Through Walls)
+                const gridW = CANVAS_WIDTH / GRID_SIZE;
+                const gridH = CANVAS_HEIGHT / GRID_SIZE;
+
+                if (p.x < 0) p.x = Math.floor(gridW - 1);
+                if (p.x >= gridW) p.x = 0;
+                if (p.y < 0) p.y = Math.floor(gridH - 1);
+                if (p.y >= gridH) p.y = 0;
+
+                // Wall Collision: IGNORED (Ghost Projectiles)
+                // if (this.walls.some(w => w.x === p.x && w.y === p.y)) {
+                //    this.projectiles.splice(i, 1);
+                //    continue;
+                // }
+
+                // Timeout (5 seconds)
+                if (now - p.createdAt > 5000) {
+                    this.projectiles.splice(i, 1);
+                    continue;
+                }
             }
         }
 
@@ -1723,6 +1858,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
                     let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
                     let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+                    let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
 
                     // Walls
                     renderWalls.forEach(w => {
@@ -1763,6 +1899,18 @@ window.addEventListener('DOMContentLoaded', () => {
                     console.error("WORLD RENDER CRASH:", e);
                 }
 
+                // Draw Projectiles
+                renderProjectiles.forEach(p => {
+                    // Pulsing Gold Diamond
+                    const size = GRID_SIZE / 2;
+                    const center = (GRID_SIZE - size) / 2;
+                    ctx.fillStyle = '#FFD700';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#FFD700';
+                    ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
+                    ctx.shadowBlur = 0;
+                });
+
                 // 3. UI LAYERS (ON TOP)
 
                 // CLEAN UI
@@ -1799,6 +1947,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 foods: this.foods,
                 powerups: this.powerups,
                 walls: this.walls,
+                projectiles: this.projectiles,
                 dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
             };
 
