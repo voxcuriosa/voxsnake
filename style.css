@@ -346,17 +346,10 @@ h2 {
 
 #high-score-list {
     list-style: none;
-    margin-bottom: 20px;
-    width: 100%;
-    max-width: 450px;
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
-    /* Scrollable */
+    padding: 0;
+    margin: 0;
+    /* Limit height on desktop */
     max-height: 60vh;
-    /* Expanded for dedicated screen */
-    overflow-y: auto;
-    padding-right: 5px;
     /* Space for scrollbar */
 
     /* Scrollbar Styling */

@@ -1183,8 +1183,11 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         handleTouchMove(e) {
-            // Prevent scrolling if NOT inside menu
-            if (!e.target.closest('.menu-screen')) {
+            // Prevent scrolling if NOT inside menu OR if checking high scores
+            // FIX: Allow default behavior (scrolling) if target is within a scrollable area
+            if (e.target.closest('.scrollable') || e.target.closest('#high-score-list')) {
+                // Allow scroll
+            } else if (!e.target.closest('.menu-screen')) {
                 e.preventDefault();
             }
 
