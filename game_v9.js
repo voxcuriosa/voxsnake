@@ -85,6 +85,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const scoreP2El = document.getElementById('score-p2');
     const btnResume = document.getElementById('btn-resume');
 
+    // High Score Screen Elements
+    const btnHighScores = document.getElementById('btn-highscores');
+    const highScoreScreen = document.getElementById('high-score-screen');
+    const btnBackHighScores = document.getElementById('btn-back-highscores');
+
     // Colors
     const COLORS = {
         p1: '#00ff88',
@@ -583,6 +588,30 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (e.key === 'Enter') this.submitHighScore();
                 });
             }
+
+            // High Score Navigation
+            const btnHighScores = document.getElementById('btn-highscores');
+            const btnBackHighScores = document.getElementById('btn-back-highscores');
+            const highScoreScreen = document.getElementById('high-score-screen');
+
+            bindButton(btnHighScores, () => {
+                if (mainMenu) mainMenu.classList.add('hidden'); // Hide Main Menu
+                if (highScoreScreen) {
+                    highScoreScreen.classList.remove('hidden');
+                    highScoreScreen.classList.remove('nuclear-hidden');
+                    highScoreScreen.classList.add('active');
+                    highScoreScreen.style.display = 'flex'; // Ensure flex layout
+                    this.loadHighScores(); // Reload fresh
+                }
+            });
+
+            bindButton(btnBackHighScores, () => {
+                if (highScoreScreen) {
+                    highScoreScreen.classList.add('hidden');
+                    highScoreScreen.classList.remove('active');
+                }
+                this.showMainMenu(); // Return to Main Menu
+            });
         }
 
         showMainMenu() {
@@ -608,6 +637,14 @@ window.addEventListener('DOMContentLoaded', () => {
             if (scoreBoard) scoreBoard.classList.add('hidden');
             if (dynamicLegend) dynamicLegend.innerHTML = '';
             if (btnResume) btnResume.classList.add('hidden');
+
+            // Ensure High Score screen is hidden
+            const highScoreScreen = document.getElementById('high-score-screen');
+            if (highScoreScreen) {
+                highScoreScreen.classList.add('hidden');
+                highScoreScreen.classList.remove('active');
+                highScoreScreen.classList.add('nuclear-hidden');
+            }
 
             this.loadHighScores();
             this.draw();

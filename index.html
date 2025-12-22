@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=7.36">
+    <link rel="stylesheet" href="style.css?v=7.37">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -132,6 +132,7 @@
                         <button id="btn-1p" class="neon-btn">1 PLAYER</button>
                         <button id="btn-2p" class="neon-btn">2 PLAYERS (SAME KEYBOARD)</button>
                         <div style="width:100%; height:1px; background:#333; margin:10px 0;"></div>
+                        <button id="btn-highscores" class="neon-btn">HIGH SCORES</button> <!-- NEW BUTTON -->
                         <button id="btn-host" class="neon-btn" style="color:#00ffff; border-color:#00ffff;">HOST
                             ONLINE</button>
                         <button id="btn-join" class="neon-btn secondary">JOIN ONLINE</button>
@@ -139,13 +140,20 @@
                         </div>
                     </div>
 
-                    <div id="high-scores" class="mt-4">
-                        <h2>TOP SCORES</h2>
-                        <ul id="high-score-list">
+                    <!-- High Scores removed from here -->
+                </div> <!-- END MAIN MENU -->
+
+                <!-- High Score Screen (NEW) -->
+                <div id="high-score-screen" class="menu-screen hidden">
+                    <h2 class="neon-title">TOP SCORES</h2>
+                    <div id="high-scores"
+                        style="width:100%; flex:1; display:flex; flex-direction:column; min-height:0;">
+                        <ul id="high-score-list" style="flex-grow:1;">
                             <!-- Populated by JS -->
                         </ul>
                     </div>
-                </div> <!-- END MAIN MENU -->
+                    <button id="btn-back-highscores" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                </div>
 
                 <!-- Game Over Screen -->
                 <div id="game-over-screen" class="menu-screen hidden">

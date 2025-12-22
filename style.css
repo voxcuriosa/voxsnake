@@ -353,8 +353,8 @@ h2 {
     margin-left: auto;
     margin-right: auto;
     /* Scrollable */
-    max-height: 240px;
-    /* Approx 5 rows (40px each + gap) */
+    max-height: 60vh;
+    /* Expanded for dedicated screen */
     overflow-y: auto;
     padding-right: 5px;
     /* Space for scrollbar */
@@ -551,11 +551,10 @@ h2 {
     }
 
     #high-score-list {
-        max-height: none !important;
-        /* Expand fully */
-        overflow: visible !important;
-        /* Let parent scroll */
-        touch-action: auto !important;
+        max-height: 60dvh !important;
+        /* Use dynamic viewport height */
+        overflow-y: auto !important;
+        touch-action: pan-y !important;
     }
 }
 
