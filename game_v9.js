@@ -1335,7 +1335,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (this.gameMode === 'single' && !skipNameEntry) {
                     const score = this.snakes[0].score;
-                    if (score > 0 && this.checkHighScore(score)) {
+                    // Require at least 5 points to trigger Name Entry (anti-spam)
+                    // Also triggers if it qualifies for the list (beat #20)
+                    if (score > 5 && this.checkHighScore(score)) {
                         this.currentPendingScore = score;
                         if (playerNameInput) playerNameInput.value = "";
                         nameEntryScreen.classList.remove('hidden');
