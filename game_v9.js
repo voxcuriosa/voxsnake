@@ -1186,7 +1186,8 @@ window.addEventListener('DOMContentLoaded', () => {
             // Prevent scrolling if NOT inside menu OR if checking high scores
             // FIX: Allow default behavior (scrolling) if target is within a scrollable area
             if (e.target.closest('.scrollable') || e.target.closest('#high-score-list')) {
-                // Allow scroll
+                e.stopPropagation(); // Stop game logic from seeing this
+                return; // LET DEFAULT SCROLL HAPPEN
             } else if (!e.target.closest('.menu-screen')) {
                 e.preventDefault();
             }
