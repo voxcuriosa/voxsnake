@@ -276,15 +276,18 @@ window.addEventListener('DOMContentLoaded', () => {
             // Check params for Test Mode
             const urlParams = new URLSearchParams(window.location.search);
             this.testMode = urlParams.get('test'); // 'torpedo'
-            if (this.testMode) console.log("TEST MODE ACTIVE:", this.testMode);
+            if (this.testMode) {
+                console.log("TEST MODE ACTIVE:", this.testMode);
+                // alert("TEST MODE: " + this.testMode); // Debugging
+            }
 
             // Platform Detection
             this.platform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'pc';
-            this.viewingPlatform = this.platform; // Default view logic
+            this.viewingPlatform = this.platform;
 
             // Power Up Types Definition
             this.powerUpTypes = {
-                'ghost': { color: COLORS.ghost, label: 'Wall Trap' }, // Renamed from Ghost
+                'ghost': { color: COLORS.ghost, label: 'Wall Trap' },
                 'eraser': { color: COLORS.white, label: 'Eraser' },
                 'blind': { color: COLORS.black, label: 'Blind' },
                 'speed': { color: COLORS.orange, label: 'Speed' },
@@ -294,10 +297,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 'magnet': { color: COLORS.pink, label: 'Magnet' },
                 'switch': { color: COLORS.green, label: 'Switch' },
                 'wall': { color: COLORS.brown, label: 'Wall' },
-                'switch': { color: COLORS.green, label: 'Switch' },
-                'wall': { color: COLORS.brown, label: 'Wall' },
                 'slow': { color: COLORS.blue, label: 'Slow' },
-                'torpedo': { color: '#FFD700', label: 'TORPEDO' } // New Golden Torpedo
+                'torpedo': { color: '#FFD700', label: 'TORPEDO' }
             };
 
             // Multiplayer Props
@@ -306,17 +307,16 @@ window.addEventListener('DOMContentLoaded', () => {
             this.isHost = false;
             this.isClient = false;
             this.remoteInput = { up: false, down: false, left: false, right: false };
-            this.clientState = null; // For client to render
+            this.clientState = null;
 
             this.initListeners();
-            this.initMultiplayer(); // AUTO-RUN
+            this.initMultiplayer();
 
-            // Delay resize slightly to ensure layout is ready
+            // Delay resize
             setTimeout(() => this.resize(), 50);
             window.addEventListener('resize', () => this.resize());
             this.loadHighScores();
 
-            // ONLY show main menu if NOT auto-joining
             if (!this.autoJoining) {
                 this.showMainMenu();
             }
@@ -325,18 +325,14 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.showMainMenu();
                 });
             }
-
-            // Removed manual touchmove trap.
-            // We rely on Global handleTouchMove + CSS touch-action: pan-y now.
-
-            // --- GAME CONTROLS ---
         }
 
         initMultiplayer() {
-            // ... variables check ...
             const btnHost = document.getElementById('btn-host');
             const btnJoin = document.getElementById('btn-join');
-            const btnConnect = document.getElementById('btn-connect');
+            // FIX: ID Mismatch (html: connect-btn, js: btn-connect)
+            // HTML ID is 'connect-btn'
+            const btnConnect = document.getElementById('connect-btn');
             const lobbyBack = document.getElementById('lobby-back-btn');
             const joinBack = document.getElementById('join-back-btn');
 
