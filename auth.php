@@ -36,8 +36,8 @@ if ($method === 'POST') {
 
         if ($row = $res->fetch_assoc()) {
             // User exists. connect?
-            // CHECK IF MIGRATED AUTO-ACCOUNT
-            if (password_verify("auto", $row['password_hash'])) {
+            // CHECK IF MIGRATED AUTO-ACCOUNT (Password is 'changeme' or 'auto')
+            if (password_verify("changeme", $row['password_hash']) || password_verify("auto", $row['password_hash'])) {
                 // Yes! Allow Claiming (Overwrite Password)
                 $new_hash = password_hash($password, PASSWORD_DEFAULT);
                 $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
