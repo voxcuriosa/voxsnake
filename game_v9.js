@@ -2192,6 +2192,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     dx: d.x,
                     dy: d.y,
                     ownerId: user.id,
+                    color: user.color, // Stamped color
                     createdAt: Date.now()
                 });
             });
@@ -2374,9 +2375,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 renderProjectiles.forEach(p => {
                     const size = GRID_SIZE / 2;
                     const center = (GRID_SIZE - size) / 2;
-                    ctx.fillStyle = '#FFD700';
+                    ctx.fillStyle = p.color || '#FFD700'; // Use owner color or gold
                     ctx.shadowBlur = 10;
-                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowColor = p.color || '#FFD700';
                     ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
                     ctx.shadowBlur = 0;
                 });
