@@ -2016,6 +2016,11 @@ window.addEventListener('DOMContentLoaded', () => {
             const head = snake.body[0];
             this.particles.explode(head.x, head.y, snake.color, 20);
             this.triggerShake(10);
+
+            // HAPTIC FEEDBACK (Android only usually)
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(400); // Long vibration for death
+            }
         }
 
         checkCollisions() {
@@ -2036,6 +2041,11 @@ window.addEventListener('DOMContentLoaded', () => {
                                 this.sound.play('explode');
                                 this.particles.explode(p.x, p.y, COLORS.orange, 15);
                                 this.triggerShake(5);
+
+                                // Haptic Hit
+                                if (window.navigator && window.navigator.vibrate) {
+                                    window.navigator.vibrate(100);
+                                }
 
                                 projectileHit = true; // Mark projectile for removal
 
