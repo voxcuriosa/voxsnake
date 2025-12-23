@@ -543,7 +543,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const screenIds = [
                 'main-menu', 'game-over-screen', 'high-score-screen',
                 'join-screen', 'name-entry-screen', 'about-screen', 'lobby-screen',
-                'login-screen', 'register-screen', 'profile-screen' // NEW AUTH SCREENS
+                'login-screen', 'register-screen', 'profile-screen',
+                'recovery-screen', 'admin-screen' // NEW AUTH SCREENS
             ];
             const screens = screenIds.map(id => document.getElementById(id)).filter(Boolean);
             screens.forEach(s => {
@@ -860,6 +861,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             this.hideAllScreens();
 
+            const mainMenu = document.getElementById('main-menu'); // FIX: Define it!
             if (mainMenu) {
                 mainMenu.classList.remove('hidden');
                 mainMenu.classList.remove('nuclear-hidden');
@@ -2597,6 +2599,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const loginScreen = document.getElementById('login-screen');
             const btnDoLogin = document.getElementById('btn-do-login');
             const btnGotoReg = document.getElementById('btn-goto-register');
+            const btnGotoRecover = document.getElementById('btn-goto-recover');
             const btnLoginBack = document.getElementById('btn-login-back');
 
             if (btnDoLogin) btnDoLogin.onclick = () => {
@@ -2606,8 +2609,19 @@ window.addEventListener('DOMContentLoaded', () => {
             };
             if (btnGotoReg) btnGotoReg.onclick = () => {
                 loginScreen.classList.add('hidden');
-                document.getElementById('register-screen').classList.remove('hidden');
-                document.getElementById('register-screen').classList.add('active');
+                const reg = document.getElementById('register-screen');
+                reg.classList.remove('hidden');
+                reg.classList.remove('nuclear-hidden');
+                reg.style.display = 'block';
+                reg.classList.add('active');
+            };
+            if (btnGotoRecover) btnGotoRecover.onclick = () => {
+                loginScreen.classList.add('hidden');
+                const rec = document.getElementById('recovery-screen');
+                rec.classList.remove('hidden');
+                rec.classList.remove('nuclear-hidden');
+                rec.style.display = 'block';
+                rec.classList.add('active');
             };
             if (btnLoginBack) btnLoginBack.onclick = () => {
                 loginScreen.classList.add('hidden');
@@ -2622,22 +2636,64 @@ window.addEventListener('DOMContentLoaded', () => {
             if (btnDoReg) btnDoReg.onclick = () => {
                 const u = document.getElementById('reg-user').value;
                 const p = document.getElementById('reg-pass').value;
-                this.register(u, p);
+                const sq = document.getElementById('reg-sec-q').value;
+                const sa = document.getElementById('reg-sec-a').value;
+                this.register(u, p, sq, sa);
             };
             if (btnRegBack) btnRegBack.onclick = () => {
                 regScreen.classList.add('hidden');
-                loginScreen.classList.remove('hidden'); // Back to Login
+                loginScreen.classList.remove('hidden');
+                loginScreen.classList.remove('nuclear-hidden');
+                loginScreen.style.display = 'block';
+            };
+
+            // RECOVERY SCREEN
+            const recScreen = document.getElementById('recovery-screen');
+            const btnCheckUser = document.getElementById('btn-check-user');
+            const btnResetPass = document.getElementById('btn-reset-pass');
+            const btnRecBack = document.getElementById('btn-recover-back');
+
+            if (btnCheckUser) btnCheckUser.onclick = () => this.recoverStep1();
+            if (btnResetPass) btnResetPass.onclick = () => this.recoverStep2();
+            if (btnRecBack) btnRecBack.onclick = () => {
+                recScreen.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+                loginScreen.classList.remove('nuclear-hidden');
+                loginScreen.style.display = 'block';
             };
 
             // PROFILE SCREEN
             const profileScreen = document.getElementById('profile-screen');
             const btnLogout = document.getElementById('btn-logout');
             const btnProfileBack = document.getElementById('btn-profile-back');
+            const btnAdminPanel = document.getElementById('btn-admin-panel');
 
             if (btnLogout) btnLogout.onclick = () => this.logout();
             if (btnProfileBack) btnProfileBack.onclick = () => {
                 profileScreen.classList.add('hidden');
                 this.showMainMenu();
+            };
+            if (btnAdminPanel) btnAdminPanel.onclick = () => {
+                profileScreen.classList.add('hidden');
+                const admin = document.getElementById('admin-screen');
+                admin.classList.remove('hidden');
+                admin.classList.remove('nuclear-hidden');
+                admin.style.display = 'block';
+                admin.classList.add('active');
+                this.loadAdmin();
+            };
+
+            // ADMIN SCREEN
+            const adminScreen = document.getElementById('admin-screen');
+            const btnAdminRefresh = document.getElementById('btn-admin-refresh');
+            const btnAdminBack = document.getElementById('btn-admin-back');
+
+            if (btnAdminRefresh) btnAdminRefresh.onclick = () => this.loadAdmin();
+            if (btnAdminBack) btnAdminBack.onclick = () => {
+                adminScreen.classList.add('hidden');
+                profileScreen.classList.remove('hidden');
+                profileScreen.classList.remove('nuclear-hidden');
+                profileScreen.style.display = 'block';
             };
 
             // MAIN MENU BUTTON
@@ -2645,14 +2701,12 @@ window.addEventListener('DOMContentLoaded', () => {
             if (btnMenuLogin) btnMenuLogin.onclick = () => {
                 this.hideAllScreens();
                 if (this.currentUser) {
-                    // Show Profile
                     profileScreen.classList.remove('hidden');
                     profileScreen.classList.remove('nuclear-hidden');
                     profileScreen.classList.add('active');
                     profileScreen.style.display = 'block';
                     this.updateProfileUI();
                 } else {
-                    // Show Login
                     loginScreen.classList.remove('hidden');
                     loginScreen.classList.remove('nuclear-hidden');
                     loginScreen.classList.add('active');
@@ -2685,18 +2739,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 .catch(e => alert("Login Error: " + e));
         }
 
-        register(username, password) {
+        register(username, password, secQ, secA) {
             if (!username || !password) { alert("Please enter username and password"); return; }
+            if (!secQ || !secA) { alert("Please set a security question and answer for recovery."); return; }
 
             fetch('auth.php', {
                 method: 'POST',
-                body: JSON.stringify({ action: 'register', username, password })
+                body: JSON.stringify({ action: 'register', username, password, security_question: secQ, security_answer: secA })
             })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
                         alert("Account Created! Logging you in...");
-                        // Auto Login logic (data.user contains id/name)
                         this.currentUser = data.user;
                         localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
@@ -2720,17 +2774,127 @@ window.addEventListener('DOMContentLoaded', () => {
         updateProfileUI() {
             if (!this.currentUser) return;
             document.getElementById('profile-name').innerText = this.currentUser.name;
-            // Placeholders for Total Score stats (User request implies they want this eventually)
-            document.getElementById('profile-score').innerText = "See Leaderboard";
-            document.getElementById('profile-games').innerText = "-";
+
+            // Show/Hide Admin Button
+            const btnAdmin = document.getElementById('btn-admin-panel');
+            if (this.currentUser.is_admin == 1 && btnAdmin) {
+                btnAdmin.style.display = 'inline-block';
+            } else if (btnAdmin) {
+                btnAdmin.style.display = 'none';
+            }
+
+            // Fetch Real Stats
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.stats) {
+                        document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
+                        document.getElementById('profile-games').innerText = data.stats.games_played || 0;
+                    }
+                })
+                .catch(e => console.error("Stats Error:", e));
+        }
+        // --- PROPER RECOVERY ---
+        recoverStep1() {
+            const u = document.getElementById('rec-user').value;
+            if (!u) { alert("Enter username first"); return; }
+            fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_question', username: u }) })
+                .then(r => r.json()).then(d => {
+                    if (d.success) {
+                        document.getElementById('rec-step-2').classList.remove('hidden');
+                        document.getElementById('rec-question-display').innerText = d.question;
+                    } else { alert(d.error); }
+                });
+        }
+
+        recoverStep2() {
+            const u = document.getElementById('rec-user').value;
+            const ans = document.getElementById('rec-answer').value;
+            const newP = document.getElementById('rec-new-pass').value;
+            if (!ans || !newP) { alert("Fill all fields"); return; }
+
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'reset_password', username: u, security_answer: ans, new_password: newP })
+            })
+                .then(r => r.json()).then(d => {
+                    if (d.success) {
+                        alert("Password Reset Successful! Please Login.");
+                        document.getElementById('recovery-screen').classList.add('hidden');
+                        const log = document.getElementById('login-screen');
+                        log.classList.remove('hidden');
+                        log.classList.remove('nuclear-hidden');
+                        log.style.display = 'block';
+                    } else { alert(d.error); }
+                });
+        }
+
+        // --- ADMIN ---
+        loadAdmin() {
+            if (!this.currentUser || this.currentUser.is_admin != 1) return;
+            const tbody = document.querySelector('#admin-user-table tbody');
+            tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
+            })
+                .then(r => r.json()).then(d => {
+                    if (d.success) {
+                        this.renderAdminList(d.users);
+                    } else { tbody.innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>'; }
+                });
+        }
+
+        renderAdminList(users) {
+            const tbody = document.querySelector('#admin-user-table tbody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${u.id}</td>
+                    <td>${u.username} ${u.is_admin == 1 ? '<span style="color:gold">(A)</span>' : ''}</td>
+                    <td>${u.total_score}</td>
+                    <td>${u.games_played}</td>
+                    <td>
+                        <button class="btn-small" onclick="window.gameInstance.resetUser(${u.id}, '${u.username}')" style="color:orange">Reset</button>
+                        <button class="btn-small" onclick="window.gameInstance.deleteUser(${u.id}, '${u.username}')" style="color:red">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        deleteUser(id, name) {
+            if (!confirm("DELETE User '" + name + "'?\\nThis cannot be undone!")) return;
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'admin_delete_user', admin_user: this.currentUser.name, target_id: id })
+            }).then(r => r.json()).then(d => {
+                if (d.success) { alert("Deleted."); this.loadAdmin(); }
+                else alert(d.error);
+            });
+        }
+
+        resetUser(id, name) {
+            if (!confirm("Reset Password for '" + name + "' to 'changeme'?")) return;
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'admin_reset_user', admin_user: this.currentUser.name, target_id: id })
+            }).then(r => r.json()).then(d => {
+                if (d.success) { alert("Reset to 'changeme'."); }
+                else alert(d.error);
+            });
         }
     }
 
 
     // Initialize Game
-    const game = new Game();
-    // game.initMultiplayer(); // REMOVED REDUNDANT CALL
-    game.loop(0);
+    window.gameInstance = new Game();
+    window.gameInstance.loop(0);
 
     // Hard Reload if version mismatch (Simple check)
     if (location.search.indexOf('v=5.6') === -1) {
