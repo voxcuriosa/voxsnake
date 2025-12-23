@@ -2789,7 +2789,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        updateProfileUI() {
+        async updateProfileUI() {
             if (!this.currentUser) return;
             const adminText = (this.currentUser.is_admin == 1) ? ' <span style="color:gold; font-size:0.8rem;">(ADMIN)</span>' : '';
             document.getElementById('profile-name').innerHTML = this.currentUser.name + adminText;
@@ -2805,21 +2805,36 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // Fetch Real Stats
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success && data.stats) {
-                        document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
-                        document.getElementById('profile-games').innerText = data.stats.games_played || 0;
-                        document.getElementById('profile-best-mobile').innerText = data.stats.best_mobile || 0;
-                        document.getElementById('profile-best-pc').innerText = data.stats.best_pc || 0;
-                        document.getElementById('profile-joined').innerText = data.stats.created_at || '-';
-                    }
-                })
-                .catch(e => console.error("Stats Error:", e));
+            try {
+                const response = await fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+                });
+
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error("STATS JSON ERROR:", text);
+                    // Only alert if it's a real error (not just empty)
+                    if (text.trim().length > 0) alert("STATS ERROR:\n" + text.substring(0, 500));
+                    return;
+                }
+
+                if (data.success && data.stats) {
+                    document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
+                    document.getElementById('profile-games').innerText = data.stats.games_played || 0;
+                    document.getElementById('profile-best-mobile').innerText = data.stats.best_mobile || 0;
+                    document.getElementById('profile-best-pc').innerText = data.stats.best_pc || 0;
+                    document.getElementById('profile-joined').innerText = data.stats.created_at || '-';
+                } else {
+                    console.error("Stats API Error:", data.error);
+                }
+            } catch (err) {
+                console.error("Stats Network Error:", err);
+            }
         }
 
         // --- PROPER RECOVERY ---
