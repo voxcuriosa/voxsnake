@@ -2925,7 +2925,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (d.users.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
                     } else {
-                        this.renderAdminList(d.users);
+                        // Cache for sorting
+                        this.adminUsersCache = d.users;
+                        this.adminSortDir = -1;
+                        this.renderAdminList(this.adminUsersCache);
                     }
                 } else {
                     tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
@@ -2936,10 +2939,45 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        sortAdminList(key) {
+            if (!this.adminUsersCache) return;
+
+            // Toggle direction
+            if (this.adminSortKey === key) {
+                this.adminSortDir *= -1;
+            } else {
+                this.adminSortKey = key;
+                this.adminSortDir = (key === 'username') ? 1 : -1; // Name ASC, nums DESC
+            }
+
+            this.adminUsersCache.sort((a, b) => {
+                let valA = a[key];
+                let valB = b[key];
+
+                // Numeric Check
+                if (key === 'id' || key === 'total_xp' || key === 'games_played') {
+                    valA = parseInt(valA) || 0;
+                    valB = parseInt(valB) || 0;
+                } else {
+                    valA = (valA || "").toString().toLowerCase();
+                    valB = (valB || "").toString().toLowerCase();
+                }
+
+                if (valA < valB) return -1 * this.adminSortDir;
+                if (valA > valB) return 1 * this.adminSortDir;
+                return 0;
+            });
+
+            this.renderAdminList(this.adminUsersCache);
+        }
+
         renderAdminList(users) {
             const tbody = document.getElementById('admin-user-list');
             tbody.innerHTML = '';
-            users.forEach(u => {
+
+            const data = users || this.adminUsersCache || [];
+
+            data.forEach(u => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${u.id}</td>
