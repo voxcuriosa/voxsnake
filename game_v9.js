@@ -2554,6 +2554,136 @@ window.addEventListener('DOMContentLoaded', () => {
             // 3. RENDER
             this.draw();
         }
+        // --- AUTHENTICATION SYSTEM (v5.7) ---
+
+        bindAuthListeners() {
+            // LOGIN SCREEN
+            const loginScreen = document.getElementById('login-screen');
+            const btnDoLogin = document.getElementById('btn-do-login');
+            const btnGotoReg = document.getElementById('btn-goto-register');
+            const btnLoginBack = document.getElementById('btn-login-back');
+
+            if (btnDoLogin) btnDoLogin.onclick = () => {
+                const u = document.getElementById('login-user').value;
+                const p = document.getElementById('login-pass').value;
+                this.login(u, p);
+            };
+            if (btnGotoReg) btnGotoReg.onclick = () => {
+                loginScreen.classList.add('hidden');
+                document.getElementById('register-screen').classList.remove('hidden');
+                document.getElementById('register-screen').classList.add('active');
+            };
+            if (btnLoginBack) btnLoginBack.onclick = () => {
+                loginScreen.classList.add('hidden');
+                this.showMainMenu();
+            };
+
+            // REGISTER SCREEN
+            const regScreen = document.getElementById('register-screen');
+            const btnDoReg = document.getElementById('btn-do-register');
+            const btnRegBack = document.getElementById('btn-register-back');
+
+            if (btnDoReg) btnDoReg.onclick = () => {
+                const u = document.getElementById('reg-user').value;
+                const p = document.getElementById('reg-pass').value;
+                this.register(u, p);
+            };
+            if (btnRegBack) btnRegBack.onclick = () => {
+                regScreen.classList.add('hidden');
+                loginScreen.classList.remove('hidden'); // Back to Login
+            };
+
+            // PROFILE SCREEN
+            const profileScreen = document.getElementById('profile-screen');
+            const btnLogout = document.getElementById('btn-logout');
+            const btnProfileBack = document.getElementById('btn-profile-back');
+
+            if (btnLogout) btnLogout.onclick = () => this.logout();
+            if (btnProfileBack) btnProfileBack.onclick = () => {
+                profileScreen.classList.add('hidden');
+                this.showMainMenu();
+            };
+
+            // MAIN MENU BUTTON
+            const btnMenuLogin = document.getElementById('btn-menu-login');
+            if (btnMenuLogin) btnMenuLogin.onclick = () => {
+                this.hideAllScreens();
+                if (this.currentUser) {
+                    // Show Profile
+                    profileScreen.classList.remove('hidden');
+                    profileScreen.classList.add('active');
+                    this.updateProfileUI();
+                } else {
+                    // Show Login
+                    loginScreen.classList.remove('hidden');
+                    loginScreen.classList.add('active');
+                }
+            };
+        }
+
+        login(username, password) {
+            if (!username || !password) { alert("Please enter username and password"); return; }
+
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', username, password })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        this.currentUser = data.user;
+                        localStorage.setItem('snake_user', JSON.stringify(data.user)); // Persist Session
+                        // Also update "Saved Name" for auto-fill in high score (legacy)
+                        localStorage.setItem('playerName', data.user.name);
+
+                        alert("Welcome back, " + data.user.name + "!");
+                        this.showMainMenu();
+                    } else {
+                        alert("Login Failed: " + data.error);
+                    }
+                })
+                .catch(e => alert("Login Error: " + e));
+        }
+
+        register(username, password) {
+            if (!username || !password) { alert("Please enter username and password"); return; }
+
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'register', username, password })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Account Created! Logging you in...");
+                        // Auto Login logic (data.user contains id/name)
+                        this.currentUser = data.user;
+                        localStorage.setItem('snake_user', JSON.stringify(data.user));
+                        localStorage.setItem('playerName', data.user.name);
+                        this.showMainMenu();
+                    } else {
+                        alert("Registration Failed: " + data.error);
+                    }
+                })
+                .catch(e => alert("Register Error: " + e));
+        }
+
+        logout() {
+            if (confirm("Log out?")) {
+                this.currentUser = null;
+                localStorage.removeItem('snake_user');
+                alert("Logged out.");
+                this.showMainMenu();
+            }
+        }
+
+        updateProfileUI() {
+            if (!this.currentUser) return;
+            document.getElementById('profile-name').innerText = this.currentUser.name;
+            // Placeholders for Total Score stats (User request implies they want this eventually)
+            document.getElementById('profile-score').innerText = "See Leaderboard";
+            document.getElementById('profile-games').innerText = "-";
+        }
     }
 
 
