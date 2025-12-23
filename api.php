@@ -1,90 +1,93 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
+require_once 'db_config.php';
+header('Content-Type: application/json');
 
-$file_pc = 'scores_pc.json';
-$file_mobile = 'scores_mobile.json';
-$file_legacy = 'scores_db.json';
+$conn = getDB();
+$method = $_SERVER['REQUEST_METHOD'];
 
-// --- MIGRATION LOGIC (Run Once) ---
-if (file_exists($file_legacy) && (!file_exists($file_pc) || !file_exists($file_mobile))) {
-    $legacy_data = json_decode(file_get_contents($file_legacy), true);
-    if (!$legacy_data)
-        $legacy_data = [];
+// Handle GET (Load High Scores)
+if ($method === 'GET') {
+    $type = isset($_GET['type']) ? $_GET['type'] : 'mobile'; // mobile or pc
 
-    $pc_scores = [];
-    $mobile_scores = [];
+    // Query: Top 50 scores for this platform
+    // We join with users to get names
+    $sql = "SELECT u.username as name, s.score, s.created_at as date 
+            FROM scores s 
+            JOIN users u ON s.user_id = u.id 
+            WHERE s.platform = ? 
+            ORDER BY s.score DESC 
+            LIMIT 50";
 
-    foreach ($legacy_data as $entry) {
-        // "Flytt bare de over 100 poeng til PC listen"
-        if ($entry['score'] > 100) {
-            $pc_scores[] = $entry;
-        } else {
-            $mobile_scores[] = $entry;
-        }
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $type);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $scores = [];
+    while ($row = $result->fetch_assoc()) {
+        $scores[] = $row;
     }
 
-    file_put_contents($file_pc, json_encode($pc_scores));
-    file_put_contents($file_mobile, json_encode($mobile_scores));
-    // Optional: unlink($file_legacy); // Keep for safety for now
-}
-// ----------------------------------
-
-// Determine which file to use
-$type = isset($_GET['type']) ? $_GET['type'] : (isset($_POST['type']) ? $_POST['type'] : 'mobile');
-$target_file = ($type === 'pc') ? $file_pc : $file_mobile;
-
-// Initialize if missing
-if (!file_exists($target_file)) {
-    file_put_contents($target_file, '[]');
+    echo json_encode($scores);
 }
 
-// Handle GET request (Read Scores)
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $scores = json_decode(file_get_contents($target_file), true);
-    if (!$scores)
-        $scores = [];
+// Handle POST (Submit Score)
+else if ($method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
 
-    // Sort by score descending
-    usort($scores, function ($a, $b) {
-        return $b['score'] - $a['score'];
-    });
+    if (!$input) {
+        http_response_code(400); // Bad Request
+        echo json_encode(["error" => "Invalid JSON"]);
+        exit;
+    }
 
-    echo json_encode(array_slice($scores, 0, 50));
-    exit;
-}
+    $name = isset($input['name']) ? strtoupper(trim($input['name'])) : 'ANON';
+    $score = isset($input['score']) ? intval($input['score']) : 0;
+    $type = isset($input['type']) ? $input['type'] : 'mobile';
 
-// Handle POST request (Save Score)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents("php://input"), true);
+    // 1. Find or Create User
+    // For simple high scores, we trust the name provided.
+    // In a full login system, we would verify session/token here.
+    // For now: Auto-register name if new.
 
-    if (isset($input['name']) && isset($input['score'])) {
-        $name = strip_tags(substr($input['name'], 0, 10)); // Sanitize
-        $score = intval($input['score']);
+    // Dummy pw hash for auto-created users
+    $dummy_pw = password_hash("auto", PASSWORD_DEFAULT);
 
-        $scores = json_decode(file_get_contents($target_file), true);
-        if (!$scores)
-            $scores = [];
+    // Insert User if not exists
+    $sql_user = "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, NOW()) 
+                 ON DUPLICATE KEY UPDATE id=id"; // No-op update to ensure id retrieval works or simple ignore
 
-        $scores[] = ["name" => $name, "score" => $score];
+    $stmt = $conn->prepare($sql_user);
+    $stmt->bind_param("ss", $name, $dummy_pw);
+    $stmt->execute();
 
-        // Sort and Keep Top 50
-        usort($scores, function ($a, $b) {
-            return $b['score'] - $a['score'];
-        });
+    // Get User ID
+    $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+    $stmt->bind_param("s", $name);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $user = $res->fetch_assoc();
+    $user_id = $user['id'];
 
-        $scores = array_slice($scores, 0, 50);
+    // 2. Insert Score
+    $sql_score = "INSERT INTO scores (user_id, score, platform) VALUES (?, ?, ?)";
+    $stmt = $conn->prepare($sql_score);
+    $stmt->bind_param("iis", $user_id, $score, $type);
 
-        if (file_put_contents($target_file, json_encode($scores))) {
-            echo json_encode(["message" => "Score saved to " . $type, "success" => true]);
-        } else {
-            http_response_code(500);
-            echo json_encode(["message" => "Failed to write to file"]);
-        }
+    if ($stmt->execute()) {
+        // 3. Update Stats
+        $conn->query("UPDATE users SET 
+                      games_played = games_played + 1, 
+                      total_xp = total_xp + $score, 
+                      best_score = GREATEST(best_score, $score) 
+                      WHERE id = $user_id");
+
+        echo json_encode(["success" => true, "rank" => "Calculated client-side"]);
     } else {
-        http_response_code(400);
-        echo json_encode(["message" => "Invalid input"]);
+        http_response_code(500);
+        echo json_encode(["error" => "Database error"]);
     }
-    exit;
 }
+
+$conn->close();
 ?>
