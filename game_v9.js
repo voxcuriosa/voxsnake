@@ -2047,6 +2047,23 @@ window.addEventListener('DOMContentLoaded', () => {
                         this.drawRect(f.x, f.y, COLORS.food, true);
                     });
 
+                    // Projectiles (Torpedoes) - FIX: MISSING RENDER LOOP
+                    renderProjectiles.forEach(p => {
+                        // Draw simple yellow circle/rect
+                        ctx.fillStyle = '#FFD700'; // Gold
+                        ctx.beginPath();
+                        const cx = p.x * GRID_SIZE + GRID_SIZE / 2;
+                        const cy = p.y * GRID_SIZE + GRID_SIZE / 2;
+                        ctx.arc(cx, cy, GRID_SIZE / 3, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Glow
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#FFD700';
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    });
+
                     // Snakes
                     renderSnakes.forEach(snake => {
                         // BLIND LOGIC (PC Multi)
