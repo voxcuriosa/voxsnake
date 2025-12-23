@@ -2277,6 +2277,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 ctx.save();
                 ctx.translate(this.shakeX, this.shakeY);
 
+                // Draw Grid (if needed, this was commented out in original)
+                // ctx.strokeStyle = COLORS.grid;
+                // for (let x = 0; x < CANVAS_WIDTH; x += GRID_SIZE) {
+                //     ctx.beginPath();
+                //     ctx.moveTo(x, 0);
+                //     ctx.lineTo(x, CANVAS_HEIGHT);
+                //     ctx.stroke();
+                // }
+                // for (let y = 0; y < CANVAS_HEIGHT; y += GRID_SIZE) {
+                //     ctx.beginPath();
+                //     ctx.moveTo(0, y);
+                //     ctx.lineTo(CANVAS_WIDTH, y);
+                //     ctx.stroke();
+                // }
+
                 // 2. MAIN WORLD RENDER (Protected)
                 try {
                     let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
@@ -2304,244 +2319,225 @@ window.addEventListener('DOMContentLoaded', () => {
                             if (ownerSnake) {
                                 borderColor = ownerSnake.color;
                             } else {
-                                this.shakeY = 0;
-                            }
-                            this.particles.update();
+                                // for (let y = 0; y < CANVAS_HEIGHT; y += GRID_SIZE) {
+                                //     ctx.beginPath();
+                                //     ctx.moveTo(0, y);
+                                //     ctx.lineTo(CANVAS_WIDTH, y);
+                                //     ctx.stroke();
+                                // }
 
-                            const ctx = this.ctx;
-                            ctx.fillStyle = COLORS.bg; // Clear with BG color
-                            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                                // 2. MAIN WORLD RENDER (Protected)
+                                try {
+                                    let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
+                                    let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
+                                    let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
+                                    let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+                                    let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
 
-                            ctx.save();
-                            ctx.translate(this.shakeX, this.shakeY);
+                                    // Walls / Mines
+                                    renderWalls.forEach(w => {
+                                        this.drawRect(w.x, w.y, COLORS.brown);
 
-                            // Draw Grid (if needed, this was commented out in original)
-                            // ctx.strokeStyle = COLORS.grid;
-                            // for (let x = 0; x < CANVAS_WIDTH; x += GRID_SIZE) {
-                            //     ctx.beginPath();
-                            //     ctx.moveTo(x, 0);
-                            //     ctx.lineTo(x, CANVAS_HEIGHT);
-                            //     ctx.stroke();
-                            // }
-                            // for (let y = 0; y < CANVAS_HEIGHT; y += GRID_SIZE) {
-                            //     ctx.beginPath();
-                            //     ctx.moveTo(0, y);
-                            //     ctx.lineTo(CANVAS_WIDTH, y);
-                            //     ctx.stroke();
-                            // }
+                                        // Default Border
+                                        let borderColor = '#ff0000'; // Default red border for walls
 
-                            // 2. MAIN WORLD RENDER (Protected)
-                            try {
-                                let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
-                                let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
-                                let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
-                                let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
-                                let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
+                                        // MINE VISUALIZATION
+                                        if (w.ownerId) {
+                                            // Determine Color based on Owner ID
+                                            // We don't have easy access to snake index by ID here without searching, 
+                                            // but we can assume ID 'p1'/'p2' or search.
+                                            // Actually, let's just use specific colors if we can match IDs?
+                                            // Simpler: If it has an ownerId, it's a Mine.
+                                            // Let's try to match to snake colors.
+                                            const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
+                                            if (ownerSnake) {
+                                                borderColor = ownerSnake.color;
+                                            } else {
+                                                // Fallback if snake not found (e.g. disconnected)
+                                                borderColor = '#ffff00';
+                                            }
 
-                                // Walls / Mines
-                                renderWalls.forEach(w => {
-                                    this.drawRect(w.x, w.y, COLORS.brown);
-
-                                    // Default Border
-                                    let borderColor = '#ff0000'; // Default red border for walls
-
-                                    // MINE VISUALIZATION
-                                    if (w.ownerId) {
-                                        // Determine Color based on Owner ID
-                                        // We don't have easy access to snake index by ID here without searching, 
-                                        // but we can assume ID 'p1'/'p2' or search.
-                                        // Actually, let's just use specific colors if we can match IDs?
-                                        // Simpler: If it has an ownerId, it's a Mine.
-                                        // Let's try to match to snake colors.
-                                        const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
-                                        if (ownerSnake) {
-                                            borderColor = ownerSnake.color;
-                                        } else {
-                                            // Fallback if snake not found (e.g. disconnected)
-                                            borderColor = '#ffff00';
+                                            // Draw Mine Indicator (Inner Dot)
+                                            ctx.fillStyle = borderColor;
+                                            const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
+                                            const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
+                                            ctx.beginPath();
+                                            ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
+                                            ctx.fill();
                                         }
 
-                                        // Draw Mine Indicator (Inner Dot)
-                                        ctx.fillStyle = borderColor;
-                                        const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
-                                        const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
+                                        ctx.strokeStyle = borderColor;
+                                        ctx.lineWidth = 2;
+                                        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+                                    });
+
+                                    // RENDER PARTICLES
+                                    this.particles.draw(ctx);
+
+                                    // Powerups
+                                    renderPowerups.forEach(p => {
+                                        const def = this.powerUpTypes[p.type];
+                                        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+                                    });
+
+                                    // Foods
+                                    renderFoods.forEach(f => {
+                                        this.drawRect(f.x, f.y, COLORS.food, true);
+                                    });
+
+                                    // Projectiles (Torpedoes) - FIX: MISSING RENDER LOOP
+                                    renderProjectiles.forEach(p => {
+                                        // Draw simple yellow circle/rect
+                                        ctx.fillStyle = '#FFD700'; // Gold
                                         ctx.beginPath();
-                                        ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
+                                        const cx = p.x * GRID_SIZE + GRID_SIZE / 2;
+                                        const cy = p.y * GRID_SIZE + GRID_SIZE / 2;
+                                        ctx.arc(cx, cy, GRID_SIZE / 3, 0, Math.PI * 2);
                                         ctx.fill();
+
+                                        // Glow
+                                        ctx.shadowBlur = 10;
+                                        ctx.shadowColor = '#FFD700';
+                                        ctx.fill();
+                                        ctx.shadowBlur = 0;
+                                    });
+
+                                    // Snakes
+                                    renderSnakes.forEach(snake => {
+                                        // BLIND LOGIC (PC Multi)
+                                        // If PC Multi, Blinded Snake becomes invisible (User Request)
+                                        if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) {
+                                            return; // Skip rendering this snake entirely
+                                        }
+
+                                        const snakeColor = snake.hasShield ? COLORS.silver :
+                                            snake.ghostTimer > 0 ? COLORS.ghost :
+                                                snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+
+                                        // FIX: BLIND EFFECT (Client Side Visual - Mobile/Single)
+                                        // If *my* entry has blindTimer > 0, blind the screen
+                                        if (this.gameMode === 'single' && snake.blindTimer > 0) {
+                                            if (document.querySelector('.game-container'))
+                                                document.querySelector('.game-container').classList.add('blinded');
+                                        } else if (this.gameMode === 'single') {
+                                            if (document.querySelector('.game-container'))
+                                                document.querySelector('.game-container').classList.remove('blinded');
+                                        }
+
+                                        snake.body.forEach((segment, index) => {
+                                            const isHead = index === 0;
+                                            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                                            else ctx.fillStyle = snakeColor;
+                                            this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
+                                        });
+                                    });
+
+                                    // Legend
+                                    // FIX: Override Ghost label for Single Player
+                                    if (this.gameMode === 'single') {
+                                        this.powerUpTypes['ghost'].label = 'GHOST';
+                                    } else {
+                                        this.powerUpTypes['ghost'].label = 'Wall Trap';
                                     }
+                                    this.updateDynamicLegend();
 
-                                    ctx.strokeStyle = borderColor;
-                                    ctx.lineWidth = 2;
-                                    ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-                                });
+                                } catch (e) {
+                                    console.error("WORLD RENDER CRASH:", e);
+                                }
 
-                                // RENDER PARTICLES
-                                this.particles.draw(ctx);
-
-                                // Powerups
-                                renderPowerups.forEach(p => {
-                                    const def = this.powerUpTypes[p.type];
-                                    this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-                                });
-
-                                // Foods
-                                renderFoods.forEach(f => {
-                                    this.drawRect(f.x, f.y, COLORS.food, true);
-                                });
-
-                                // Projectiles (Torpedoes) - FIX: MISSING RENDER LOOP
+                                // Draw Projectiles
                                 renderProjectiles.forEach(p => {
-                                    // Draw simple yellow circle/rect
-                                    ctx.fillStyle = '#FFD700'; // Gold
-                                    ctx.beginPath();
-                                    const cx = p.x * GRID_SIZE + GRID_SIZE / 2;
-                                    const cy = p.y * GRID_SIZE + GRID_SIZE / 2;
-                                    ctx.arc(cx, cy, GRID_SIZE / 3, 0, Math.PI * 2);
-                                    ctx.fill();
-
-                                    // Glow
+                                    // Pulsing Gold Diamond
+                                    const size = GRID_SIZE / 2;
+                                    const center = (GRID_SIZE - size) / 2;
+                                    ctx.fillStyle = '#FFD700';
                                     ctx.shadowBlur = 10;
                                     ctx.shadowColor = '#FFD700';
-                                    ctx.fill();
+                                    ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
                                     ctx.shadowBlur = 0;
                                 });
 
-                                // Snakes
-                                renderSnakes.forEach(snake => {
-                                    // BLIND LOGIC (PC Multi)
-                                    // If PC Multi, Blinded Snake becomes invisible (User Request)
-                                    if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) {
-                                        return; // Skip rendering this snake entirely
-                                    }
+                                // 3. UI LAYERS (ON TOP)
 
-                                    const snakeColor = snake.hasShield ? COLORS.silver :
-                                        snake.ghostTimer > 0 ? COLORS.ghost :
-                                            snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
-
-                                    // FIX: BLIND EFFECT (Client Side Visual - Mobile/Single)
-                                    // If *my* entry has blindTimer > 0, blind the screen
-                                    if (this.gameMode === 'single' && snake.blindTimer > 0) {
-                                        if (document.querySelector('.game-container'))
-                                            document.querySelector('.game-container').classList.add('blinded');
-                                    } else if (this.gameMode === 'single') {
-                                        if (document.querySelector('.game-container'))
-                                            document.querySelector('.game-container').classList.remove('blinded');
-                                    }
-
-                                    snake.body.forEach((segment, index) => {
-                                        const isHead = index === 0;
-                                        if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-                                        else ctx.fillStyle = snakeColor;
-                                        this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
-                                    });
-                                });
-
-                                // Legend
-                                // FIX: Override Ghost label for Single Player
-                                if (this.gameMode === 'single') {
-                                    this.powerUpTypes['ghost'].label = 'GHOST';
-                                } else {
-                                    this.powerUpTypes['ghost'].label = 'Wall Trap';
+                                // CLEAN UI
+                                if (this.isRunning) {
+                                    const uiLayer = document.getElementById('ui-layer');
+                                    if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
+                                    const join = document.getElementById('join-screen');
+                                    if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
                                 }
-                                this.updateDynamicLegend();
 
-                            } catch (e) {
-                                console.error("WORLD RENDER CRASH:", e);
+                            } catch (fatalE) {
+                                console.error("FATAL DRAW ERROR:", fatalE);
                             }
-
-                            // Draw Projectiles
-                            renderProjectiles.forEach(p => {
-                                // Pulsing Gold Diamond
-                                const size = GRID_SIZE / 2;
-                                const center = (GRID_SIZE - size) / 2;
-                                ctx.fillStyle = '#FFD700';
-                                ctx.shadowBlur = 10;
-                                ctx.shadowColor = '#FFD700';
-                                ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
-                                ctx.shadowBlur = 0;
-                            });
-
-                            // 3. UI LAYERS (ON TOP)
-
-                            // CLEAN UI
-                            if (this.isRunning) {
-                                const uiLayer = document.getElementById('ui-layer');
-                                if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
-                                const join = document.getElementById('join-screen');
-                                if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
-                            }
-
-                        } catch (fatalE) {
-                            console.error("FATAL DRAW ERROR:", fatalE);
                         }
-                    }
 
-                    drawRect(x, y, color, glow = false) {
-                        ctx.fillStyle = color;
-                        if(glow) {
-                            ctx.shadowBlur = 15;
-                            ctx.shadowColor = color;
-                        } else {
+                        drawRect(x, y, color, glow = false) {
+                            ctx.fillStyle = color;
+                            if (glow) {
+                                ctx.shadowBlur = 15;
+                                ctx.shadowColor = color;
+                            } else {
+                                ctx.shadowBlur = 0;
+                            }
+                            ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
                             ctx.shadowBlur = 0;
                         }
-                        ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
-                        ctx.shadowBlur = 0;
-                    }
 
-                    broadcastState() {
-                        if(!this.isHost || !this.conn || !this.conn.open) return;
+                        broadcastState() {
+                            if (!this.isHost || !this.conn || !this.conn.open) return;
 
-                    const state = {
-                        type: 'state',
-                        snakes: this.snakes,
-                        foods: this.foods,
-                        powerups: this.powerups,
-                        walls: this.walls,
-                        projectiles: this.projectiles,
-                        dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
-                    };
+                            const state = {
+                                type: 'state',
+                                snakes: this.snakes,
+                                foods: this.foods,
+                                powerups: this.powerups,
+                                walls: this.walls,
+                                projectiles: this.projectiles,
+                                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
+                            };
 
-                    try {
-                        this.conn.send(state);
-                    } catch (e) {
-                        console.error("Broadcast Error:", e);
-                    }
-                }
-
-                    loop(timestamp) {
-                    // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
-                    this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-
-                    // 2. LOGIC
-                    if (this.isRunning && !this.isPaused) {
-                        if (timestamp - this.lastTime > this.currentSpeed) {
-                            this.lastTime = timestamp;
                             try {
-                                this.update();
+                                this.conn.send(state);
                             } catch (e) {
-                                console.error("UPDATE CRASH:", e);
-                                this.isRunning = false;
-                            }
-                            if (this.isHost) {
-                                try { this.broadcastState(); } catch (e) { }
+                                console.error("Broadcast Error:", e);
                             }
                         }
-                    }
 
-                    // 3. RENDER
-                    this.draw();
-                }
-            }
+                        loop(timestamp) {
+                            // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
+                            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+
+                            // 2. LOGIC
+                            if (this.isRunning && !this.isPaused) {
+                                if (timestamp - this.lastTime > this.currentSpeed) {
+                                    this.lastTime = timestamp;
+                                    try {
+                                        this.update();
+                                    } catch (e) {
+                                        console.error("UPDATE CRASH:", e);
+                                        this.isRunning = false;
+                                    }
+                                    if (this.isHost) {
+                                        try { this.broadcastState(); } catch (e) { }
+                                    }
+                                }
+                            }
+
+                            // 3. RENDER
+                            this.draw();
+                        }
+                    }
 
                 // Initialize Game
                 const game = new Game();
-            // game.initMultiplayer(); // REMOVED REDUNDANT CALL
-            game.loop(0);
+                    // game.initMultiplayer(); // REMOVED REDUNDANT CALL
+                    game.loop(0);
 
-            // Hard Reload if version mismatch (Simple check)
-            if (location.search.indexOf('v=5.6') === -1) {
-                // console.log("Updating URL version...");
-                // history.replaceState({}, '', location.pathname + '?v=5.6');
-            }
+                    // Hard Reload if version mismatch (Simple check)
+                    if (location.search.indexOf('v=5.6') === -1) {
+                        // console.log("Updating URL version...");
+                        // history.replaceState({}, '', location.pathname + '?v=5.6');
+                    }
 
-        }); // MAIN WRAPPER END
+                }); // MAIN WRAPPER END
