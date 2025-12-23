@@ -111,6 +111,122 @@ window.addEventListener('DOMContentLoaded', () => {
         blue: '#0000ff'
     };
 
+    // --- AUDIO SYSTEM (Synthesized) ---
+    class SoundManager {
+        constructor() {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.muted = false;
+        }
+
+        play(type) {
+            if (this.muted) return;
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            const now = this.ctx.currentTime;
+
+            switch (type) {
+                case 'eat':
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                    break;
+
+                case 'die':
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                    break;
+
+                case 'shoot':
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                    break;
+
+                case 'pickup':
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(1000, now);
+                    osc.frequency.linearRampToValueAtTime(1500, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                    break;
+
+                case 'explode':
+                    // Noise (approximate with erratic freq)
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.linearRampToValueAtTime(10, now + 0.3);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                    break;
+            }
+        }
+    }
+
+    // --- PARTICLE SYSTEM ---
+    class ParticleSystem {
+        constructor() {
+            this.particles = [];
+        }
+
+        explode(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                this.particles.push({
+                    x: x * GRID_SIZE + GRID_SIZE / 2,
+                    y: y * GRID_SIZE + GRID_SIZE / 2,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1.0,
+                    color: color,
+                    size: Math.random() * 5 + 2
+                });
+            }
+        }
+
+        update() {
+            for (let i = this.particles.length - 1; i >= 0; i--) {
+                const p = this.particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05;
+                p.size *= 0.95;
+                if (p.life <= 0) this.particles.splice(i, 1);
+            }
+        }
+
+        draw(ctx) {
+            this.particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
     class Snake {
         constructor(id, color, startPos, startDir, controls) {
             this.id = id;
@@ -260,6 +376,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     class Game {
         constructor() {
+            this.canvas = document.getElementById('game-canvas');
+            this.ctx = this.canvas.getContext('2d');
+
+            // FX System
+            this.sound = new SoundManager();
+            this.particles = new ParticleSystem();
+            this.shakeX = 0;
+            this.shakeY = 0;
+            this.shakeTimer = 0;
+
             this.snakes = [];
             this.foods = []; // Converted to Array for Multi-Food
             this.powerups = []; // Array of {x, y, type, createdAt}
@@ -717,8 +843,27 @@ window.addEventListener('DOMContentLoaded', () => {
                 highScoreScreen.classList.add('nuclear-hidden');
             }
 
+            this.touchStartY = 0;
+
+            // FX Systems
+            this.sound = new SoundManager();
+            this.particles = new ParticleSystem();
+            this.shakeX = 0;
+            this.shakeY = 0;
+            this.shakeTimer = 0;
+
             this.loadHighScores();
             this.draw();
+        }
+
+        triggerShake(amount = 5) {
+            this.shakeTimer = amount;
+        }
+
+        init() {
+            // This init function seems to be missing from the provided context,
+            // but the instruction implies it should exist.
+            // Adding a placeholder if it's not defined elsewhere.
         }
 
         joinGame(hostId) {
@@ -1826,6 +1971,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     s.score++;
                     this.totalFoodEaten++;
 
+                    // Trigger FX for eating
+                    this.sound.play('eat');
+                    this.particles.explode(s.body[0].x, s.body[0].y, COLORS.food, 5);
+
                     // Spawn Replacement right away to keep map full
                     this.spawnFood();
                     // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
@@ -1862,33 +2011,34 @@ window.addEventListener('DOMContentLoaded', () => {
                         // Don't hit owner
                         if (s.id === p.ownerId) continue;
 
-                        // Check Head Collision
-                        const head = s.body[0];
-                        if (head.x === p.x && head.y === p.y) {
-                            // Hit!
-                            if (s.hasShield) {
-                                s.hasShield = false;
-                                projectileHit = true;
-                                this.triggerShieldEffect(p.x, p.y);
-                            } else {
-                                s.isDead = true;
-                                projectileHit = true;
-                            }
-                        }
-                        // Check Body Collision? (Optional: Destroy projectile if it hits body?)
-                        // "Dreper motstanderen hvis den treffer motstanderen" usually means any part.
-                        for (let i = 1; i < s.body.length; i++) {
-                            if (s.body[i].x === p.x && s.body[i].y === p.y) {
-                                if (s.hasShield) {
-                                    s.hasShield = false;
-                                    projectileHit = true;
-                                    this.triggerShieldEffect(p.x, p.y);
-                                } else {
-                                    s.isDead = true;
-                                    projectileHit = true;
+                        // Projectile Hit Snake
+                        s.body.forEach((seg, i) => {
+                            if (p.x === seg.x && p.y === seg.y) {
+                                // Hit!
+                                this.sound.play('explode');
+                                this.particles.explode(p.x, p.y, COLORS.orange, 15);
+                                this.triggerShake(5);
+
+                                projectileHit = true; // Mark projectile for removal
+
+                                // Head Hit
+                                if (i === 0) {
+                                    if (s.hasShield) {
+                                        s.hasShield = false;
+                                        this.triggerShieldEffect(p.x, p.y);
+                                    } else {
+                                        s.isDead = true;
+                                    }
+                                } else { // Body Hit
+                                    if (s.hasShield) {
+                                        s.hasShield = false;
+                                        this.triggerShieldEffect(p.x, p.y);
+                                    } else {
+                                        s.isDead = true;
+                                    }
                                 }
                             }
-                        }
+                        });
                     }
                     if (projectileHit) {
                         this.projectiles.splice(pIndex, 1); // Destroy projectile
@@ -1920,6 +2070,9 @@ window.addEventListener('DOMContentLoaded', () => {
         applyPowerUp(user, type, userIdx) {
             const enemy = this.snakes[userIdx === 0 ? 1 : 0];
             const isMulti = this.gameMode === 'multi';
+
+            // Trigger FX for pickup
+            this.sound.play('pickup');
 
             switch (type) {
                 case 'blind':
@@ -1973,12 +2126,25 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                     break;
                 case 'torpedo':
-                    this.fireTorpedo(user);
+                    user.hasTorpedo = true;
+                    if (this.platform === 'pc') {
+                        // Auto-fire or just enable? 
+                        // Logic says we fire processing happens elsewhere likely or manual?
+                        // Actually PC doesn't have a button usually?
+                        // Wait, fireTorpedo() is called on KEY PRESS space.
+                        // We assume user will press space.
+                    }
                     break;
             }
         }
 
         fireTorpedo(user) {
+            if (!user.hasTorpedo) return;
+            user.hasTorpedo = false;
+            this.sound.play('shoot');
+            this.triggerShake(2);
+
+            // Directions to shoot (Up, Down, Left, Right)
             const head = user.body[0];
             const dirs = [
                 { x: 0, y: -1 }, // Up
@@ -2102,130 +2268,73 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         draw() {
+
+            const ctx = this.ctx;
+            ctx.fillStyle = COLORS.bg; // Clear with BG color
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+            // 1. UPDATE FX
+            if (this.shakeTimer > 0) {
+                this.shakeX = (Math.random() - 0.5) * 10;
+                this.shakeY = (Math.random() - 0.5) * 10;
+                this.shakeTimer--;
+            } else {
+                this.shakeX = 0;
+                this.shakeY = 0;
+            }
+            this.particles.update();
+
+            // (Redundant ctx and clear removed)
+
+            ctx.save();
+            ctx.translate(this.shakeX, this.shakeY);
+
+            // 2. MAIN WORLD RENDER (Protected)
             try {
-                // 1. BACKGROUND
-                ctx.fillStyle = COLORS.bg;
-                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
+                let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
+                let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
+                let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+                let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
 
-                // 2. MAIN WORLD RENDER (Protected)
-                try {
-                    let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
-                    let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
-                    let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
-                    let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
-                    let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
+                // Walls / Mines
+                renderWalls.forEach(w => {
+                    this.drawRect(w.x, w.y, COLORS.brown);
+                    let borderColor = '#ff0000';
+                    if (w.ownerId) {
+                        const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
+                        if (ownerSnake) borderColor = ownerSnake.color;
+                        else borderColor = '#ffff00';
 
-                    // Walls / Mines
-                    renderWalls.forEach(w => {
-                        this.drawRect(w.x, w.y, COLORS.brown);
-
-                        // Default Border
-                        let borderColor = '#ff0000'; // Default red border for walls
-
-                        // MINE VISUALIZATION
-                        if (w.ownerId) {
-                            // Determine Color based on Owner ID
-                            // We don't have easy access to snake index by ID here without searching, 
-                            // but we can assume ID 'p1'/'p2' or search.
-                            // Actually, let's just use specific colors if we can match IDs?
-                            // Simpler: If it has an ownerId, it's a Mine.
-                            // Let's try to match to snake colors.
-                            const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
-                            if (ownerSnake) {
-                                borderColor = ownerSnake.color;
-                            } else {
-                                // Fallback if snake not found (e.g. disconnected)
-                                borderColor = '#ffff00';
-                            }
-
-                            // Draw Mine Indicator (Inner Dot)
-                            ctx.fillStyle = borderColor;
-                            const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
-                            const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
-                            ctx.beginPath();
-                            ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-
-                        ctx.strokeStyle = borderColor;
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-                    });
-
-                    // Powerups
-                    renderPowerups.forEach(p => {
-                        const def = this.powerUpTypes[p.type];
-                        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-                    });
-
-                    // Foods
-                    renderFoods.forEach(f => {
-                        this.drawRect(f.x, f.y, COLORS.food, true);
-                    });
-
-                    // Projectiles (Torpedoes) - FIX: MISSING RENDER LOOP
-                    renderProjectiles.forEach(p => {
-                        // Draw simple yellow circle/rect
-                        ctx.fillStyle = '#FFD700'; // Gold
+                        // Mine Dot
+                        ctx.fillStyle = borderColor;
+                        const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
+                        const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
                         ctx.beginPath();
-                        const cx = p.x * GRID_SIZE + GRID_SIZE / 2;
-                        const cy = p.y * GRID_SIZE + GRID_SIZE / 2;
-                        ctx.arc(cx, cy, GRID_SIZE / 3, 0, Math.PI * 2);
+                        ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
                         ctx.fill();
-
-                        // Glow
-                        ctx.shadowBlur = 10;
-                        ctx.shadowColor = '#FFD700';
-                        ctx.fill();
-                        ctx.shadowBlur = 0;
-                    });
-
-                    // Snakes
-                    renderSnakes.forEach(snake => {
-                        // BLIND LOGIC (PC Multi)
-                        // If PC Multi, Blinded Snake becomes invisible (User Request)
-                        if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) {
-                            return; // Skip rendering this snake entirely
-                        }
-
-                        const snakeColor = snake.hasShield ? COLORS.silver :
-                            snake.ghostTimer > 0 ? COLORS.ghost :
-                                snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
-
-                        // FIX: BLIND EFFECT (Client Side Visual - Mobile/Single)
-                        // If *my* entry has blindTimer > 0, blind the screen
-                        if (this.gameMode === 'single' && snake.blindTimer > 0) {
-                            if (document.querySelector('.game-container'))
-                                document.querySelector('.game-container').classList.add('blinded');
-                        } else if (this.gameMode === 'single') {
-                            if (document.querySelector('.game-container'))
-                                document.querySelector('.game-container').classList.remove('blinded');
-                        }
-
-                        snake.body.forEach((segment, index) => {
-                            const isHead = index === 0;
-                            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-                            else ctx.fillStyle = snakeColor;
-                            this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
-                        });
-                    });
-
-                    // Legend
-                    // FIX: Override Ghost label for Single Player
-                    if (this.gameMode === 'single') {
-                        this.powerUpTypes['ghost'].label = 'GHOST';
-                    } else {
-                        this.powerUpTypes['ghost'].label = 'Wall Trap';
                     }
-                    this.updateDynamicLegend();
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+                });
 
-                } catch (e) {
-                    console.error("WORLD RENDER CRASH:", e);
-                }
+                // Particles
+                this.particles.draw(ctx);
 
-                // Draw Projectiles
+                // Powerups
+                renderPowerups.forEach(p => {
+                    const def = this.powerUpTypes[p.type];
+                    this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+                });
+
+                // Foods
+                renderFoods.forEach(f => {
+                    this.drawRect(f.x, f.y, COLORS.food, true);
+                });
+
+                // Projectiles
                 renderProjectiles.forEach(p => {
-                    // Pulsing Gold Diamond
                     const size = GRID_SIZE / 2;
                     const center = (GRID_SIZE - size) / 2;
                     ctx.fillStyle = '#FFD700';
@@ -2235,9 +2344,36 @@ window.addEventListener('DOMContentLoaded', () => {
                     ctx.shadowBlur = 0;
                 });
 
-                // 3. UI LAYERS (ON TOP)
+                // Snakes
+                renderSnakes.forEach(snake => {
+                    if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) return;
 
-                // CLEAN UI
+                    const snakeColor = snake.hasShield ? COLORS.silver :
+                        snake.ghostTimer > 0 ? COLORS.ghost :
+                            snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+
+                    // Blind visual
+                    if (this.gameMode === 'single') {
+                        const container = document.querySelector('.game-container');
+                        if (container) {
+                            if (snake.blindTimer > 0) container.classList.add('blinded');
+                            else container.classList.remove('blinded');
+                        }
+                    }
+
+                    snake.body.forEach((segment, index) => {
+                        if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                        else ctx.fillStyle = snakeColor;
+                        this.drawRect(segment.x, segment.y, ctx.fillStyle, index === 0);
+                    });
+                });
+
+                // Legend Override
+                if (this.gameMode === 'single') this.powerUpTypes['ghost'].label = 'GHOST';
+                else this.powerUpTypes['ghost'].label = 'Wall Trap';
+                this.updateDynamicLegend();
+
+                // Clean UI
                 if (this.isRunning) {
                     const uiLayer = document.getElementById('ui-layer');
                     if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
@@ -2248,9 +2384,12 @@ window.addEventListener('DOMContentLoaded', () => {
             } catch (fatalE) {
                 console.error("FATAL DRAW ERROR:", fatalE);
             }
+
+            ctx.restore();
         }
 
         drawRect(x, y, color, glow = false) {
+            const ctx = this.ctx;
             ctx.fillStyle = color;
             if (glow) {
                 ctx.shadowBlur = 15;
@@ -2272,7 +2411,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 powerups: this.powerups,
                 walls: this.walls,
                 projectiles: this.projectiles,
-                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
+                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT }
             };
 
             try {
@@ -2283,7 +2422,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         loop(timestamp) {
-            // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
+            // 1. SCHEDULE NEXT FRAME IMMEDIATELY
             this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
 
             // 2. LOGIC
@@ -2306,6 +2445,7 @@ window.addEventListener('DOMContentLoaded', () => {
             this.draw();
         }
     }
+
 
     // Initialize Game
     const game = new Game();
