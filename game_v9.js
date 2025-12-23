@@ -2071,10 +2071,39 @@ window.addEventListener('DOMContentLoaded', () => {
                     let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
                     let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
 
-                    // Walls
+                    // Walls / Mines
                     renderWalls.forEach(w => {
                         this.drawRect(w.x, w.y, COLORS.brown);
-                        ctx.strokeStyle = '#ff0000';
+
+                        // Default Border
+                        let borderColor = '#ff0000'; // Default red border for walls
+
+                        // MINE VISUALIZATION
+                        if (w.ownerId) {
+                            // Determine Color based on Owner ID
+                            // We don't have easy access to snake index by ID here without searching, 
+                            // but we can assume ID 'p1'/'p2' or search.
+                            // Actually, let's just use specific colors if we can match IDs?
+                            // Simpler: If it has an ownerId, it's a Mine.
+                            // Let's try to match to snake colors.
+                            const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
+                            if (ownerSnake) {
+                                borderColor = ownerSnake.color;
+                            } else {
+                                // Fallback if snake not found (e.g. disconnected)
+                                borderColor = '#ffff00';
+                            }
+
+                            // Draw Mine Indicator (Inner Dot)
+                            ctx.fillStyle = borderColor;
+                            const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
+                            const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+
+                        ctx.strokeStyle = borderColor;
                         ctx.lineWidth = 2;
                         ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
                     });
