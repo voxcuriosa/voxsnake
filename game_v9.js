@@ -2858,34 +2858,45 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- ADMIN ---
-        loadAdmin() {
+        async loadAdmin() {
             if (!this.currentUser || this.currentUser.is_admin != 1) return;
             const tbody = document.getElementById('admin-user-list');
             tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
 
             console.log("Loading Admin List for:", this.currentUser.name);
 
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
-            })
-                .then(r => r.json())
-                .then(d => {
-                    console.log("Admin Data:", d);
-                    if (d.success) {
-                        if (d.users.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="5">No users found (except you?)</td></tr>';
-                        } else {
-                            this.renderAdminList(d.users);
-                        }
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
-                    }
-                })
-                .catch(e => {
-                    console.error("Admin Load Error:", e);
-                    tbody.innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
+            try {
+                const response = await fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
                 });
+
+                const text = await response.text();
+                let d;
+                try {
+                    d = JSON.parse(text);
+                } catch (e) {
+                    console.error("JSON PARSE ERROR:", text);
+                    alert("SERVER ERROR:\n" + text.substring(0, 500));
+                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Server Error (Check Alert)</td></tr>';
+                    return;
+                }
+
+                console.log("Admin Data:", d);
+                if (d.success) {
+                    if (d.users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
+                    } else {
+                        this.renderAdminList(d.users);
+                    }
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
+                }
+            } catch (err) {
+                console.error("Network Error:", err);
+                tbody.innerHTML = '<tr><td colspan="5" style="color:red">Network Error</td></tr>';
+            }
         }
 
         renderAdminList(users) {
