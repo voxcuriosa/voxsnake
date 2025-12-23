@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=5.9">
+    <link rel="stylesheet" href="style.css?v=5.91">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -74,7 +74,7 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v5.9</span></h3>
+                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v5.91</span></h3>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
@@ -217,9 +217,30 @@
                     <input type="text" id="login-user" placeholder="USERNAME" maxlength="12">
                     <input type="password" id="login-pass" placeholder="PASSWORD" maxlength="20">
                     <button id="btn-do-login" class="neon-btn">LOG IN</button>
+                    <div style="margin-top:10px;">
+                        <button id="btn-goto-recover" class="neon-btn secondary"
+                            style="font-size:0.7rem; padding:4px 10px; border:none;">FORGOT PASSWORD?</button>
+                    </div>
                     <button id="btn-goto-register" class="neon-btn secondary" style="margin-top:10px;">CREATE
                         ACCOUNT</button>
                     <button id="btn-login-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                </div>
+
+                <!-- RECOVERY SCREEN -->
+                <div id="recover-screen" class="menu-screen hidden">
+                    <h2 class="neon-title">RECOVERY</h2>
+                    <div id="rec-step-1">
+                        <input type="text" id="rec-user" placeholder="USERNAME" maxlength="12">
+                        <button id="btn-rec-find" class="neon-btn">FIND USER</button>
+                    </div>
+                    <div id="rec-step-2" class="hidden">
+                        <div id="rec-question"
+                            style="color:#00ffff; margin-bottom:10px; font-style:italic; font-size:0.9rem;"></div>
+                        <input type="text" id="rec-answer" placeholder="YOUR ANSWER">
+                        <input type="password" id="rec-newpass" placeholder="NEW PASSWORD (Min 6)">
+                        <button id="btn-rec-reset" class="neon-btn">RESET PASSWORD</button>
+                    </div>
+                    <button id="btn-rec-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
                 </div>
 
                 <!-- REGISTER SCREEN -->
@@ -229,6 +250,20 @@
                     </p>
                     <input type="text" id="reg-user" placeholder="USERNAME" maxlength="12">
                     <input type="password" id="reg-pass" placeholder="PASSWORD" maxlength="20">
+
+                    <div style="margin:10px 0; width:100%; max-width:300px;">
+                        <label
+                            style="color:#aaa; font-size:0.7rem; display:block; text-align:left; margin-bottom:4px;">SECURITY
+                            QUESTION (For Recovery)</label>
+                        <select id="reg-sec-q" class="neon-input" style="width:100%; margin-bottom:10px;">
+                            <option value="pet">What was your first pet's name?</option>
+                            <option value="school">What primary school did you go to?</option>
+                            <option value="mother">What is your mother's maiden name?</option>
+                            <option value="city">In what city were you born?</option>
+                        </select>
+                        <input type="text" id="reg-sec-a" placeholder="YOUR ANSWER" maxlength="50">
+                    </div>
+
                     <button id="btn-do-register" class="neon-btn">REGISTER</button>
                     <button id="btn-register-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
                 </div>
@@ -237,13 +272,44 @@
                 <div id="profile-screen" class="menu-screen hidden">
                     <h2 class="neon-title">MY PROFILE</h2>
                     <h3 id="profile-name" style="color:#00ffff; margin-bottom:20px;">User</h3>
-                    <div style="text-align:left; margin-bottom:20px; font-size:1.2rem;">
-                        <div>Total Score: <span id="profile-score" style="color:#FFD700;">0</span></div>
-                        <div>Games Played: <span id="profile-games" style="color:#fff;">0</span></div>
+                    <div
+                        style="text-align:left; margin-bottom:20px; font-size:1.2rem; background:rgba(255,255,255,0.05); padding:15px; border-radius:8px;">
+                        <div>Total XP: <span id="profile-score" style="color:#FFD700; float:right;">-</span></div>
+                        <div style="margin-top:5px;">Games Played: <span id="profile-games"
+                                style="color:#fff; float:right;">-</span></div>
+                        <div style="margin-top:5px; font-size:0.8rem; color:#888;">Joined: <span id="profile-joined"
+                                style="float:right;">-</span></div>
                     </div>
+
+                    <!-- ADMIN BUTTON (Hidden by default) -->
+                    <button id="btn-admin-panel" class="neon-btn hidden"
+                        style="border-color:#ff00ff; color:#ff00ff; margin-bottom:10px;">ADMIN PANEL 👑</button>
+
                     <button id="btn-logout" class="neon-btn" style="border-color:#ff5555; color:#ff5555;">LOG
                         OUT</button>
                     <button id="btn-profile-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                </div>
+
+                <!-- ADMIN PANEL -->
+                <div id="admin-screen" class="menu-screen hidden" style="width:90%; max-width:600px;">
+                    <h2 class="neon-title" style="color:#ff00ff;">ADMIN PANEL</h2>
+                    <div
+                        style="max-height:300px; overflow-y:auto; width:100%; border:1px solid #333; margin-bottom:10px;">
+                        <table style="width:100%; color:#ccc; font-size:0.8rem; border-collapse:collapse;">
+                            <thead style="background:#222; position:sticky; top:0;">
+                                <tr>
+                                    <th style="padding:5px;">ID</th>
+                                    <th style="padding:5px;">Name</th>
+                                    <th style="padding:5px;">XP</th>
+                                    <th style="padding:5px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-user-list">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button id="btn-admin-close" class="neon-btn secondary">CLOSE</button>
                 </div>
 
                 <!-- Online Lobby Screen -->
@@ -358,7 +424,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-    <script src="game_v9.js?v=5.9"></script>
+    <script src="game_v9.js?v=5.91"></script>
 </body>
 
 </html>
