@@ -1188,8 +1188,8 @@ window.addEventListener('DOMContentLoaded', () => {
             let type = '';
 
             // TEST MODE OVERRIDE
-            if (this.testMode === 'torpedo') {
-                type = 'torpedo';
+            if (this.testMode && this.powerUpTypes[this.testMode]) {
+                type = this.testMode;
             } else {
                 let availableTypes = Object.keys(this.powerUpTypes);
 
