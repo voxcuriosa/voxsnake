@@ -2448,16 +2448,17 @@ window.addEventListener('DOMContentLoaded', () => {
                 this.draw();
             }
         }
+    }
 
-        // Initialize Game
-        const game = new Game();
-            // game.initMultiplayer(); // REMOVED REDUNDANT CALL
-            game.loop(0);
+    // Initialize Game
+    const game = new Game();
+    // game.initMultiplayer(); // REMOVED REDUNDANT CALL
+    game.loop(0);
 
-        // Hard Reload if version mismatch (Simple check)
-        if(location.search.indexOf('v=5.6') === -1) {
-    // console.log("Updating URL version...");
-    // history.replaceState({}, '', location.pathname + '?v=5.6');
-}
+    // Hard Reload if version mismatch (Simple check)
+    if (location.search.indexOf('v=5.6') === -1) {
+        // console.log("Updating URL version...");
+        // history.replaceState({}, '', location.pathname + '?v=5.6');
+    }
 
-        }); // MAIN WRAPPER END
+}); // MAIN WRAPPER END
