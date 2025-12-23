@@ -1614,42 +1614,76 @@ window.addEventListener('DOMContentLoaded', () => {
                 // Head-to-Head/Body collision logic
                 const h1 = this.snakes[0].body[0];
                 const h2 = this.snakes[1].body[0];
+                const headOn = (h1.x === h2.x && h1.y === h2.y);
 
-                // P1 Head hits P2 Body -> P1 Dies
-                this.snakes[1].body.forEach((seg) => {
-                    if (h1.x === seg.x && h1.y === seg.y) p1d = true;
+                // P1 Head hits P2 Body
+                // If Head-on, we skip index 0 here and handle it in specific block
+                this.snakes[1].body.forEach((seg, idx) => {
+                    if (headOn && idx === 0) return; // Handled later
+
+                    if (h1.x === seg.x && h1.y === seg.y) {
+                        // COLLISION!
+                        if (this.snakes[0].hasShield) {
+                            // P1 has shield: Survives crash
+                            this.snakes[0].hasShield = false;
+                            this.triggerShieldEffect(h1.x, h1.y);
+
+                            // SHIELD SMASH: If P2 does NOT have shield (and we hit body)
+                            // P2 dies! (Shield as weapon)
+                            if (!this.snakes[1].hasShield) {
+                                p2d = true;
+                            }
+                            // If P2 HAS shield, P2 survives, P1 shield just broke. 
+                            // (Bouncing off Armor)
+                        } else {
+                            // No shield: P1 dies
+                            p1d = true;
+                        }
+                    }
                 });
 
-                // P2 Head hits P1 Body -> P2 Dies
-                this.snakes[0].body.forEach((seg) => {
-                    if (h2.x === seg.x && h2.y === seg.y) p2d = true;
+                // P2 Head hits P1 Body
+                this.snakes[0].body.forEach((seg, idx) => {
+                    if (headOn && idx === 0) return;
+
+                    if (h2.x === seg.x && h2.y === seg.y) {
+                        if (this.snakes[1].hasShield) {
+                            this.snakes[1].hasShield = false;
+                            this.triggerShieldEffect(h2.x, h2.y);
+                            if (!this.snakes[0].hasShield) {
+                                p1d = true; // SMASH
+                            }
+                        } else {
+                            p2d = true;
+                        }
+                    }
                 });
 
                 // HEAD-ON COLLISION (Same Tile)
-                if (h1.x === h2.x && h1.y === h2.y) {
-                    // FIX: Check Shields!
+                if (headOn) {
                     const p1Shield = this.snakes[0].hasShield;
                     const p2Shield = this.snakes[1].hasShield;
 
                     if (p1Shield && p2Shield) {
-                        // Both shielded? Bounce? Nothing?
-                        // Let's say nothing happens, they pass through or both shields break?
+                        // BOUNCE / MUTUAL BREAK
                         this.snakes[0].hasShield = false;
                         this.snakes[1].hasShield = false;
                         this.triggerShieldEffect(h1.x, h1.y);
+                        // No deaths
                     } else if (p1Shield) {
-                        // P1 wins (P2 dies)
+                        // P1 Wins
+                        this.snakes[0].hasShield = false;
                         this.triggerShieldEffect(h1.x, h1.y);
                         p2d = true;
-                        this.snakes[0].hasShield = false; // Consumed?
                     } else if (p2Shield) {
-                        // P2 wins (P1 dies)
+                        // P2 Wins
+                        this.snakes[1].hasShield = false;
                         this.triggerShieldEffect(h1.x, h1.y);
                         p1d = true;
-                        this.snakes[1].hasShield = false; // Consumed?
                     } else {
-                        // mutual destruction
-                        p1d = true; p2d = true;
+                        // NO SHIELDS: MUTUAL DESTRUCTION
+                        p1d = true;
+                        p2d = true;
                     }
                 }
 
