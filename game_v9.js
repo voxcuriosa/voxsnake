@@ -1187,993 +1187,1006 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         spawnPowerUp() {
-            if (this.powerups.length >= 5) return; // Increased limit slightly
+            if (this.powerups.length >= 5) return;
 
-        }
+            let type = '';
 
-        // Logic: Bomb is useless if nothing to destroy
-        // (Check if there are walls OR other powerups to blow up)
-        const hasTargets = (this.walls.length > 0 || this.powerups.length > 0);
-        if(!hasTargets) {
-            availableTypes = availableTypes.filter(t => t !== 'bomb');
-        }
-
-        // Logic: Boost 'Wall' frequency (User Request: "mange flere")
-        // We add 'wall' multiple times to the array to increase probability
-        if(availableTypes.includes('wall')) {
-    availableTypes.push('wall');
-    availableTypes.push('wall');
-    availableTypes.push('wall'); // 4x chance total
-}
-
-if (availableTypes.length === 0) return;
-
-const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-
-let valid = false;
-let pos = {};
-let attempts = 0;
-while (!valid && attempts < 50) {
-    attempts++;
-    pos = {
-        x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
-        y: Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE)),
-        type: type,
-        createdAt: Date.now()
-    };
-    valid = !this.isOccupied(pos);
-}
-if (valid) this.powerups.push(pos);
-        }
-
-isOccupied(pos) {
-    if (this.foods) {
-        for (let f of this.foods) {
-            if (f.x === pos.x && f.y === pos.y) return true;
-        }
-    }
-    for (let snake of this.snakes) {
-        for (let segment of snake.body) {
-            if (pos.x === segment.x && pos.y === segment.y) return true;
-        }
-    }
-    for (let w of this.walls) if (pos.x === w.x && pos.y === w.y) return true;
-    for (let p of this.powerups) if (pos.x === p.x && pos.y === p.y) return true;
-    for (let proj of this.projectiles) if (pos.x === proj.x && pos.y === proj.y) return true; // Check projectiles
-    return false;
-}
-
-handleTouchStart(e) {
-    // FAILSAFE RESTART (Tap Screen if Game Over)
-    if (!this.isRunning && this.restartZone) {
-        location.reload(); // Simple restart
-        return;
-    }
-
-    // Allow clicks on buttons/inputs/menu to pass through
-    if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.menu-screen')) {
-        // Do not prevent default
-    } else {
-        e.preventDefault();
-    }
-
-    const touch = e.changedTouches[0];
-    this.touchStartX = touch.clientX;
-    this.touchStartY = touch.clientY;
-    if (typeof log !== 'undefined') log(`Start: ${Math.floor(this.touchStartX)},${Math.floor(this.touchStartY)}`);
-}
-
-handleTouchMove(e) {
-    // Prevent scrolling if NOT inside menu OR if checking high scores
-    // FIX: Allow default behavior (scrolling) if target is within a scrollable area
-    if (e.target.closest('.scrollable') || e.target.closest('#high-score-list')) {
-        e.stopPropagation(); // Stop game logic from seeing this
-        return; // LET DEFAULT SCROLL HAPPEN
-    } else if (!e.target.closest('.menu-screen')) {
-        e.preventDefault();
-    }
-
-    if (!this.isRunning || this.isPaused) return;
-
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - this.touchStartX;
-    const deltaY = touch.clientY - this.touchStartY;
-
-    // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
-    // REDUCED TO 15px for ultra-responsive continuous control
-    if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
-        let key = '';
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
-        } else {
-            key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
-        }
-
-        if (typeof log !== 'undefined') log(`CONT SWIPE: ${key}`);
-        this.handleInput({ key: key, preventDefault: () => { } });
-
-        // RESET Start Position to current finger position
-        // This is the key for "Continuous" swiping (Up -> Right without lifting)
-        this.touchStartX = touch.clientX;
-        this.touchStartY = touch.clientY;
-    }
-}
-
-handleTouchEnd(e) {
-    // Always allow button clicks to finish
-    if (e.target.closest('button') || e.target.closest('input')) {
-        return;
-    }
-
-    if (!e.target.closest('.menu-screen')) {
-        e.preventDefault();
-    }
-
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - this.touchStartX;
-    const deltaY = touch.clientY - this.touchStartY;
-
-    if (typeof log !== 'undefined') log(`End dX:${Math.floor(deltaX)} dY:${Math.floor(deltaY)} Run:${this.isRunning} Paused:${this.isPaused}`);
-
-    if (!this.isRunning || this.isPaused) return;
-
-    // Threshold for swipe vs tap (Reduced to 10px for responsiveness)
-    if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
-        // if (typeof log !== 'undefined') log("Tap ignored (<10px)");
-        return;
-    }
-
-    // Determine Direction
-    let key = '';
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        // Horizontal
-        key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
-    } else {
-        // Vertical
-        key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
-    }
-
-    if (typeof log !== 'undefined') log(`SWIPE END: ${key}`);
-    this.handleInput({ key: key, preventDefault: () => { } });
-}
-
-handleRemoteInput(key) {
-    if (typeof log !== 'undefined') log("HOST RX: " + key);
-
-    if (this.snakes.length > 1 && this.snakes[1]) {
-        const p2 = this.snakes[1];
-
-        // MAP Arrows (from Client Touch) to WASD (Player 2 Local)
-        let mappedKey = key;
-        if (key === 'ArrowUp') mappedKey = 'w';
-        if (key === 'ArrowDown') mappedKey = 's';
-        if (key === 'ArrowLeft') mappedKey = 'a';
-        if (key === 'ArrowRight') mappedKey = 'd';
-
-        p2.handleInput(mappedKey);
-    }
-}
-
-
-handleInput(e) {
-    if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
-        this.togglePause();
-        return;
-    }
-
-    // Network Client Input
-    if (this.isClient) {
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-            e.preventDefault();
-            if (typeof log !== 'undefined') log(`CLIENT INPUT: ${e.key} Send: ${this.conn && this.conn.open}`);
-            if (this.conn && this.conn.open) {
-                this.conn.send({ type: 'input', key: e.key });
-                // Record for visual feedback
-                this.lastClientInputKey = e.key;
-                this.lastClientInputTime = Date.now();
-            }
-        }
-        return; // Client ONLY sends input, does not move locally
-    }
-
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
-    this.snakes.forEach(s => s.handleInput(e.key));
-}
-
-togglePause() {
-    this.isPaused = !this.isPaused;
-
-    const uiLayer = document.getElementById('ui-layer');
-    if (uiLayer) uiLayer.style.display = 'block';
-
-    if (this.isPaused) {
-        mainMenu.classList.remove('hidden');
-        mainMenu.classList.remove('nuclear-hidden'); // UN-NUKE
-        mainMenu.classList.add('active');
-        mainMenu.style.display = 'flex';
-        if (btnResume) btnResume.classList.remove('hidden');
-    } else {
-        mainMenu.classList.add('hidden');
-        mainMenu.classList.remove('active');
-        if (btnResume) btnResume.classList.add('hidden');
-
-        this.lastTime = performance.now();
-        this.loop(this.lastTime);
-    }
-}
-
-gameOver(winnerIndex, skipNameEntry = false) {
-    try {
-        this.isRunning = false;
-        this.isPaused = false;
-
-        // SHOW MASTER UI
-        const uiLayer = document.getElementById('ui-layer');
-        if (uiLayer) {
-            uiLayer.style.display = 'block';
-            // Force reflow
-            uiLayer.offsetHeight;
-        }
-
-        mainMenu.classList.remove('active');
-        mainMenu.classList.add('hidden');
-        nameEntryScreen.classList.add('hidden');
-
-        if (this.gameMode === 'single' && !skipNameEntry) {
-            const score = this.snakes[0].score;
-            // Require at least 5 points to trigger Name Entry (anti-spam)
-            // Also triggers if it qualifies for the list (beat #20)
-            if (score > 5 && this.checkHighScore(score)) {
-                this.currentPendingScore = score;
-                if (playerNameInput) playerNameInput.value = "";
-
-                // CALCULATE DISPLAY RANK
-                try {
-                    const raw = localStorage.getItem('snake_highscores_cache');
-                    const scores = JSON.parse(raw || '[]');
-                    // Count how many scores are better or equal (simple rank)
-                    // Actually, if we insert this score, where would it land?
-                    // It lands after everyone with GREATER OR EQUAL score? No, usually after greater.
-                    // Let's count how many are STRICTLY greater.
-                    const better = scores.filter(s => s.score >= score).length;
-                    const rank = better + 1;
-
-                    const rankMsg = document.getElementById('rank-msg');
-                    if (rankMsg) {
-                        rankMsg.innerText = `CONGRATULATIONS, YOU ARE NUMBER ${rank}`;
-                    }
-                } catch (e) { }
-
-                nameEntryScreen.classList.remove('hidden');
-                nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
-                nameEntryScreen.classList.add('active');
-                nameEntryScreen.style.display = 'flex';
-                // FORCE VISIBILITY (Like Game Over)
-                nameEntryScreen.style.opacity = '1';
-                nameEntryScreen.style.visibility = 'visible';
-                nameEntryScreen.style.pointerEvents = 'auto';
-
-                if (playerNameInput) playerNameInput.focus();
-                return;
-            }
-        }
-
-        let msg = "GAME OVER";
-        let color = COLORS.p1;
-        if (this.gameMode === 'multi') {
-            if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
-            else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
-            else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
-        }
-
-        if (winnerText) {
-            winnerText.innerText = msg;
-            winnerText.style.color = color;
-        }
-
-        gameOverScreen.classList.remove('hidden');
-        gameOverScreen.classList.remove('nuclear-hidden'); // UN-NUKE
-        gameOverScreen.classList.add('active');
-        gameOverScreen.style.display = 'flex';
-        // FORCE VISIBILITY
-        gameOverScreen.style.opacity = '1';
-        gameOverScreen.style.visibility = 'visible';
-        gameOverScreen.style.pointerEvents = 'auto';
-
-        if (btnResume) btnResume.classList.add('hidden');
-        if (dynamicLegend) dynamicLegend.innerHTML = '';
-
-        // SYNC GAME OVER
-        if (this.isHost) {
-            this.broadcastGameOver(winnerIndex);
-        }
-
-    } catch (err) {
-        console.error(err);
-        alert("Game Over!");
-    }
-}
-
-broadcastGameOver(winnerIndex) {
-    if (!this.isHost || !this.conn || !this.conn.open) return;
-
-    // REDUNDANT BROADCAST (Fix for Mobile Packet Loss)
-    // Send 10 times over 1 second to ensure delivery
-    let count = 0;
-    const spam = setInterval(() => {
-        if (this.conn && this.conn.open) {
-            try {
-                this.conn.send({ type: 'gameover', winner: winnerIndex });
-            } catch (e) { }
-        }
-        count++;
-        if (count >= 10) clearInterval(spam);
-    }, 100);
-}
-
-// Fix Restart Button visibility for Client
-// Ensure buttons are rebound or checked in GameOver
-triggerShieldEffect(x, y) {
-    // Visual Flare
-    const div = document.createElement('div');
-    div.innerText = "SHIELD BLOCKED!";
-    div.style.position = 'absolute';
-    div.style.left = (x * GRID_SIZE) + 'px';
-    div.style.top = (y * GRID_SIZE) + 'px';
-    div.style.color = '#fff';
-    div.style.fontWeight = 'bold';
-    div.style.textShadow = '0 0 5px #000';
-    div.style.zIndex = '100';
-    div.style.pointerEvents = 'none';
-    div.className = 'shield-broken-msg'; // Add class for animation
-    document.body.appendChild(div);
-
-    // Animate up and fade
-    let op = 1;
-    let top = y * GRID_SIZE;
-    const anim = setInterval(() => {
-        op -= 0.05;
-        top -= 1;
-        div.style.opacity = op;
-        div.style.top = top + 'px';
-        if (op <= 0) {
-            clearInterval(anim);
-            div.remove();
-        }
-    }, 50);
-
-    // Flash Screen
-    const flash = document.createElement('div');
-    flash.style.position = 'fixed';
-    flash.style.top = '0'; flash.style.left = '0';
-    flash.style.width = '100vw'; flash.style.height = '100vh';
-    flash.style.background = 'rgba(255, 255, 255, 0.3)';
-    flash.style.zIndex = '99';
-    flash.style.pointerEvents = 'none';
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 100);
-}
-
-update() {
-    if (this.isPaused) return;
-    // CRITICAL FIX: Client is a PURE RENDERER. Do not run local physics!
-    if (this.isClient) return;
-
-    const now = Date.now();
-    // Use true delta time for smoother timers if framerate dips
-    // Note: this.lastTime is updated at end of loop(), but here we need delta for logic.
-    // Actually, the loop runs at `currentSpeed` interval!
-    // Standard loop: requestAnimationFrame runs freely?
-    // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
-    // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
-    // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower!
-    // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
-    const tickRate = this.currentSpeed;
-
-    if (this.speedEffectTimer > 0) {
-        this.speedEffectTimer -= tickRate;
-        if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
-    }
-
-    // Power-Up Lifespan
-    const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
-    this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
-
-    // Capture OLD HEADS (Before Move) for Swap Detection
-    const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
-    const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
-
-    // Update Snakes (Collision & Movement)
-    this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
-        // Shield Break Callback (Particles?)
-        this.triggerShieldEffect(x, y);
-    }));
-
-    this.updateProjectiles(this.currentSpeed); // Move projectiles
-
-    this.checkCollisions();    // GAME OVER CHECKS - ROBUST MODE
-    // Use snake count to ensure Multi physics runs even if gameMode string is glitchy
-    if (this.snakes.length === 1) {
-        if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
-            this.gameOver();
-            return;
-        }
-    } else if (this.snakes.length > 1) {
-        let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-        let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-
-        // Head-to-Head/Body collision logic
-        const h1 = this.snakes[0].body[0];
-        const h2 = this.snakes[1].body[0];
-
-        // P1 Head hits P2 Body -> P1 Dies
-        this.snakes[1].body.forEach((seg) => {
-            if (h1.x === seg.x && h1.y === seg.y) p1d = true;
-        });
-
-        // P2 Head hits P1 Body -> P2 Dies
-        this.snakes[0].body.forEach((seg) => {
-            if (h2.x === seg.x && h2.y === seg.y) p2d = true;
-        });
-
-        // HEAD-ON COLLISION (Same Tile)
-        if (h1.x === h2.x && h1.y === h2.y) {
-            // FIX: Check Shields!
-            const p1Shield = this.snakes[0].hasShield;
-            const p2Shield = this.snakes[1].hasShield;
-
-            if (p1Shield && p2Shield) {
-                // Both shielded? Bounce? Nothing?
-                // Let's say nothing happens, they pass through or both shields break?
-                this.snakes[0].hasShield = false;
-                this.snakes[1].hasShield = false;
-                this.triggerShieldEffect(h1.x, h1.y);
-            } else if (p1Shield) {
-                // P1 wins (P2 dies)
-                this.triggerShieldEffect(h1.x, h1.y);
-                p2d = true;
-                this.snakes[0].hasShield = false; // Consumed?
-            } else if (p2Shield) {
-                // P2 wins (P1 dies)
-                this.triggerShieldEffect(h1.x, h1.y);
-                p1d = true;
-                this.snakes[1].hasShield = false; // Consumed?
+            // TEST MODE OVERRIDE
+            if (this.testMode === 'torpedo') {
+                type = 'torpedo';
             } else {
-                // mutual destruction
-                p1d = true; p2d = true;
+                let availableTypes = Object.keys(this.powerUpTypes);
+
+                if (this.gameMode === 'single') {
+                    // Exclude multiplayer-only powerups in single player
+                    availableTypes = availableTypes.filter(t => !['eraser', 'blind', 'ice', 'switch', 'torpedo'].includes(t));
+                }
+
+                if (this.totalFoodEaten < 10) {
+                    availableTypes = availableTypes.filter(t => t !== 'slow');
+                }
+
+                // Logic: Bomb is useless if nothing to destroy
+                const hasTargets = (this.walls.length > 0 || this.powerups.length > 0);
+                if (!hasTargets) {
+                    availableTypes = availableTypes.filter(t => t !== 'bomb');
+                }
+
+                // Logic: Boost 'Wall' frequency
+                if (availableTypes.includes('wall')) {
+                    availableTypes.push('wall');
+                    availableTypes.push('wall');
+                    availableTypes.push('wall');
+                }
+
+                if (availableTypes.length === 0) return;
+                type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
             }
+
+            let valid = false;
+            let pos = {};
+            let attempts = 0;
+            while (!valid && attempts < 50) {
+                attempts++;
+                pos = {
+                    x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
+                    y: Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE)),
+                    type: type,
+                    createdAt: Date.now()
+                };
+                valid = !this.isOccupied(pos);
+            }
+            if (valid) this.powerups.push(pos);
         }
 
-        // HEAD SWAP COLLISION (Passed through each other)
-        if (oldH1 && oldH2) {
-            if (h1.x === oldH2.x && h1.y === oldH2.y && h2.x === oldH1.x && h2.y === oldH1.y) {
-                // FIX: Check Shields!
-                const p1Shield = this.snakes[0].hasShield;
-                const p2Shield = this.snakes[1].hasShield;
-
-                if (p1Shield && p2Shield) {
-                    this.snakes[0].hasShield = false;
-                    this.snakes[1].hasShield = false;
-                    this.triggerShieldEffect(h1.x, h1.y);
-                } else if (p1Shield) {
-                    p2d = true;
-                    this.snakes[0].hasShield = false;
-                } else if (p2Shield) {
-                    p1d = true;
-                    this.snakes[1].hasShield = false;
-                } else {
-                    p1d = true; p2d = true;
-                    console.log("CRITICAL: HEAD SWAP DETECTED! FORCE GAME OVER.");
+        isOccupied(pos) {
+            if (this.foods) {
+                for (let f of this.foods) {
+                    if (f.x === pos.x && f.y === pos.y) return true;
                 }
             }
+            for (let snake of this.snakes) {
+                for (let segment of snake.body) {
+                    if (pos.x === segment.x && pos.y === segment.y) return true;
+                }
+            }
+            for (let w of this.walls) if (pos.x === w.x && pos.y === w.y) return true;
+            for (let p of this.powerups) if (pos.x === p.x && pos.y === p.y) return true;
+            for (let proj of this.projectiles) if (pos.x === proj.x && pos.y === proj.y) return true; // Check projectiles
+            return false;
         }
 
-        if (p1d && p2d) { this.gameOver(-1); return; }
-        if (p1d) { this.gameOver(1); return; }
-        if (p2d) { this.gameOver(0); return; }
-    }
-
-
-
-
-    // Timed Powerup Spawning (Independent of eating)
-    if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
-        this.spawnPowerUp();
-        this.lastPowerUpTime = now;
-        // Randomize next delay: 5s to 15s
-        this.nextPowerUpDelay = 5000 + Math.random() * 10000;
-    }
-
-    // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
-    this.snakes.forEach(s => {
-        let ate = false;
-        let ateIndex = -1;
-
-        for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
-            const f = this.foods[fIdx];
-
-            // Regular Eat
-            if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                ate = true;
-                ateIndex = fIdx;
-                break;
+        handleTouchStart(e) {
+            // FAILSAFE RESTART (Tap Screen if Game Over)
+            if (!this.isRunning && this.restartZone) {
+                location.reload(); // Simple restart
+                return;
             }
 
-            // Magnet Logic (Pull closest food)
-            else if (s.magnetTimer > 0) {
-                const head = s.body[0];
-                const dx = f.x - head.x;
-                const dy = f.y - head.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
+            // Allow clicks on buttons/inputs/menu to pass through
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.menu-screen')) {
+                // Do not prevent default
+            } else {
+                e.preventDefault();
+            }
 
-                if (dist < 15 && dist > 0) {
-                    // Pull food closer
-                    if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
-                    else f.y -= Math.sign(dy);
+            const touch = e.changedTouches[0];
+            this.touchStartX = touch.clientX;
+            this.touchStartY = touch.clientY;
+            if (typeof log !== 'undefined') log(`Start: ${Math.floor(this.touchStartX)},${Math.floor(this.touchStartY)}`);
+        }
 
-                    // Check capture
+        handleTouchMove(e) {
+            // Prevent scrolling if NOT inside menu OR if checking high scores
+            // FIX: Allow default behavior (scrolling) if target is within a scrollable area
+            if (e.target.closest('.scrollable') || e.target.closest('#high-score-list')) {
+                e.stopPropagation(); // Stop game logic from seeing this
+                return; // LET DEFAULT SCROLL HAPPEN
+            } else if (!e.target.closest('.menu-screen')) {
+                e.preventDefault();
+            }
+
+            if (!this.isRunning || this.isPaused) return;
+
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - this.touchStartX;
+            const deltaY = touch.clientY - this.touchStartY;
+
+            // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
+            // REDUCED TO 15px for ultra-responsive continuous control
+            if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
+                let key = '';
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
+                } else {
+                    key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
+                }
+
+                if (typeof log !== 'undefined') log(`CONT SWIPE: ${key}`);
+                this.handleInput({ key: key, preventDefault: () => { } });
+
+                // RESET Start Position to current finger position
+                // This is the key for "Continuous" swiping (Up -> Right without lifting)
+                this.touchStartX = touch.clientX;
+                this.touchStartY = touch.clientY;
+            }
+        }
+
+        handleTouchEnd(e) {
+            // Always allow button clicks to finish
+            if (e.target.closest('button') || e.target.closest('input')) {
+                return;
+            }
+
+            if (!e.target.closest('.menu-screen')) {
+                e.preventDefault();
+            }
+
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - this.touchStartX;
+            const deltaY = touch.clientY - this.touchStartY;
+
+            if (typeof log !== 'undefined') log(`End dX:${Math.floor(deltaX)} dY:${Math.floor(deltaY)} Run:${this.isRunning} Paused:${this.isPaused}`);
+
+            if (!this.isRunning || this.isPaused) return;
+
+            // Threshold for swipe vs tap (Reduced to 10px for responsiveness)
+            if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
+                // if (typeof log !== 'undefined') log("Tap ignored (<10px)");
+                return;
+            }
+
+            // Determine Direction
+            let key = '';
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal
+                key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
+            } else {
+                // Vertical
+                key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
+            }
+
+            if (typeof log !== 'undefined') log(`SWIPE END: ${key}`);
+            this.handleInput({ key: key, preventDefault: () => { } });
+        }
+
+        handleRemoteInput(key) {
+            if (typeof log !== 'undefined') log("HOST RX: " + key);
+
+            if (this.snakes.length > 1 && this.snakes[1]) {
+                const p2 = this.snakes[1];
+
+                // MAP Arrows (from Client Touch) to WASD (Player 2 Local)
+                let mappedKey = key;
+                if (key === 'ArrowUp') mappedKey = 'w';
+                if (key === 'ArrowDown') mappedKey = 's';
+                if (key === 'ArrowLeft') mappedKey = 'a';
+                if (key === 'ArrowRight') mappedKey = 'd';
+
+                p2.handleInput(mappedKey);
+            }
+        }
+
+
+        handleInput(e) {
+            if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
+                this.togglePause();
+                return;
+            }
+
+            // Network Client Input
+            if (this.isClient) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                    if (typeof log !== 'undefined') log(`CLIENT INPUT: ${e.key} Send: ${this.conn && this.conn.open}`);
+                    if (this.conn && this.conn.open) {
+                        this.conn.send({ type: 'input', key: e.key });
+                        // Record for visual feedback
+                        this.lastClientInputKey = e.key;
+                        this.lastClientInputTime = Date.now();
+                    }
+                }
+                return; // Client ONLY sends input, does not move locally
+            }
+
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+            this.snakes.forEach(s => s.handleInput(e.key));
+        }
+
+        togglePause() {
+            this.isPaused = !this.isPaused;
+
+            const uiLayer = document.getElementById('ui-layer');
+            if (uiLayer) uiLayer.style.display = 'block';
+
+            if (this.isPaused) {
+                mainMenu.classList.remove('hidden');
+                mainMenu.classList.remove('nuclear-hidden'); // UN-NUKE
+                mainMenu.classList.add('active');
+                mainMenu.style.display = 'flex';
+                if (btnResume) btnResume.classList.remove('hidden');
+            } else {
+                mainMenu.classList.add('hidden');
+                mainMenu.classList.remove('active');
+                if (btnResume) btnResume.classList.add('hidden');
+
+                this.lastTime = performance.now();
+                this.loop(this.lastTime);
+            }
+        }
+
+        gameOver(winnerIndex, skipNameEntry = false) {
+            try {
+                this.isRunning = false;
+                this.isPaused = false;
+
+                // SHOW MASTER UI
+                const uiLayer = document.getElementById('ui-layer');
+                if (uiLayer) {
+                    uiLayer.style.display = 'block';
+                    // Force reflow
+                    uiLayer.offsetHeight;
+                }
+
+                mainMenu.classList.remove('active');
+                mainMenu.classList.add('hidden');
+                nameEntryScreen.classList.add('hidden');
+
+                if (this.gameMode === 'single' && !skipNameEntry) {
+                    const score = this.snakes[0].score;
+                    // Require at least 5 points to trigger Name Entry (anti-spam)
+                    // Also triggers if it qualifies for the list (beat #20)
+                    if (score > 5 && this.checkHighScore(score)) {
+                        this.currentPendingScore = score;
+                        if (playerNameInput) playerNameInput.value = "";
+
+                        // CALCULATE DISPLAY RANK
+                        try {
+                            const raw = localStorage.getItem('snake_highscores_cache');
+                            const scores = JSON.parse(raw || '[]');
+                            // Count how many scores are better or equal (simple rank)
+                            // Actually, if we insert this score, where would it land?
+                            // It lands after everyone with GREATER OR EQUAL score? No, usually after greater.
+                            // Let's count how many are STRICTLY greater.
+                            const better = scores.filter(s => s.score >= score).length;
+                            const rank = better + 1;
+
+                            const rankMsg = document.getElementById('rank-msg');
+                            if (rankMsg) {
+                                rankMsg.innerText = `CONGRATULATIONS, YOU ARE NUMBER ${rank}`;
+                            }
+                        } catch (e) { }
+
+                        nameEntryScreen.classList.remove('hidden');
+                        nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
+                        nameEntryScreen.classList.add('active');
+                        nameEntryScreen.style.display = 'flex';
+                        // FORCE VISIBILITY (Like Game Over)
+                        nameEntryScreen.style.opacity = '1';
+                        nameEntryScreen.style.visibility = 'visible';
+                        nameEntryScreen.style.pointerEvents = 'auto';
+
+                        if (playerNameInput) playerNameInput.focus();
+                        return;
+                    }
+                }
+
+                let msg = "GAME OVER";
+                let color = COLORS.p1;
+                if (this.gameMode === 'multi') {
+                    if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
+                    else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
+                    else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
+                }
+
+                if (winnerText) {
+                    winnerText.innerText = msg;
+                    winnerText.style.color = color;
+                }
+
+                gameOverScreen.classList.remove('hidden');
+                gameOverScreen.classList.remove('nuclear-hidden'); // UN-NUKE
+                gameOverScreen.classList.add('active');
+                gameOverScreen.style.display = 'flex';
+                // FORCE VISIBILITY
+                gameOverScreen.style.opacity = '1';
+                gameOverScreen.style.visibility = 'visible';
+                gameOverScreen.style.pointerEvents = 'auto';
+
+                if (btnResume) btnResume.classList.add('hidden');
+                if (dynamicLegend) dynamicLegend.innerHTML = '';
+
+                // SYNC GAME OVER
+                if (this.isHost) {
+                    this.broadcastGameOver(winnerIndex);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Game Over!");
+            }
+        }
+
+        broadcastGameOver(winnerIndex) {
+            if (!this.isHost || !this.conn || !this.conn.open) return;
+
+            // REDUNDANT BROADCAST (Fix for Mobile Packet Loss)
+            // Send 10 times over 1 second to ensure delivery
+            let count = 0;
+            const spam = setInterval(() => {
+                if (this.conn && this.conn.open) {
+                    try {
+                        this.conn.send({ type: 'gameover', winner: winnerIndex });
+                    } catch (e) { }
+                }
+                count++;
+                if (count >= 10) clearInterval(spam);
+            }, 100);
+        }
+
+        // Fix Restart Button visibility for Client
+        // Ensure buttons are rebound or checked in GameOver
+        triggerShieldEffect(x, y) {
+            // Visual Flare
+            const div = document.createElement('div');
+            div.innerText = "SHIELD BLOCKED!";
+            div.style.position = 'absolute';
+            div.style.left = (x * GRID_SIZE) + 'px';
+            div.style.top = (y * GRID_SIZE) + 'px';
+            div.style.color = '#fff';
+            div.style.fontWeight = 'bold';
+            div.style.textShadow = '0 0 5px #000';
+            div.style.zIndex = '100';
+            div.style.pointerEvents = 'none';
+            div.className = 'shield-broken-msg'; // Add class for animation
+            document.body.appendChild(div);
+
+            // Animate up and fade
+            let op = 1;
+            let top = y * GRID_SIZE;
+            const anim = setInterval(() => {
+                op -= 0.05;
+                top -= 1;
+                div.style.opacity = op;
+                div.style.top = top + 'px';
+                if (op <= 0) {
+                    clearInterval(anim);
+                    div.remove();
+                }
+            }, 50);
+
+            // Flash Screen
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0'; flash.style.left = '0';
+            flash.style.width = '100vw'; flash.style.height = '100vh';
+            flash.style.background = 'rgba(255, 255, 255, 0.3)';
+            flash.style.zIndex = '99';
+            flash.style.pointerEvents = 'none';
+            document.body.appendChild(flash);
+            setTimeout(() => flash.remove(), 100);
+        }
+
+        update() {
+            if (this.isPaused) return;
+            // CRITICAL FIX: Client is a PURE RENDERER. Do not run local physics!
+            if (this.isClient) return;
+
+            const now = Date.now();
+            // Use true delta time for smoother timers if framerate dips
+            // Note: this.lastTime is updated at end of loop(), but here we need delta for logic.
+            // Actually, the loop runs at `currentSpeed` interval!
+            // Standard loop: requestAnimationFrame runs freely?
+            // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
+            // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
+            // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower!
+            // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
+            const tickRate = this.currentSpeed;
+
+            if (this.speedEffectTimer > 0) {
+                this.speedEffectTimer -= tickRate;
+                if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+            }
+
+            // Power-Up Lifespan
+            const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
+            this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
+
+            // Capture OLD HEADS (Before Move) for Swap Detection
+            const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
+            const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
+
+            // Update Snakes (Collision & Movement)
+            this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
+                // Shield Break Callback (Particles?)
+                this.triggerShieldEffect(x, y);
+            }));
+
+            this.updateProjectiles(this.currentSpeed); // Move projectiles
+
+            this.checkCollisions();    // GAME OVER CHECKS - ROBUST MODE
+            // Use snake count to ensure Multi physics runs even if gameMode string is glitchy
+            if (this.snakes.length === 1) {
+                if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
+                    this.gameOver();
+                    return;
+                }
+            } else if (this.snakes.length > 1) {
+                let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+                let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+
+                // Head-to-Head/Body collision logic
+                const h1 = this.snakes[0].body[0];
+                const h2 = this.snakes[1].body[0];
+
+                // P1 Head hits P2 Body -> P1 Dies
+                this.snakes[1].body.forEach((seg) => {
+                    if (h1.x === seg.x && h1.y === seg.y) p1d = true;
+                });
+
+                // P2 Head hits P1 Body -> P2 Dies
+                this.snakes[0].body.forEach((seg) => {
+                    if (h2.x === seg.x && h2.y === seg.y) p2d = true;
+                });
+
+                // HEAD-ON COLLISION (Same Tile)
+                if (h1.x === h2.x && h1.y === h2.y) {
+                    // FIX: Check Shields!
+                    const p1Shield = this.snakes[0].hasShield;
+                    const p2Shield = this.snakes[1].hasShield;
+
+                    if (p1Shield && p2Shield) {
+                        // Both shielded? Bounce? Nothing?
+                        // Let's say nothing happens, they pass through or both shields break?
+                        this.snakes[0].hasShield = false;
+                        this.snakes[1].hasShield = false;
+                        this.triggerShieldEffect(h1.x, h1.y);
+                    } else if (p1Shield) {
+                        // P1 wins (P2 dies)
+                        this.triggerShieldEffect(h1.x, h1.y);
+                        p2d = true;
+                        this.snakes[0].hasShield = false; // Consumed?
+                    } else if (p2Shield) {
+                        // P2 wins (P1 dies)
+                        this.triggerShieldEffect(h1.x, h1.y);
+                        p1d = true;
+                        this.snakes[1].hasShield = false; // Consumed?
+                    } else {
+                        // mutual destruction
+                        p1d = true; p2d = true;
+                    }
+                }
+
+                // HEAD SWAP COLLISION (Passed through each other)
+                if (oldH1 && oldH2) {
+                    if (h1.x === oldH2.x && h1.y === oldH2.y && h2.x === oldH1.x && h2.y === oldH1.y) {
+                        // FIX: Check Shields!
+                        const p1Shield = this.snakes[0].hasShield;
+                        const p2Shield = this.snakes[1].hasShield;
+
+                        if (p1Shield && p2Shield) {
+                            this.snakes[0].hasShield = false;
+                            this.snakes[1].hasShield = false;
+                            this.triggerShieldEffect(h1.x, h1.y);
+                        } else if (p1Shield) {
+                            p2d = true;
+                            this.snakes[0].hasShield = false;
+                        } else if (p2Shield) {
+                            p1d = true;
+                            this.snakes[1].hasShield = false;
+                        } else {
+                            p1d = true; p2d = true;
+                            console.log("CRITICAL: HEAD SWAP DETECTED! FORCE GAME OVER.");
+                        }
+                    }
+                }
+
+                if (p1d && p2d) { this.gameOver(-1); return; }
+                if (p1d) { this.gameOver(1); return; }
+                if (p2d) { this.gameOver(0); return; }
+            }
+
+
+
+
+            // Timed Powerup Spawning (Independent of eating)
+            if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
+                this.spawnPowerUp();
+                this.lastPowerUpTime = now;
+                // Randomize next delay: 5s to 15s
+                this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+            }
+
+            // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
+            this.snakes.forEach(s => {
+                let ate = false;
+                let ateIndex = -1;
+
+                for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
+                    const f = this.foods[fIdx];
+
+                    // Regular Eat
                     if (s.body[0].x === f.x && s.body[0].y === f.y) {
                         ate = true;
                         ateIndex = fIdx;
                         break;
                     }
-                }
-            }
-        }
 
-        if (ate && ateIndex !== -1) {
-            // Remove the eaten piece
-            this.foods.splice(ateIndex, 1);
+                    // Magnet Logic (Pull closest food)
+                    else if (s.magnetTimer > 0) {
+                        const head = s.body[0];
+                        const dx = f.x - head.x;
+                        const dy = f.y - head.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
 
-            this.baseSpeed *= 0.99;
-            if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+                        if (dist < 15 && dist > 0) {
+                            // Pull food closer
+                            if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
+                            else f.y -= Math.sign(dy);
 
-            s.growPending++;
-            s.score++;
-            this.totalFoodEaten++;
-
-            // Spawn Replacement right away to keep map full
-            this.spawnFood();
-            // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
-            // User asked for "random", not "just when eaten".
-            // But maybe small chance?
-            if (Math.random() < 0.2) this.spawnPowerUp();
-
-            this.updateScoreUI();
-        }
-    });
-
-    // Eat Powerups
-    this.snakes.forEach((s, sIdx) => {
-        const head = s.body[0];
-        for (let i = 0; i < this.powerups.length; i++) {
-            const p = this.powerups[i];
-            if (head.x === p.x && head.y === p.y) {
-                this.applyPowerUp(s, p.type, sIdx);
-                this.powerups.splice(i, 1);
-                break;
-            }
-        }
-    });
-}
-
-checkCollisions() {
-    // 5. Check Projectile Collisions
-    if (this.projectiles.length > 0) {
-        for (let pIndex = this.projectiles.length - 1; pIndex >= 0; pIndex--) {
-            const p = this.projectiles[pIndex];
-            let projectileHit = false;
-
-            for (let s of this.snakes) {
-                // Don't hit owner
-                if (s.id === p.ownerId) continue;
-
-                // Check Head Collision
-                const head = s.body[0];
-                if (head.x === p.x && head.y === p.y) {
-                    // Hit!
-                    if (s.hasShield) {
-                        s.hasShield = false;
-                        projectileHit = true;
-                        this.triggerShieldEffect(p.x, p.y);
-                    } else {
-                        s.isDead = true;
-                        projectileHit = true;
-                    }
-                }
-                // Check Body Collision? (Optional: Destroy projectile if it hits body?)
-                // "Dreper motstanderen hvis den treffer motstanderen" usually means any part.
-                for (let i = 1; i < s.body.length; i++) {
-                    if (s.body[i].x === p.x && s.body[i].y === p.y) {
-                        if (s.hasShield) {
-                            s.hasShield = false;
-                            projectileHit = true;
-                            this.triggerShieldEffect(p.x, p.y);
-                        } else {
-                            s.isDead = true;
-                            projectileHit = true;
+                            // Check capture
+                            if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                                ate = true;
+                                ateIndex = fIdx;
+                                break;
+                            }
                         }
                     }
                 }
-            }
-            if (projectileHit) {
-                this.projectiles.splice(pIndex, 1); // Destroy projectile
-            }
-        }
-    }
 
-    // 6. Check Deaths
-    const deadSnakes = this.snakes.filter(s => s.isDead);
-    if (deadSnakes.length > 0) {
-        // Determine winner based on who is dead
-        if (this.snakes.length === 1) {
-            this.gameOver(0); // Single player, player 1 died
-        } else if (this.snakes.length > 1) {
-            const p1Dead = this.snakes[0].isDead;
-            const p2Dead = this.snakes[1].isDead;
+                if (ate && ateIndex !== -1) {
+                    // Remove the eaten piece
+                    this.foods.splice(ateIndex, 1);
 
-            if (p1Dead && p2Dead) {
-                this.gameOver(-1); // Draw
-            } else if (p1Dead) {
-                this.gameOver(1); // Player 1 died, Player 2 wins
-            } else if (p2Dead) {
-                this.gameOver(0); // Player 2 died, Player 1 wins
-            }
-        }
-    }
-}
+                    this.baseSpeed *= 0.99;
+                    if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
 
-applyPowerUp(user, type, userIdx) {
-    const enemy = this.snakes[userIdx === 0 ? 1 : 0];
-    const isMulti = this.gameMode === 'multi';
+                    s.growPending++;
+                    s.score++;
+                    this.totalFoodEaten++;
 
-    switch (type) {
-        case 'blind':
-            if (isMulti && enemy) {
-                // PC: 2 seconds (Invisible Snake)
-                // Mobile: 5 seconds (Black Screen) - though invisible snake works there too if logic applied
-                // User specifically asked for this change for 2P PC.
-                const duration = (this.platform === 'pc') ? 2000 : 5000;
-                enemy.blindTimer = duration;
-            }
-            break;
-        case 'ghost':
-            if (isMulti && enemy) {
-                enemy.wallTrapTimer = 10000;
-                // Feedback? Done in Draw/Legend
-            } else {
-                user.ghostTimer = 5000;
-            }
-            break;
-        case 'speed':
-            this.currentSpeed = 50;
-            this.speedEffectTimer = 3000;
-            break;
-        case 'slow':
-            this.baseSpeed = this.baseSpeed * 1.10;
-            this.currentSpeed = this.baseSpeed;
-            break;
-        case 'bomb':
-            this.spawnFood();
-            this.powerups = [];
-            this.walls = [];
-            break;
-        case 'shield':
-            user.hasShield = true;
-            user.shieldTimer = 10000; // FIX: Initialize timer!
-            break;
-        case 'magnet': user.magnetTimer = 10000; break;
-        case 'wall':
-            const tail = user.body[user.body.length - 1];
-            this.walls.push({ x: tail.x, y: tail.y });
-            break;
-        case 'ice':
-            if (isMulti && enemy) enemy.frozenTimer = 2000;
-            break;
-        case 'switch':
-            if (isMulti && enemy) {
-                const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
-                const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
-            }
-            break;
-        case 'torpedo':
-            this.fireTorpedo(user);
-            break;
-    }
-}
+                    // Spawn Replacement right away to keep map full
+                    this.spawnFood();
+                    // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
+                    // User asked for "random", not "just when eaten".
+                    // But maybe small chance?
+                    if (Math.random() < 0.2) this.spawnPowerUp();
 
-fireTorpedo(user) {
-    const head = user.body[0];
-    const dirs = [
-        { x: 0, y: -1 }, // Up
-        { x: 0, y: 1 },  // Down
-        { x: -1, y: 0 }, // Left
-        { x: 1, y: 0 }   // Right
-    ];
-
-    dirs.forEach(d => {
-        this.projectiles.push({
-            x: head.x + d.x,
-            y: head.y + d.y,
-            dx: d.x,
-            dy: d.y,
-            ownerId: user.id,
-            createdAt: Date.now()
-        });
-    });
-}
-
-updateProjectiles(tickRate) {
-    const now = Date.now();
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-        const p = this.projectiles[i];
-
-        // Move (Grid based movement?)
-        // To make it smooth/fast, maybe move every tick?
-        // Let's move 1 grid per tick for now.
-        p.x += p.dx;
-        p.y += p.dy;
-
-        // WRAPPING LOGIC (Through Walls)
-        const gridW = CANVAS_WIDTH / GRID_SIZE;
-        const gridH = CANVAS_HEIGHT / GRID_SIZE;
-
-        if (p.x < 0) p.x = Math.floor(gridW - 1);
-        if (p.x >= gridW) p.x = 0;
-        if (p.y < 0) p.y = Math.floor(gridH - 1);
-        if (p.y >= gridH) p.y = 0;
-
-        // Wall Collision: IGNORED (Ghost Projectiles)
-        // if (this.walls.some(w => w.x === p.x && w.y === p.y)) {
-        //    this.projectiles.splice(i, 1);
-        //    continue;
-        // }
-
-        // Timeout (5 seconds)
-        if (now - p.createdAt > 5000) {
-            this.projectiles.splice(i, 1);
-            continue;
-        }
-    }
-}
-
-updateScoreUI() {
-    if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
-    if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
-}
-
-updateDynamicLegend() {
-    if (!dynamicLegend) return;
-
-    // Force Redraw Every Frame (No Caching)
-    dynamicLegend.innerHTML = '';
-
-    let renderPowerups = this.powerups;
-    if (this.isClient && this.clientState) {
-        renderPowerups = this.clientState.powerups;
-    }
-
-    // 1. Draw Static Powerups (Available on board)
-    if (renderPowerups) {
-        renderPowerups.forEach(p => {
-            const def = this.powerUpTypes[p.type];
-            const div = document.createElement('div');
-            div.className = 'legend-item';
-            div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
-            dynamicLegend.appendChild(div);
-        });
-    }
-
-    // 2. Draw Active Timers (Ghost Style: Individual rows)
-    const s1 = this.snakes[0];
-    const s2 = this.snakes[1];
-
-    // Helper to add a timer row
-    const addTimer = (type, seconds, labelOverride = null) => {
-        const def = this.powerUpTypes[type];
-        const label = labelOverride || def.label;
-        const div = document.createElement('div');
-        div.className = 'legend-item'; // Use standard class
-        // Add specific styling to make it pop
-        div.style.color = '#fff';
-        div.style.fontWeight = 'bold';
-        div.style.textShadow = '0 0 5px ' + def.color;
-
-        div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
-        dynamicLegend.appendChild(div);
-    };
-
-    if (this.gameMode === 'single' && s1) {
-        if (s1.ghostTimer > 0) {
-            addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
-        }
-        if (s1.shieldTimer > 0) {
-            addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
-        }
-        if (s1.magnetTimer > 0) {
-            addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
-        }
-    } else if (this.gameMode === 'multi') {
-        // Multi Mode Legends (e.g. Wall Trap)
-        // Check BOTH players for Wall Trap
-        if (s1 && s1.wallTrapTimer > 0) {
-            addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
-        }
-        if (s2 && s2.wallTrapTimer > 0) {
-            addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
-        }
-    }
-}
-
-draw() {
-    try {
-        // 1. BACKGROUND
-        ctx.fillStyle = COLORS.bg;
-        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        // 2. MAIN WORLD RENDER (Protected)
-        try {
-            let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
-            let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
-            let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
-            let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
-            let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
-
-            // Walls
-            renderWalls.forEach(w => {
-                this.drawRect(w.x, w.y, COLORS.brown);
-                ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-            });
-
-            // Powerups
-            renderPowerups.forEach(p => {
-                const def = this.powerUpTypes[p.type];
-                this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-            });
-
-            // Foods
-            renderFoods.forEach(f => {
-                this.drawRect(f.x, f.y, COLORS.food, true);
-            });
-
-            // Snakes
-            renderSnakes.forEach(snake => {
-                // BLIND LOGIC (PC Multi)
-                // If PC Multi, Blinded Snake becomes invisible (User Request)
-                if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) {
-                    return; // Skip rendering this snake entirely
+                    this.updateScoreUI();
                 }
+            });
 
-                const snakeColor = snake.hasShield ? COLORS.silver :
-                    snake.ghostTimer > 0 ? COLORS.ghost :
-                        snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
-
-                // FIX: BLIND EFFECT (Client Side Visual - Mobile/Single)
-                // If *my* entry has blindTimer > 0, blind the screen
-                if (this.gameMode === 'single' && snake.blindTimer > 0) {
-                    if (document.querySelector('.game-container'))
-                        document.querySelector('.game-container').classList.add('blinded');
-                } else if (this.gameMode === 'single') {
-                    if (document.querySelector('.game-container'))
-                        document.querySelector('.game-container').classList.remove('blinded');
+            // Eat Powerups
+            this.snakes.forEach((s, sIdx) => {
+                const head = s.body[0];
+                for (let i = 0; i < this.powerups.length; i++) {
+                    const p = this.powerups[i];
+                    if (head.x === p.x && head.y === p.y) {
+                        this.applyPowerUp(s, p.type, sIdx);
+                        this.powerups.splice(i, 1);
+                        break;
+                    }
                 }
+            });
+        }
 
-                snake.body.forEach((segment, index) => {
-                    const isHead = index === 0;
-                    if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-                    else ctx.fillStyle = snakeColor;
-                    this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
+        checkCollisions() {
+            // 5. Check Projectile Collisions
+            if (this.projectiles.length > 0) {
+                for (let pIndex = this.projectiles.length - 1; pIndex >= 0; pIndex--) {
+                    const p = this.projectiles[pIndex];
+                    let projectileHit = false;
+
+                    for (let s of this.snakes) {
+                        // Don't hit owner
+                        if (s.id === p.ownerId) continue;
+
+                        // Check Head Collision
+                        const head = s.body[0];
+                        if (head.x === p.x && head.y === p.y) {
+                            // Hit!
+                            if (s.hasShield) {
+                                s.hasShield = false;
+                                projectileHit = true;
+                                this.triggerShieldEffect(p.x, p.y);
+                            } else {
+                                s.isDead = true;
+                                projectileHit = true;
+                            }
+                        }
+                        // Check Body Collision? (Optional: Destroy projectile if it hits body?)
+                        // "Dreper motstanderen hvis den treffer motstanderen" usually means any part.
+                        for (let i = 1; i < s.body.length; i++) {
+                            if (s.body[i].x === p.x && s.body[i].y === p.y) {
+                                if (s.hasShield) {
+                                    s.hasShield = false;
+                                    projectileHit = true;
+                                    this.triggerShieldEffect(p.x, p.y);
+                                } else {
+                                    s.isDead = true;
+                                    projectileHit = true;
+                                }
+                            }
+                        }
+                    }
+                    if (projectileHit) {
+                        this.projectiles.splice(pIndex, 1); // Destroy projectile
+                    }
+                }
+            }
+
+            // 6. Check Deaths
+            const deadSnakes = this.snakes.filter(s => s.isDead);
+            if (deadSnakes.length > 0) {
+                // Determine winner based on who is dead
+                if (this.snakes.length === 1) {
+                    this.gameOver(0); // Single player, player 1 died
+                } else if (this.snakes.length > 1) {
+                    const p1Dead = this.snakes[0].isDead;
+                    const p2Dead = this.snakes[1].isDead;
+
+                    if (p1Dead && p2Dead) {
+                        this.gameOver(-1); // Draw
+                    } else if (p1Dead) {
+                        this.gameOver(1); // Player 1 died, Player 2 wins
+                    } else if (p2Dead) {
+                        this.gameOver(0); // Player 2 died, Player 1 wins
+                    }
+                }
+            }
+        }
+
+        applyPowerUp(user, type, userIdx) {
+            const enemy = this.snakes[userIdx === 0 ? 1 : 0];
+            const isMulti = this.gameMode === 'multi';
+
+            switch (type) {
+                case 'blind':
+                    if (isMulti && enemy) {
+                        // PC: 2 seconds (Invisible Snake)
+                        // Mobile: 5 seconds (Black Screen) - though invisible snake works there too if logic applied
+                        // User specifically asked for this change for 2P PC.
+                        const duration = (this.platform === 'pc') ? 2000 : 5000;
+                        enemy.blindTimer = duration;
+                    }
+                    break;
+                case 'ghost':
+                    if (isMulti && enemy) {
+                        enemy.wallTrapTimer = 10000;
+                        // Feedback? Done in Draw/Legend
+                    } else {
+                        user.ghostTimer = 5000;
+                    }
+                    break;
+                case 'speed':
+                    this.currentSpeed = 50;
+                    this.speedEffectTimer = 3000;
+                    break;
+                case 'slow':
+                    this.baseSpeed = this.baseSpeed * 1.10;
+                    this.currentSpeed = this.baseSpeed;
+                    break;
+                case 'bomb':
+                    this.spawnFood();
+                    this.powerups = [];
+                    this.walls = [];
+                    break;
+                case 'shield':
+                    user.hasShield = true;
+                    user.shieldTimer = 10000; // FIX: Initialize timer!
+                    break;
+                case 'magnet': user.magnetTimer = 10000; break;
+                case 'wall':
+                    const tail = user.body[user.body.length - 1];
+                    this.walls.push({ x: tail.x, y: tail.y });
+                    break;
+                case 'ice':
+                    if (isMulti && enemy) enemy.frozenTimer = 2000;
+                    break;
+                case 'switch':
+                    if (isMulti && enemy) {
+                        const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
+                        const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
+                    }
+                    break;
+                case 'torpedo':
+                    this.fireTorpedo(user);
+                    break;
+            }
+        }
+
+        fireTorpedo(user) {
+            const head = user.body[0];
+            const dirs = [
+                { x: 0, y: -1 }, // Up
+                { x: 0, y: 1 },  // Down
+                { x: -1, y: 0 }, // Left
+                { x: 1, y: 0 }   // Right
+            ];
+
+            dirs.forEach(d => {
+                this.projectiles.push({
+                    x: head.x + d.x,
+                    y: head.y + d.y,
+                    dx: d.x,
+                    dy: d.y,
+                    ownerId: user.id,
+                    createdAt: Date.now()
                 });
             });
+        }
 
-            // Legend
-            // FIX: Override Ghost label for Single Player
-            if (this.gameMode === 'single') {
-                this.powerUpTypes['ghost'].label = 'GHOST';
-            } else {
-                this.powerUpTypes['ghost'].label = 'Wall Trap';
+        updateProjectiles(tickRate) {
+            const now = Date.now();
+            for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                const p = this.projectiles[i];
+
+                // Move (Grid based movement?)
+                // To make it smooth/fast, maybe move every tick?
+                // Let's move 1 grid per tick for now.
+                p.x += p.dx;
+                p.y += p.dy;
+
+                // WRAPPING LOGIC (Through Walls)
+                const gridW = CANVAS_WIDTH / GRID_SIZE;
+                const gridH = CANVAS_HEIGHT / GRID_SIZE;
+
+                if (p.x < 0) p.x = Math.floor(gridW - 1);
+                if (p.x >= gridW) p.x = 0;
+                if (p.y < 0) p.y = Math.floor(gridH - 1);
+                if (p.y >= gridH) p.y = 0;
+
+                // Wall Collision: IGNORED (Ghost Projectiles)
+                // if (this.walls.some(w => w.x === p.x && w.y === p.y)) {
+                //    this.projectiles.splice(i, 1);
+                //    continue;
+                // }
+
+                // Timeout (5 seconds)
+                if (now - p.createdAt > 5000) {
+                    this.projectiles.splice(i, 1);
+                    continue;
+                }
             }
-            this.updateDynamicLegend();
-
-        } catch (e) {
-            console.error("WORLD RENDER CRASH:", e);
         }
 
-        // Draw Projectiles
-        renderProjectiles.forEach(p => {
-            // Pulsing Gold Diamond
-            const size = GRID_SIZE / 2;
-            const center = (GRID_SIZE - size) / 2;
-            ctx.fillStyle = '#FFD700';
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#FFD700';
-            ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
-            ctx.shadowBlur = 0;
-        });
-
-        // 3. UI LAYERS (ON TOP)
-
-        // CLEAN UI
-        if (this.isRunning) {
-            const uiLayer = document.getElementById('ui-layer');
-            if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
-            const join = document.getElementById('join-screen');
-            if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
+        updateScoreUI() {
+            if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
+            if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
         }
 
-    } catch (fatalE) {
-        console.error("FATAL DRAW ERROR:", fatalE);
-    }
-}
+        updateDynamicLegend() {
+            if (!dynamicLegend) return;
 
-drawRect(x, y, color, glow = false) {
-    ctx.fillStyle = color;
-    if (glow) {
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = color;
-    } else {
-        ctx.shadowBlur = 0;
-    }
-    ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
-    ctx.shadowBlur = 0;
-}
+            // Force Redraw Every Frame (No Caching)
+            dynamicLegend.innerHTML = '';
 
-broadcastState() {
-    if (!this.isHost || !this.conn || !this.conn.open) return;
+            let renderPowerups = this.powerups;
+            if (this.isClient && this.clientState) {
+                renderPowerups = this.clientState.powerups;
+            }
 
-    const state = {
-        type: 'state',
-        snakes: this.snakes,
-        foods: this.foods,
-        powerups: this.powerups,
-        walls: this.walls,
-        projectiles: this.projectiles,
-        dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
-    };
+            // 1. Draw Static Powerups (Available on board)
+            if (renderPowerups) {
+                renderPowerups.forEach(p => {
+                    const def = this.powerUpTypes[p.type];
+                    const div = document.createElement('div');
+                    div.className = 'legend-item';
+                    div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+                    dynamicLegend.appendChild(div);
+                });
+            }
 
-    try {
-        this.conn.send(state);
-    } catch (e) {
-        console.error("Broadcast Error:", e);
-    }
-}
+            // 2. Draw Active Timers (Ghost Style: Individual rows)
+            const s1 = this.snakes[0];
+            const s2 = this.snakes[1];
 
-loop(timestamp) {
-    // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
-    this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+            // Helper to add a timer row
+            const addTimer = (type, seconds, labelOverride = null) => {
+                const def = this.powerUpTypes[type];
+                const label = labelOverride || def.label;
+                const div = document.createElement('div');
+                div.className = 'legend-item'; // Use standard class
+                // Add specific styling to make it pop
+                div.style.color = '#fff';
+                div.style.fontWeight = 'bold';
+                div.style.textShadow = '0 0 5px ' + def.color;
 
-    // 2. LOGIC
-    if (this.isRunning && !this.isPaused) {
-        if (timestamp - this.lastTime > this.currentSpeed) {
-            this.lastTime = timestamp;
+                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+                dynamicLegend.appendChild(div);
+            };
+
+            if (this.gameMode === 'single' && s1) {
+                if (s1.ghostTimer > 0) {
+                    addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+                }
+                if (s1.shieldTimer > 0) {
+                    addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+                }
+                if (s1.magnetTimer > 0) {
+                    addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+                }
+            } else if (this.gameMode === 'multi') {
+                // Multi Mode Legends (e.g. Wall Trap)
+                // Check BOTH players for Wall Trap
+                if (s1 && s1.wallTrapTimer > 0) {
+                    addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
+                }
+                if (s2 && s2.wallTrapTimer > 0) {
+                    addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
+                }
+            }
+        }
+
+        draw() {
             try {
-                this.update();
+                // 1. BACKGROUND
+                ctx.fillStyle = COLORS.bg;
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                // 2. MAIN WORLD RENDER (Protected)
+                try {
+                    let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
+                    let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
+                    let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
+                    let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+                    let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
+
+                    // Walls
+                    renderWalls.forEach(w => {
+                        this.drawRect(w.x, w.y, COLORS.brown);
+                        ctx.strokeStyle = '#ff0000';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+                    });
+
+                    // Powerups
+                    renderPowerups.forEach(p => {
+                        const def = this.powerUpTypes[p.type];
+                        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+                    });
+
+                    // Foods
+                    renderFoods.forEach(f => {
+                        this.drawRect(f.x, f.y, COLORS.food, true);
+                    });
+
+                    // Snakes
+                    renderSnakes.forEach(snake => {
+                        // BLIND LOGIC (PC Multi)
+                        // If PC Multi, Blinded Snake becomes invisible (User Request)
+                        if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) {
+                            return; // Skip rendering this snake entirely
+                        }
+
+                        const snakeColor = snake.hasShield ? COLORS.silver :
+                            snake.ghostTimer > 0 ? COLORS.ghost :
+                                snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+
+                        // FIX: BLIND EFFECT (Client Side Visual - Mobile/Single)
+                        // If *my* entry has blindTimer > 0, blind the screen
+                        if (this.gameMode === 'single' && snake.blindTimer > 0) {
+                            if (document.querySelector('.game-container'))
+                                document.querySelector('.game-container').classList.add('blinded');
+                        } else if (this.gameMode === 'single') {
+                            if (document.querySelector('.game-container'))
+                                document.querySelector('.game-container').classList.remove('blinded');
+                        }
+
+                        snake.body.forEach((segment, index) => {
+                            const isHead = index === 0;
+                            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                            else ctx.fillStyle = snakeColor;
+                            this.drawRect(segment.x, segment.y, ctx.fillStyle, isHead);
+                        });
+                    });
+
+                    // Legend
+                    // FIX: Override Ghost label for Single Player
+                    if (this.gameMode === 'single') {
+                        this.powerUpTypes['ghost'].label = 'GHOST';
+                    } else {
+                        this.powerUpTypes['ghost'].label = 'Wall Trap';
+                    }
+                    this.updateDynamicLegend();
+
+                } catch (e) {
+                    console.error("WORLD RENDER CRASH:", e);
+                }
+
+                // Draw Projectiles
+                renderProjectiles.forEach(p => {
+                    // Pulsing Gold Diamond
+                    const size = GRID_SIZE / 2;
+                    const center = (GRID_SIZE - size) / 2;
+                    ctx.fillStyle = '#FFD700';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#FFD700';
+                    ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
+                    ctx.shadowBlur = 0;
+                });
+
+                // 3. UI LAYERS (ON TOP)
+
+                // CLEAN UI
+                if (this.isRunning) {
+                    const uiLayer = document.getElementById('ui-layer');
+                    if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
+                    const join = document.getElementById('join-screen');
+                    if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
+                }
+
+            } catch (fatalE) {
+                console.error("FATAL DRAW ERROR:", fatalE);
+            }
+        }
+
+        drawRect(x, y, color, glow = false) {
+            ctx.fillStyle = color;
+            if (glow) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color;
+            } else {
+                ctx.shadowBlur = 0;
+            }
+            ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+            ctx.shadowBlur = 0;
+        }
+
+        broadcastState() {
+            if (!this.isHost || !this.conn || !this.conn.open) return;
+
+            const state = {
+                type: 'state',
+                snakes: this.snakes,
+                foods: this.foods,
+                powerups: this.powerups,
+                walls: this.walls,
+                projectiles: this.projectiles,
+                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
+            };
+
+            try {
+                this.conn.send(state);
             } catch (e) {
-                console.error("UPDATE CRASH:", e);
-                this.isRunning = false;
+                console.error("Broadcast Error:", e);
             }
-            if (this.isHost) {
-                try { this.broadcastState(); } catch (e) { }
+        }
+
+        loop(timestamp) {
+            // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
+            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+
+            // 2. LOGIC
+            if (this.isRunning && !this.isPaused) {
+                if (timestamp - this.lastTime > this.currentSpeed) {
+                    this.lastTime = timestamp;
+                    try {
+                        this.update();
+                    } catch (e) {
+                        console.error("UPDATE CRASH:", e);
+                        this.isRunning = false;
+                    }
+                    if (this.isHost) {
+                        try { this.broadcastState(); } catch (e) { }
+                    }
+                }
             }
+
+            // 3. RENDER
+            this.draw();
         }
     }
 
-    // 3. RENDER
-    this.draw();
-}
+    // Initialize Game
+    const game = new Game();
+    // game.initMultiplayer(); // REMOVED REDUNDANT CALL
+    game.loop(0);
+
+    // Hard Reload if version mismatch (Simple check)
+    if (location.search.indexOf('v=5.6') === -1) {
+        // console.log("Updating URL version...");
+        // history.replaceState({}, '', location.pathname + '?v=5.6');
     }
-
-// Initialize Game
-const game = new Game();
-// game.initMultiplayer(); // REMOVED REDUNDANT CALL
-game.loop(0);
-
-// Hard Reload if version mismatch (Simple check)
-if (location.search.indexOf('v=5.6') === -1) {
-    // console.log("Updating URL version...");
-    // history.replaceState({}, '', location.pathname + '?v=5.6');
-}
 
 }); // MAIN WRAPPER END
