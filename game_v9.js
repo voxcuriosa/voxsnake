@@ -761,9 +761,14 @@ window.addEventListener('DOMContentLoaded', () => {
             // TABS
             const tabMobile = document.getElementById('tab-mobile');
             const tabPC = document.getElementById('tab-pc');
+            const sortBest = document.getElementById('sort-best');
+            const sortTotal = document.getElementById('sort-total');
 
             if (tabMobile) bindButton(tabMobile, () => this.updateTabs('mobile') || this.loadHighScores('mobile'));
             if (tabPC) bindButton(tabPC, () => this.updateTabs('pc') || this.loadHighScores('pc'));
+
+            if (sortBest) bindButton(sortBest, () => this.updateTabs(null, 'best') || this.loadHighScores(null, 'best'));
+            if (sortTotal) bindButton(sortTotal, () => this.updateTabs(null, 'total') || this.loadHighScores(null, 'total'));
 
             if (btnHighScores) {
                 bindButton(btnHighScores, () => {
@@ -1104,14 +1109,17 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        loadHighScores(type = 'mobile') {
+        loadHighScores(type, sort) {
+            type = type || this.viewingPlatform || 'mobile';
+            sort = sort || this.viewingSort || 'best';
+
             const list = document.getElementById('high-score-list');
             if (!list) return;
 
             list.innerHTML = '<li style="text-align:center;">LOADING...</li>';
 
-            // Cache key per platform
-            const cacheKey = 'snake_highscores_cache_' + type;
+            // Cache key per platform AND sort
+            const cacheKey = 'snake_highscores_cache_' + type + '_' + sort;
 
             // Try Cache First
             try {
@@ -1123,7 +1131,7 @@ window.addEventListener('DOMContentLoaded', () => {
             } catch (e) { }
 
             // Fetch Live
-            fetch('api.php?type=' + type + '&t=' + Date.now())
+            fetch(`api.php?type=${type}&sort=${sort}&t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     localStorage.setItem(cacheKey, JSON.stringify(data));
@@ -1131,11 +1139,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(err => {
                     console.error("Score Load Error", err);
-                    list.innerHTML = '<li style="text-align:center; color:#ff5555;">OFFLINE - SHOWING CACHE</li>';
-                    setTimeout(() => {
-                        const raw = localStorage.getItem(cacheKey);
-                        if (raw) this.renderHighScores(JSON.parse(raw));
-                    }, 1000);
+                    // Fallback to cache without clearing
+                    if (!list.innerHTML.includes('span')) {
+                        list.innerHTML = '<li style="text-align:center; color:#ff5555;">OFFLINE</li>';
+                    }
                 });
         }
 
@@ -1149,9 +1156,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const isTotal = (this.viewingSort === 'total');
+            const suffix = isTotal ? ' XP' : '';
+
             data.forEach((entry, index) => {
                 const li = document.createElement('li');
-                li.innerHTML = `<span>${index + 1}. ${entry.name}</span> <span>${entry.score}</span>`;
+                // Format large numbers
+                const val = parseInt(entry.score).toLocaleString();
+                li.innerHTML = `<span>${index + 1}. ${entry.name}</span> <span>${val}${suffix}</span>`;
                 list.appendChild(li);
             });
         }
