@@ -2644,12 +2644,16 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (this.currentUser) {
                     // Show Profile
                     profileScreen.classList.remove('hidden');
+                    profileScreen.classList.remove('nuclear-hidden');
                     profileScreen.classList.add('active');
+                    profileScreen.style.display = 'block';
                     this.updateProfileUI();
                 } else {
                     // Show Login
                     loginScreen.classList.remove('hidden');
+                    loginScreen.classList.remove('nuclear-hidden');
                     loginScreen.classList.add('active');
+                    loginScreen.style.display = 'block';
                 }
             };
         }
