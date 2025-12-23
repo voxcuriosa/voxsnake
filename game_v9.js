@@ -1579,7 +1579,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
             }
 
-            this.powerups = this.powerups.filter(p => now - p.createdAt < 5000);
+            // Power-Up Lifespan
+            const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
+            this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
 
             // Capture OLD HEADS (Before Move) for Swap Detection
             const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
