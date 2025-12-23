@@ -786,6 +786,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 bindButton(btnHighScores, () => {
                     if (mainMenu) mainMenu.classList.add('hidden');
                     this.showHighScoreScreen(); // Use new helper
+                    // Force Default View: Mobile
+                    this.updateTabs('mobile');
+                    this.loadHighScores('mobile');
                 });
             } else {
                 console.error("High Score Button NOT FOUND");
