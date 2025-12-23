@@ -1485,12 +1485,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
                         // CALCULATE DISPLAY RANK
                         try {
-                            const raw = localStorage.getItem('snake_highscores_cache');
+                            // FIX: Use Platform-Specific Cache!
+                            const type = (this.platform === 'pc') ? 'pc' : 'mobile';
+                            const cacheKey = 'snake_highscores_cache_' + type;
+
+                            const raw = localStorage.getItem(cacheKey);
                             const scores = JSON.parse(raw || '[]');
-                            // Count how many scores are better or equal (simple rank)
-                            // Actually, if we insert this score, where would it land?
-                            // It lands after everyone with GREATER OR EQUAL score? No, usually after greater.
-                            // Let's count how many are STRICTLY greater.
+
+                            // Count strictly better scores
                             const better = scores.filter(s => s.score >= score).length;
                             const rank = better + 1;
 
