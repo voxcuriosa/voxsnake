@@ -18,7 +18,7 @@ $cols = [
     'security_answer' => "VARCHAR(255) NULL"
 ];
 
-echo "<h2>1. checking Schema...</h2>";
+echo "<h2>1a. Checking 'users' Schema...</h2>";
 foreach ($cols as $name => $def) {
     echo "Checking <b>$name</b>... ";
     try {
@@ -26,6 +26,24 @@ foreach ($cols as $name => $def) {
         if ($check->num_rows == 0) {
             echo "<span style='color:orange'>MISSING. Adding...</span> ";
             $conn->query("ALTER TABLE users ADD COLUMN $name $def");
+            echo "<span style='color:lime'>ADDED.</span><br>";
+        } else {
+            echo "<span style='color:gray'>EXISTS.</span><br>";
+        }
+    } catch (Exception $e) {
+        echo "<span style='color:red'>ERROR: " . $e->getMessage() . "</span><br>";
+    }
+}
+
+echo "<h2>1b. Checking 'scores' Schema...</h2>";
+$scoreCols = ['device_type' => "VARCHAR(20) DEFAULT 'mobile'"];
+foreach ($scoreCols as $name => $def) {
+    echo "Checking <b>$name</b>... ";
+    try {
+        $check = $conn->query("SHOW COLUMNS FROM scores LIKE '$name'");
+        if ($check->num_rows == 0) {
+            echo "<span style='color:orange'>MISSING. Adding...</span> ";
+            $conn->query("ALTER TABLE scores ADD COLUMN $name $def");
             echo "<span style='color:lime'>ADDED.</span><br>";
         } else {
             echo "<span style='color:gray'>EXISTS.</span><br>";
