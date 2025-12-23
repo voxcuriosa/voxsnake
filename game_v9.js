@@ -1572,16 +1572,34 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // FIRE TORPEDO INPUT
+            if (this.isRunning && !this.isPaused) {
+                const key = e.key.toLowerCase();
+
+                // P1 Fire (Enter / Shift)
+                if (key === 'enter' || key === 'shift') {
+                    if (this.snakes[0] && this.snakes[0].hasTorpedo) this.fireTorpedo(this.snakes[0]);
+                }
+
+                // P2 Fire (Space / Q)
+                if (key === ' ' || key === 'q') {
+                    if (this.snakes[1]) {
+                        // Double check if P2 exists (Multiplayer)
+                        if (this.snakes[1].hasTorpedo) this.fireTorpedo(this.snakes[1]);
+                    }
+                    else if (this.gameMode === 'single') {
+                        // Allow Space for P1 in Single Player too
+                        if (this.snakes[0].hasTorpedo) this.fireTorpedo(this.snakes[0]);
+                    }
+                }
+            }
+
             // Network Client Input
             if (this.isClient) {
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Shift', ' '].includes(e.key)) {
                     e.preventDefault();
-                    if (typeof log !== 'undefined') log(`CLIENT INPUT: ${e.key} Send: ${this.conn && this.conn.open}`);
                     if (this.conn && this.conn.open) {
                         this.conn.send({ type: 'input', key: e.key });
-                        // Record for visual feedback
-                        this.lastClientInputKey = e.key;
-                        this.lastClientInputTime = Date.now();
                     }
                 }
                 return; // Client ONLY sends input, does not move locally
