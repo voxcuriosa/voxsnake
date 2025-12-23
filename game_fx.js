@@ -2277,21 +2277,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 ctx.save();
                 ctx.translate(this.shakeX, this.shakeY);
 
-                // Draw Grid (if needed, this was commented out in original)
-                // ctx.strokeStyle = COLORS.grid;
-                // for (let x = 0; x < CANVAS_WIDTH; x += GRID_SIZE) {
-                //     ctx.beginPath();
-                //     ctx.moveTo(x, 0);
-                //     ctx.lineTo(x, CANVAS_HEIGHT);
-                //     ctx.stroke();
-                // }
-                // for (let y = 0; y < CANVAS_HEIGHT; y += GRID_SIZE) {
-                //     ctx.beginPath();
-                //     ctx.moveTo(0, y);
-                //     ctx.lineTo(CANVAS_WIDTH, y);
-                //     ctx.stroke();
-                // }
-
                 // 2. MAIN WORLD RENDER (Protected)
                 try {
                     let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
