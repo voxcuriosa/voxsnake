@@ -2253,15 +2253,72 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 if (s2 && s2.wallTrapTimer > 0) {
                     addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
-                    draw() {
-                        try {
-                            // Update FX
-                            if (this.shakeTimer > 0) {
-                                this.shakeX = (Math.random() - 0.5) * 10;
-                                this.shakeY = (Math.random() - 0.5) * 10;
-                                this.shakeTimer--;
+                }
+            }
+        }
+
+        draw() {
+            try {
+                // Update FX
+                if (this.shakeTimer > 0) {
+                    this.shakeX = (Math.random() - 0.5) * 10;
+                    this.shakeY = (Math.random() - 0.5) * 10;
+                    this.shakeTimer--;
+                } else {
+                    this.shakeX = 0;
+                    this.shakeY = 0;
+                }
+                this.particles.update();
+
+                const ctx = this.ctx;
+                ctx.fillStyle = COLORS.bg; // Clear with BG color
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                ctx.save();
+                ctx.translate(this.shakeX, this.shakeY);
+
+                // Draw Grid (if needed, this was commented out in original)
+                // ctx.strokeStyle = COLORS.grid;
+                // for (let x = 0; x < CANVAS_WIDTH; x += GRID_SIZE) {
+                //     ctx.beginPath();
+                //     ctx.moveTo(x, 0);
+                //     ctx.lineTo(x, CANVAS_HEIGHT);
+                //     ctx.stroke();
+                // }
+                // for (let y = 0; y < CANVAS_HEIGHT; y += GRID_SIZE) {
+                //     ctx.beginPath();
+                //     ctx.moveTo(0, y);
+                //     ctx.lineTo(CANVAS_WIDTH, y);
+                //     ctx.stroke();
+                // }
+
+                // 2. MAIN WORLD RENDER (Protected)
+                try {
+                    let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
+                    let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
+                    let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
+                    let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+                    let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
+
+                    // Walls / Mines
+                    renderWalls.forEach(w => {
+                        this.drawRect(w.x, w.y, COLORS.brown);
+
+                        // Default Border
+                        let borderColor = '#ff0000'; // Default red border for walls
+
+                        // MINE VISUALIZATION
+                        if (w.ownerId) {
+                            // Determine Color based on Owner ID
+                            // We don't have easy access to snake index by ID here without searching, 
+                            // but we can assume ID 'p1'/'p2' or search.
+                            // Actually, let's just use specific colors if we can match IDs?
+                            // Simpler: If it has an ownerId, it's a Mine.
+                            // Let's try to match to snake colors.
+                            const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
+                            if (ownerSnake) {
+                                borderColor = ownerSnake.color;
                             } else {
-                                this.shakeX = 0;
                                 this.shakeY = 0;
                             }
                             this.particles.update();
@@ -2436,7 +2493,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                     drawRect(x, y, color, glow = false) {
                         ctx.fillStyle = color;
-                        if (glow) {
+                        if(glow) {
                             ctx.shadowBlur = 15;
                             ctx.shadowColor = color;
                         } else {
@@ -2447,59 +2504,59 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
 
                     broadcastState() {
-                        if (!this.isHost || !this.conn || !this.conn.open) return;
+                        if(!this.isHost || !this.conn || !this.conn.open) return;
 
-                        const state = {
-                            type: 'state',
-                            snakes: this.snakes,
-                            foods: this.foods,
-                            powerups: this.powerups,
-                            walls: this.walls,
-                            projectiles: this.projectiles,
-                            dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
-                        };
+                    const state = {
+                        type: 'state',
+                        snakes: this.snakes,
+                        foods: this.foods,
+                        powerups: this.powerups,
+                        walls: this.walls,
+                        projectiles: this.projectiles,
+                        dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
+                    };
 
-                        try {
-                            this.conn.send(state);
-                        } catch (e) {
-                            console.error("Broadcast Error:", e);
-                        }
-                    }
-
-                    loop(timestamp) {
-                        // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
-                        this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-
-                        // 2. LOGIC
-                        if (this.isRunning && !this.isPaused) {
-                            if (timestamp - this.lastTime > this.currentSpeed) {
-                                this.lastTime = timestamp;
-                                try {
-                                    this.update();
-                                } catch (e) {
-                                    console.error("UPDATE CRASH:", e);
-                                    this.isRunning = false;
-                                }
-                                if (this.isHost) {
-                                    try { this.broadcastState(); } catch (e) { }
-                                }
-                            }
-                        }
-
-                        // 3. RENDER
-                        this.draw();
+                    try {
+                        this.conn.send(state);
+                    } catch (e) {
+                        console.error("Broadcast Error:", e);
                     }
                 }
+
+                    loop(timestamp) {
+                    // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
+                    this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+
+                    // 2. LOGIC
+                    if (this.isRunning && !this.isPaused) {
+                        if (timestamp - this.lastTime > this.currentSpeed) {
+                            this.lastTime = timestamp;
+                            try {
+                                this.update();
+                            } catch (e) {
+                                console.error("UPDATE CRASH:", e);
+                                this.isRunning = false;
+                            }
+                            if (this.isHost) {
+                                try { this.broadcastState(); } catch (e) { }
+                            }
+                        }
+                    }
+
+                    // 3. RENDER
+                    this.draw();
+                }
+            }
 
                 // Initialize Game
                 const game = new Game();
-                // game.initMultiplayer(); // REMOVED REDUNDANT CALL
-                game.loop(0);
+            // game.initMultiplayer(); // REMOVED REDUNDANT CALL
+            game.loop(0);
 
-                // Hard Reload if version mismatch (Simple check)
-                if (location.search.indexOf('v=5.6') === -1) {
-                    // console.log("Updating URL version...");
-                    // history.replaceState({}, '', location.pathname + '?v=5.6');
-                }
+            // Hard Reload if version mismatch (Simple check)
+            if (location.search.indexOf('v=5.6') === -1) {
+                // console.log("Updating URL version...");
+                // history.replaceState({}, '', location.pathname + '?v=5.6');
+            }
 
-            }); // MAIN WRAPPER END
+        }); // MAIN WRAPPER END
