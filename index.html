@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=4.93">
+    <link rel="stylesheet" href="style.css?v=4.94">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -74,7 +74,7 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v4.93</span></h3>
+                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v4.94</span></h3>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
@@ -150,6 +150,16 @@
                 <!-- High Score Screen (NEW) -->
                 <div id="high-score-screen" class="menu-screen hidden">
                     <h2 class="neon-title">HIGH SCORES</h2>
+
+                    <!-- Platform Tabs -->
+                    <div class="score-tabs"
+                        style="display:flex; gap:10px; margin-bottom:15px; width:100%; justify-content:center;">
+                        <button id="tab-mobile" class="neon-btn small active"
+                            style="flex:1; max-width:150px; min-width:auto; padding:8px;">MOBILE</button>
+                        <button id="tab-pc" class="neon-btn small secondary"
+                            style="flex:1; max-width:150px; min-width:auto; padding:8px;">PC</button>
+                    </div>
+
                     <div id="high-scores"
                         style="width:100%; flex:1; display:flex; flex-direction:column; min-height:0;">
                         <ul id="high-score-list" style="flex-grow:1;" ontouchstart="event.stopPropagation();"
@@ -214,7 +224,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-    <script src="game_v9.js?v=4.93"></script>
+    <script src="game_v9.js?v=4.94"></script>
 </body>
 
 </html>
