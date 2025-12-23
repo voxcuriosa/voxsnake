@@ -2274,23 +2274,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 ctx.fillStyle = COLORS.bg; // Clear with BG color
                 ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+                // 1. UPDATE FX
+                if (this.shakeTimer > 0) {
+                    this.shakeX = (Math.random() - 0.5) * 10;
+                    this.shakeY = (Math.random() - 0.5) * 10;
+                    this.shakeTimer--;
+                } else {
+                    this.shakeX = 0;
+                    this.shakeY = 0;
+                }
+                this.particles.update();
+
+                const ctx = this.ctx;
+                ctx.fillStyle = COLORS.bg; // Clear with BG color
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
                 ctx.save();
                 ctx.translate(this.shakeX, this.shakeY);
-
-                // Draw Grid (if needed, this was commented out in original)
-                // ctx.strokeStyle = COLORS.grid;
-                // for (let x = 0; x < CANVAS_WIDTH; x += GRID_SIZE) {
-                //     ctx.beginPath();
-                //     ctx.moveTo(x, 0);
-                //     ctx.lineTo(x, CANVAS_HEIGHT);
-                //     ctx.stroke();
-                // }
-                // for (let y = 0; y < CANVAS_HEIGHT; y += GRID_SIZE) {
-                //     ctx.beginPath();
-                //     ctx.moveTo(0, y);
-                //     ctx.lineTo(CANVAS_WIDTH, y);
-                //     ctx.stroke();
-                // }
 
                 // 2. MAIN WORLD RENDER (Protected)
                 try {
@@ -2303,75 +2303,161 @@ window.addEventListener('DOMContentLoaded', () => {
                     // Walls / Mines
                     renderWalls.forEach(w => {
                         this.drawRect(w.x, w.y, COLORS.brown);
-
-                        // Default Border
-                        let borderColor = '#ff0000'; // Default red border for walls
-
-                        // MINE VISUALIZATION
+                        let borderColor = '#ff0000';
                         if (w.ownerId) {
-                            // Determine Color based on Owner ID
-                            ctx.shadowColor = color;
-                        } else {
-                            ctx.shadowBlur = 0;
+                            const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
+                            if (ownerSnake) borderColor = ownerSnake.color;
+                            else borderColor = '#ffff00';
+
+                            // Mine Dot
+                            ctx.fillStyle = borderColor;
+                            const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
+                            const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
+                            ctx.fill();
                         }
-                        ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+                        ctx.strokeStyle = borderColor;
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+                    });
+
+                    // Particles
+                    this.particles.draw(ctx);
+
+                    // Powerups
+                    renderPowerups.forEach(p => {
+                        const def = this.powerUpTypes[p.type];
+                        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+                    });
+
+                    // Foods
+                    renderFoods.forEach(f => {
+                        this.drawRect(f.x, f.y, COLORS.food, true);
+                    });
+
+                    // Projectiles
+                    renderProjectiles.forEach(p => {
+                        const size = GRID_SIZE / 2;
+                        const center = (GRID_SIZE - size) / 2;
+                        ctx.fillStyle = '#FFD700';
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#FFD700';
+                        ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
                         ctx.shadowBlur = 0;
+                    });
+
+                    // Snakes
+                    renderSnakes.forEach(snake => {
+                        if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) return;
+
+                        const snakeColor = snake.hasShield ? COLORS.silver :
+                            snake.ghostTimer > 0 ? COLORS.ghost :
+                                snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+
+                        // Blind visual
+                        if (this.gameMode === 'single') {
+                            const container = document.querySelector('.game-container');
+                            if (container) {
+                                if (snake.blindTimer > 0) container.classList.add('blinded');
+                                else container.classList.remove('blinded');
+                            }
+                        }
+
+                        snake.body.forEach((segment, index) => {
+                            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                            else ctx.fillStyle = snakeColor;
+                            this.drawRect(segment.x, segment.y, ctx.fillStyle, index === 0);
+                        });
+                    });
+
+                    // Legend Override
+                    if (this.gameMode === 'single') this.powerUpTypes['ghost'].label = 'GHOST';
+                    else this.powerUpTypes['ghost'].label = 'Wall Trap';
+                    this.updateDynamicLegend();
+
+                    // Clean UI
+                    if (this.isRunning) {
+                        const uiLayer = document.getElementById('ui-layer');
+                        if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
+                        const join = document.getElementById('join-screen');
+                        if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
                     }
 
-                        broadcastState() {
-                        if(!this.isHost || !this.conn || !this.conn.open) return;
-
-                    const state = {
-                        type: 'state',
-                        snakes: this.snakes,
-                        foods: this.foods,
-                        powerups: this.powerups,
-                        walls: this.walls,
-                        projectiles: this.projectiles,
-                        dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT } // Send Host Dims
-                    };
-
-                    try {
-                        this.conn.send(state);
-                    } catch (e) {
-                        console.error("Broadcast Error:", e);
-                    }
+                } catch (fatalE) {
+                    console.error("FATAL DRAW ERROR:", fatalE);
                 }
 
-                        loop(timestamp) {
-                    // 1. SCHEDULE NEXT FRAME IMMEDIATELY (True Unstoppable Loop)
-                    this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+                ctx.restore();
+            }
 
-                    // 2. LOGIC
-                    if (this.isRunning && !this.isPaused) {
-                        if (timestamp - this.lastTime > this.currentSpeed) {
-                            this.lastTime = timestamp;
-                            try {
-                                this.update();
-                            } catch (e) {
-                                console.error("UPDATE CRASH:", e);
-                                this.isRunning = false;
-                            }
-                            if (this.isHost) {
-                                try { this.broadcastState(); } catch (e) { }
-                            }
-                        }
-                    }
+        drawRect(x, y, color, glow = false) {
+                const ctx = this.ctx;
+                ctx.fillStyle = color;
+                if (glow) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+                ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+                ctx.shadowBlur = 0;
+            }
 
-                    // 3. RENDER
-                    this.draw();
+            broadcastState() {
+                if (!this.isHost || !this.conn || !this.conn.open) return;
+
+                const state = {
+                    type: 'state',
+                    snakes: this.snakes,
+                    foods: this.foods,
+                    powerups: this.powerups,
+                    walls: this.walls,
+                    projectiles: this.projectiles,
+                    dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT }
+                };
+
+                try {
+                    this.conn.send(state);
+                } catch (e) {
+                    console.error("Broadcast Error:", e);
                 }
             }
 
-                // Initialize Game
-                const game = new Game();
+            loop(timestamp) {
+                // 1. SCHEDULE NEXT FRAME IMMEDIATELY
+                this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+
+                // 2. LOGIC
+                if (this.isRunning && !this.isPaused) {
+                    if (timestamp - this.lastTime > this.currentSpeed) {
+                        this.lastTime = timestamp;
+                        try {
+                            this.update();
+                        } catch (e) {
+                            console.error("UPDATE CRASH:", e);
+                            this.isRunning = false;
+                        }
+                        if (this.isHost) {
+                            try { this.broadcastState(); } catch (e) { }
+                        }
+                    }
+                }
+
+                // 3. RENDER
+                this.draw();
+            }
+        }
+
+        // Initialize Game
+        const game = new Game();
             // game.initMultiplayer(); // REMOVED REDUNDANT CALL
             game.loop(0);
 
-            // Hard Reload if version mismatch (Simple check)
-            if (location.search.indexOf('v=5.6') === -1) {
-                // console.log("Updating URL version...");
-                // history.replaceState({}, '', location.pathname + '?v=5.6');
-            }
+        // Hard Reload if version mismatch (Simple check)
+        if(location.search.indexOf('v=5.6') === -1) {
+    // console.log("Updating URL version...");
+    // history.replaceState({}, '', location.pathname + '?v=5.6');
+}
 
         }); // MAIN WRAPPER END
