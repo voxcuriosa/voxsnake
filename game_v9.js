@@ -1064,12 +1064,7 @@ window.addEventListener('DOMContentLoaded', () => {
             nameEntryScreen.classList.add('hidden');
             nameEntryScreen.classList.remove('active');
 
-            fetch('api.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, score: score, type: type })
-            })
-                .then(res => res.json())
+            this.saveScoreToBackend(name, score, type)
                 .then(data => {
                     this.updateTabs(type);
                     this.loadHighScores(type);
@@ -1701,8 +1696,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (this.gameMode === 'single' && !skipNameEntry) {
                     const score = this.snakes[0].score;
-                    // Require at least 5 points to trigger Name Entry (anti-spam)
-                    if (score > 5 && this.checkHighScore(score)) {
+                    const type = (this.platform === 'pc') ? 'pc' : 'mobile';
+
+                    // 1. LOGGED IN USER: AUTO-SAVE (Updates Total XP / Games Played)
+                    if (this.currentUser) {
+                        this.saveScoreToBackend(this.currentUser.name, score, type)
+                            .then(res => {
+                                if (res && res.success) console.log("Score Saved Automatically");
+                            });
+
+                        // If it's a high score, maybe flash a message? 
+                        // For now, just falling through to Game Over screen is fine.
+                        // We could modify 'msg' below if we wanted.
+                    }
+                    // 2. GUEST: Only prompt if HIGH SCORE
+                    else if (score > 5 && this.checkHighScore(score)) {
                         this.currentPendingScore = score;
                         if (playerNameInput) {
                             // Load saved name if available
@@ -1710,14 +1718,9 @@ window.addEventListener('DOMContentLoaded', () => {
                             playerNameInput.value = savedName || "";
                         }
 
-                        // Determine Platform
-                        const type = (this.platform === 'pc') ? 'pc' : 'mobile';
-
                         // ASYNC FETCH for Accurate Rank
                         this.loadHighScores(type, 'best').then(freshData => {
                             try {
-                                // Logic: Count strictly better scores
-                                // Note: freshData is the array of scores
                                 const scores = Array.isArray(freshData) ? freshData : [];
                                 const better = scores.filter(s => s.score >= score).length;
                                 const rank = better + 1;
@@ -1746,6 +1749,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 let msg = "GAME OVER";
                 let color = COLORS.p1;
+                if (this.currentUser && this.gameMode === 'single') {
+                    // Feedback for User
+                    msg = "SCORE SAVED!";
+                    color = "#00ffff";
+                }
+
                 if (this.gameMode === 'multi') {
                     if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
                     else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
@@ -1778,6 +1787,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 console.error(err);
                 alert("Game Over!");
             }
+        }
+
+        saveScoreToBackend(name, score, type) {
+            return fetch('api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, score: score, type: type })
+            })
+                .then(res => res.json())
+                .catch(err => {
+                    console.error("Save Score Error:", err);
+                    return { success: false };
+                });
         }
 
         broadcastGameOver(winnerIndex) {
