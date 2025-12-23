@@ -429,7 +429,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 'shield': { color: COLORS.silver, label: 'Shield' },
                 'magnet': { color: COLORS.pink, label: 'Magnet' },
                 'switch': { color: COLORS.green, label: 'Switch' },
-                'wall': { color: COLORS.brown, label: 'Wall' },
+                'wall': { color: COLORS.brown, label: 'Mine' },
                 'slow': { color: COLORS.blue, label: 'Slow' },
                 'torpedo': { color: '#FFD700', label: 'TORPEDO' }
             };

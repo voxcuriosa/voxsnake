@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=5.56">
+    <link rel="stylesheet" href="style.css?v=5.57">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -74,7 +74,7 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v5.56</span></h3>
+                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v5.57</span></h3>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
@@ -103,7 +103,7 @@
                                     <div><span class="dot pink"></span> <strong>Magnet:</strong> Attract food from close
                                         range.
                                     </div>
-                                    <div><span class="dot brown"></span> <strong>Wall:</strong> Drops an obstacle block.
+                                    <div><span class="dot brown"></span> <strong>Mine:</strong> Drops a deadly mine.
                                     </div>
                                 </div>
                             </div>
@@ -240,9 +240,9 @@
                                 <li>Goal: Eat food to grow and score points.</li>
                                 <li>Avoid crashing into walls or your own tail.</li>
                                 <li>Use power-ups to survive longer or score higher.</li>
-                                <li><strong>Warning:</strong> The Wall power-up creates permanent obstacles. Don't
+                                <li><strong>Warning:</strong> Mines are deadly obstacles. Don't
                                     crash!</li>
-                                <li><strong>Ghost Mode:</strong> Allows you to pass through walls securely.</li>
+                                <li><strong>Ghost Mode:</strong> Allows you to pass through mines/walls.</li>
                             </ul>
                         </div>
                         <div style="flex: 1; min-width: 250px;">
@@ -254,7 +254,7 @@
                                 <li><strong>Side Collision:</strong> Hitting the side of an enemy kills them.</li>
                                 <li><strong>Shield Smash:</strong> If you are shielded, you can ram an unshielded enemy
                                     to kill them without dying.</li>
-                                <li><strong>Mines:</strong> Wall power-ups drop Mines. Mines are safe for the owner (you
+                                <li><strong>Mines:</strong> Mine power-ups drop Mines. Mines are safe for the owner (you
                                     can pass through them) but deadly for the enemy!</li>
                             </ul>
                         </div>
@@ -276,9 +276,9 @@
                             one crash (or smash enemy).</div>
                         <div class="legend-item"><span class="dot pink"></span> <strong>Magnet:</strong><br>Attracts
                             food from a distance.</div>
-                        <div class="legend-item"><span class="dot brown"></span> <strong>Wall / Mine:</strong><br>1P:
+                        <div class="legend-item"><span class="dot brown"></span> <strong>Mine:</strong><br>1P:
                             Drops
-                            Wall. 2P: Drops Mine (Safe for owner).</div>
+                            Mine. 2P: Drops Mine (Safe for owner).</div>
                         <div class="legend-item"><span class="dot white"></span> <strong>Eraser (2P):</strong><br>Cuts
                             opponent's length in half.</div>
                         <div class="legend-item"><span class="dot black"></span> <strong>Blind (2P):</strong><br>PC:
@@ -306,7 +306,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-    <script src="game_v9.js?v=5.56"></script>
+    <script src="game_v9.js?v=5.57"></script>
 </body>
 
 </html>
