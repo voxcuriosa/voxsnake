@@ -659,6 +659,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.hideAllScreens();
                     if (aboutScreen) {
                         aboutScreen.classList.remove('hidden');
+                        aboutScreen.classList.remove('nuclear-hidden'); // CRITICAL FIX
                         aboutScreen.classList.add('active');
                         aboutScreen.style.display = 'block';
                     }
