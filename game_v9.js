@@ -703,10 +703,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (!btn) return;
                 btn.onclick = (e) => {
                     e.preventDefault(); e.stopPropagation();
+                    // Haptic Unlock (Try to vibrate on user interaction)
+                    if (window.navigator && window.navigator.vibrate) {
+                        try { window.navigator.vibrate(50); } catch (e) { }
+                    }
                     callback(e);
                 };
                 btn.ontouchend = (e) => {
                     e.preventDefault(); e.stopPropagation();
+                    // Haptic Unlock
+                    if (window.navigator && window.navigator.vibrate) {
+                        try { window.navigator.vibrate(50); } catch (e) { }
+                    }
                     callback(e);
                 };
             };
