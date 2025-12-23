@@ -29,10 +29,29 @@ if ($method === 'POST') {
         }
 
         // Check availability
-        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt = $conn->prepare("SELECT id, password_hash FROM users WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
-        if ($stmt->get_result()->num_rows > 0) {
+        $res = $stmt->get_result();
+
+        if ($row = $res->fetch_assoc()) {
+            // User exists. connect?
+            // CHECK IF MIGRATED AUTO-ACCOUNT
+            if (password_verify("auto", $row['password_hash'])) {
+                // Yes! Allow Claiming (Overwrite Password)
+                $new_hash = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+                $stmt->bind_param("si", $new_hash, $row['id']);
+                if ($stmt->execute()) {
+                    echo json_encode([
+                        "success" => true,
+                        "message" => "Account Claimed Successfully!",
+                        "user" => ["id" => $row['id'], "name" => $username]
+                    ]);
+                    exit;
+                }
+            }
+
             echo json_encode(["error" => "Username already taken"]);
             exit;
         }
