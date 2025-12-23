@@ -1796,10 +1796,20 @@ window.addEventListener('DOMContentLoaded', () => {
             const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
 
             // Update Snakes (Collision & Movement)
-            this.snakes.forEach(s => s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
-                // Shield Break Callback (Particles?)
-                this.triggerShieldEffect(x, y);
-            }));
+            this.snakes.forEach(s => {
+                // SLOW EFFECT (Individual)
+                if (s.slowTimer > 0) {
+                    s.slowTimer -= tickRate;
+                    // Skip every other frame to simulate 50% speed
+                    s.slowSkip = !s.slowSkip;
+                    if (s.slowSkip) return;
+                }
+
+                s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
+                    // Shield Break Callback (Particles?)
+                    this.triggerShieldEffect(x, y);
+                });
+            });
 
             this.updateProjectiles(this.currentSpeed); // Move projectiles
 
@@ -2135,8 +2145,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.speedEffectTimer = 3000;
                     break;
                 case 'slow':
-                    this.currentSpeed = 350; // Super Slow motion
-                    this.speedEffectTimer = 5000;
+                    if (isMulti && enemy) {
+                        enemy.slowTimer = 10000; // 10s Slow for Enemy
+                    } else {
+                        this.currentSpeed = 200; // Global Slow Motion (1P)
+                        this.speedEffectTimer = 5000;
+                    }
                     break;
                 case 'bomb':
                     this.spawnFood();
