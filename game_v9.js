@@ -2408,8 +2408,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 });
 
                 // Legend Override
-                if (this.gameMode === 'single') this.powerUpTypes['ghost'].label = 'GHOST';
-                else this.powerUpTypes['ghost'].label = 'Wall Trap';
+                if (this.gameMode === 'single') {
+                    this.powerUpTypes['ghost'].label = 'GHOST';
+                    this.powerUpTypes['wall'].label = 'Wall';
+                } else {
+                    this.powerUpTypes['ghost'].label = 'Wall Trap';
+                    this.powerUpTypes['wall'].label = 'Mine (Safe)';
+                }
                 this.updateDynamicLegend();
 
                 // Clean UI
