@@ -844,6 +844,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 this.hideAllScreens();
 
+                // Update Login Button Text
+                const btnMenuLogin = document.getElementById('btn-menu-login');
+                if (btnMenuLogin) {
+                    if (this.currentUser) {
+                        btnMenuLogin.innerText = "PROFILE: " + this.currentUser.name;
+                        btnMenuLogin.style.color = "#00ffff"; // Cyan for user
+                    } else {
+                        btnMenuLogin.innerText = "LOGIN / PROFILE";
+                        btnMenuLogin.style.color = "#FFD700"; // Gold for action
+                    }
+                }
+
                 this.hideAllScreens();
 
                 if (mainMenu) {
@@ -852,6 +864,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     mainMenu.classList.add('active');
                     mainMenu.style.display = 'flex'; // Reset to flex
                 }
+                this.touchStartX = 0;
+                this.touchStartY = 0;
                 if (gameOverScreen) {
                     gameOverScreen.classList.remove('active');
                     gameOverScreen.classList.add('hidden');
