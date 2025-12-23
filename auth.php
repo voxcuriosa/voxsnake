@@ -183,7 +183,7 @@ if ($method === 'POST') {
     // --- ADMIN ACTIONS ---
     else if (strpos($action, 'admin_') === 0) {
         // 1. Verify Requestor IS Admin
-        $adminUser = isset($input['admin_user']) ? $input['admin_user'] : '';
+        $adminUser = isset($input['admin_user']) ? strtoupper(trim($input['admin_user'])) : '';
         if (!$adminUser) {
             echo json_encode(["error" => "Admin Auth Missing"]);
             exit;

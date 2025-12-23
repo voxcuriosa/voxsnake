@@ -2788,7 +2788,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         updateProfileUI() {
             if (!this.currentUser) return;
-            document.getElementById('profile-name').innerText = this.currentUser.name;
+            const adminText = (this.currentUser.is_admin == 1) ? ' <span style="color:gold; font-size:0.8rem;">(ADMIN)</span>' : '';
+            document.getElementById('profile-name').innerHTML = this.currentUser.name + adminText;
 
             // Show/Hide Admin Button
             const btnAdmin = document.getElementById('btn-admin-panel');
