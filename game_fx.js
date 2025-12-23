@@ -2285,9 +2285,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 this.particles.update();
 
-                const ctx = this.ctx;
-                ctx.fillStyle = COLORS.bg; // Clear with BG color
-                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                // (Redundant ctx and clear removed)
 
                 ctx.save();
                 ctx.translate(this.shakeX, this.shakeY);
