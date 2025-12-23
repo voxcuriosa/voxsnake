@@ -211,12 +211,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 for (let w of walls) {
                     if (newHead.x === w.x && newHead.y === w.y) {
                         if (this.ghostTimer > 0) break; // Ghost passes through
+
+                        // MINE LOGIC: Allow Owner to pass through their own walls (Multiplayer)
+                        if (w.ownerId !== undefined && w.ownerId === this.id) {
+                            // Safe! (It's a mine, and I placed it)
+                            break;
+                        }
+
                         if (this.hasShield) {
                             this.hasShield = false;
                             this.shieldTimer = 0;
                             if (onShieldBreak) onShieldBreak(newHead.x, newHead.y);
 
-                            // CRITICAL FIX: Stop the snake!
+                            // CRITICAL FIX: Stop movement
                             this.direction = { x: 0, y: 0 };
                             this.nextDirection = { x: 0, y: 0 };
                             return;
@@ -1908,7 +1915,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 case 'magnet': user.magnetTimer = 10000; break;
                 case 'wall':
                     const tail = user.body[user.body.length - 1];
-                    this.walls.push({ x: tail.x, y: tail.y });
+                    // Multi: Add Owner ID for Safe Passage
+                    // Single: No owner needed (or same logic works if ID matches)
+                    this.walls.push({ x: tail.x, y: tail.y, ownerId: user.id });
                     break;
                 case 'ice':
                     if (isMulti && enemy) enemy.frozenTimer = 2000;
