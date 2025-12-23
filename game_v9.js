@@ -2685,11 +2685,14 @@ window.addEventListener('DOMContentLoaded', () => {
             // ADMIN SCREEN
             const adminScreen = document.getElementById('admin-screen');
             const btnAdminRefresh = document.getElementById('btn-admin-refresh');
-            const btnAdminBack = document.getElementById('btn-admin-back');
+            const btnAdminClose = document.getElementById('btn-admin-close');
 
             if (btnAdminRefresh) btnAdminRefresh.onclick = () => this.loadAdmin();
-            if (btnAdminBack) btnAdminBack.onclick = () => {
+            if (btnAdminClose) btnAdminClose.onclick = () => {
                 adminScreen.classList.add('hidden');
+                // Clear list to force reload next time
+                document.getElementById('admin-user-list').innerHTML = '';
+
                 profileScreen.classList.remove('hidden');
                 profileScreen.classList.remove('nuclear-hidden');
                 profileScreen.style.display = 'block';

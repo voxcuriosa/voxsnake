@@ -183,13 +183,14 @@ if ($method === 'POST') {
     // --- ADMIN ACTIONS ---
     else if (strpos($action, 'admin_') === 0) {
         // 1. Verify Requestor IS Admin
-        $adminUser = isset($input['admin_user']) ? strtoupper(trim($input['admin_user'])) : '';
+        // Use input directly, let SQL handle logic via LOWER()
+        $adminUser = isset($input['admin_user']) ? trim($input['admin_user']) : '';
         if (!$adminUser) {
             echo json_encode(["error" => "Admin Auth Missing"]);
             exit;
         }
 
-        $chk = $conn->prepare("SELECT is_admin FROM users WHERE username = ?");
+        $chk = $conn->prepare("SELECT is_admin FROM users WHERE LOWER(username) = LOWER(?)");
         $chk->bind_param("s", $adminUser);
         $chk->execute();
         $res = $chk->get_result();
