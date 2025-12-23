@@ -1572,27 +1572,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // FIRE TORPEDO INPUT
-            if (this.isRunning && !this.isPaused) {
-                const key = e.key.toLowerCase();
+            // FIRE TORPEDO INPUT (Removed - Now Auto-Fire on Pickup)
 
-                // P1 Fire (Enter / Shift)
-                if (key === 'enter' || key === 'shift') {
-                    if (this.snakes[0] && this.snakes[0].hasTorpedo) this.fireTorpedo(this.snakes[0]);
-                }
-
-                // P2 Fire (Space / Q)
-                if (key === ' ' || key === 'q') {
-                    if (this.snakes[1]) {
-                        // Double check if P2 exists (Multiplayer)
-                        if (this.snakes[1].hasTorpedo) this.fireTorpedo(this.snakes[1]);
-                    }
-                    else if (this.gameMode === 'single') {
-                        // Allow Space for P1 in Single Player too
-                        if (this.snakes[0].hasTorpedo) this.fireTorpedo(this.snakes[0]);
-                    }
-                }
-            }
 
             // Network Client Input
             if (this.isClient) {
@@ -2184,13 +2165,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'torpedo':
                     user.hasTorpedo = true;
-                    if (this.platform === 'pc') {
-                        // Auto-fire or just enable? 
-                        // Logic says we fire processing happens elsewhere likely or manual?
-                        // Actually PC doesn't have a button usually?
-                        // Wait, fireTorpedo() is called on KEY PRESS space.
-                        // We assume user will press space.
-                    }
+                    this.fireTorpedo(user); // Auto-fire immediately
                     break;
             }
         }
