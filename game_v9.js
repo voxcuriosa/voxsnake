@@ -2418,7 +2418,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.powerUpTypes['wall'].label = 'Wall';
                 } else {
                     this.powerUpTypes['ghost'].label = 'Wall Trap';
-                    this.powerUpTypes['wall'].label = 'Mine (Safe)';
+                    this.powerUpTypes['wall'].label = 'Mine';
                 }
                 this.updateDynamicLegend();
 
