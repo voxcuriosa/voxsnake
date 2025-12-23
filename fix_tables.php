@@ -50,12 +50,14 @@ try {
 }
 
 // 3. CHECK TEST USER
-echo "<h2>3. Checking for user 'Test'</h2>";
-$t = $conn->query("SELECT * FROM users WHERE username = 'Test' OR username = 'TEST'");
+echo "<h2>3. Checking for user 'Christian'</h2>";
+$t = $conn->query("SELECT * FROM users WHERE username = 'Christian' OR username = 'CHRISTIAN'");
 if ($t->num_rows > 0) {
-    echo "User 'Test' FOUND.<br>";
+    echo "User 'Christian' FOUND.<br>";
+    $u = $t->fetch_assoc();
+    echo "ID: " . $u['id'] . " | Admin: " . $u['is_admin'] . " | XP: " . $u['total_xp'] . "<br>";
 } else {
-    echo "User 'Test' NOT FOUND.<br>";
+    echo "User 'Christian' NOT FOUND.<br>";
 }
 
 echo "<br><hr><h1>DONE.</h1>";

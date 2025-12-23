@@ -2794,8 +2794,10 @@ window.addEventListener('DOMContentLoaded', () => {
             // Show/Hide Admin Button
             const btnAdmin = document.getElementById('btn-admin-panel');
             if (this.currentUser.is_admin == 1 && btnAdmin) {
-                btnAdmin.style.display = 'inline-block';
+                btnAdmin.classList.remove('hidden');
+                btnAdmin.style.display = 'block';
             } else if (btnAdmin) {
+                btnAdmin.classList.add('hidden');
                 btnAdmin.style.display = 'none';
             }
 

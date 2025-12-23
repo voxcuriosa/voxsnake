@@ -156,7 +156,7 @@ if ($method === 'POST') {
     // --- PROFILE STATS ---
     else if ($action === 'get_stats') {
         // Requires Login (or explicit user request) - Currently using username from input
-        $stmt = $conn->prepare("SELECT id, total_xp, games_played, created_at FROM users WHERE username = ?");
+        $stmt = $conn->prepare("SELECT id, total_xp, games_played, created_at FROM users WHERE LOWER(username) = LOWER(?)");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $res = $stmt->get_result();
