@@ -414,7 +414,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 document.head.appendChild(style);
             }
 
-            const screens = document.querySelectorAll('.menu-screen');
+            const screenIds = [
+                'main-menu', 'game-over-screen', 'high-score-screen',
+                'join-screen', 'name-entry-screen', 'about-screen', 'lobby-screen'
+            ];
+            const screens = screenIds.map(id => document.getElementById(id)).filter(Boolean);
             screens.forEach(s => {
                 s.classList.add('hidden');
                 s.classList.add('nuclear-hidden'); // NUKE IT
@@ -643,6 +647,41 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 this.showMainMenu(); // Return to Main Menu
             });
+
+            // ABOUT BUTTON & LOGIC
+            const btnAbout = document.getElementById('btn-about');
+            const aboutScreen = document.getElementById('about-screen');
+            const aboutBackBtn = document.getElementById('about-back-btn');
+            const contactEmail = document.getElementById('contact-email');
+
+            if (btnAbout) {
+                bindButton(btnAbout, () => {
+                    this.hideAllScreens();
+                    if (aboutScreen) {
+                        aboutScreen.classList.remove('hidden');
+                        aboutScreen.classList.add('active');
+                        aboutScreen.style.display = 'block';
+                    }
+                });
+            }
+
+            if (aboutBackBtn) {
+                bindButton(aboutBackBtn, () => {
+                    this.showMainMenu();
+                });
+            }
+
+            if (contactEmail) {
+                contactEmail.onclick = () => {
+                    const u = 'borchgrevink';
+                    const d = 'gmail.com';
+                    contactEmail.innerText = u + '@' + d;
+                    contactEmail.style.color = '#fff';
+                    contactEmail.style.cursor = 'text';
+                    contactEmail.title = '';
+                    contactEmail.onclick = null;
+                };
+            }
         }
 
         showMainMenu() {
