@@ -156,12 +156,25 @@ if ($method === 'POST') {
     // --- PROFILE STATS ---
     else if ($action === 'get_stats') {
         // Requires Login (or explicit user request) - Currently using username from input
-        $stmt = $conn->prepare("SELECT total_xp, games_played, best_score, created_at FROM users WHERE username = ?");
+        $stmt = $conn->prepare("SELECT id, total_xp, games_played, created_at FROM users WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $res = $stmt->get_result();
-        if ($row = $res->fetch_assoc()) {
-            echo json_encode(["success" => true, "stats" => $row]);
+
+        if ($userRow = $res->fetch_assoc()) {
+            $uid = $userRow['id'];
+
+            // Get Best Mobile Score
+            $qMob = $conn->query("SELECT MAX(score) as s FROM scores WHERE user_id = $uid AND device_type = 'mobile'");
+            $rMob = $qMob->fetch_assoc();
+            $userRow['best_mobile'] = $rMob['s'] ?? 0;
+
+            // Get Best PC Score
+            $qPC = $conn->query("SELECT MAX(score) as s FROM scores WHERE user_id = $uid AND device_type = 'pc'");
+            $rPC = $qPC->fetch_assoc();
+            $userRow['best_pc'] = $rPC['s'] ?? 0;
+
+            echo json_encode(["success" => true, "stats" => $userRow]);
         } else {
             echo json_encode(["error" => "User not found"]);
         }

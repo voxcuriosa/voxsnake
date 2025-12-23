@@ -2793,10 +2793,14 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (data.success && data.stats) {
                         document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
                         document.getElementById('profile-games').innerText = data.stats.games_played || 0;
+                        document.getElementById('profile-best-mobile').innerText = data.stats.best_mobile || 0;
+                        document.getElementById('profile-best-pc').innerText = data.stats.best_pc || 0;
+                        document.getElementById('profile-joined').innerText = data.stats.created_at || '-';
                     }
                 })
                 .catch(e => console.error("Stats Error:", e));
         }
+
         // --- PROPER RECOVERY ---
         recoverStep1() {
             const u = document.getElementById('rec-user').value;
@@ -2838,14 +2842,28 @@ window.addEventListener('DOMContentLoaded', () => {
             const tbody = document.querySelector('#admin-user-table tbody');
             tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
 
+            console.log("Loading Admin List for:", this.currentUser.name);
+
             fetch('auth.php', {
                 method: 'POST',
                 body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
             })
-                .then(r => r.json()).then(d => {
+                .then(r => r.json())
+                .then(d => {
+                    console.log("Admin Data:", d);
                     if (d.success) {
-                        this.renderAdminList(d.users);
-                    } else { tbody.innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>'; }
+                        if (d.users.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5">No users found (except you?)</td></tr>';
+                        } else {
+                            this.renderAdminList(d.users);
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
+                    }
+                })
+                .catch(e => {
+                    console.error("Admin Load Error:", e);
+                    tbody.innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
                 });
         }
 
