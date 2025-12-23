@@ -2303,12 +2303,27 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (s1.magnetTimer > 0) {
                     addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
                 }
+                // Speed (Global)
+                if (this.speedEffectTimer > 0) {
+                    const isSlow = this.currentSpeed > this.baseSpeed;
+                    addTimer(isSlow ? 'slow' : 'speed', Math.ceil(this.speedEffectTimer / 1000), isSlow ? "MATRIX" : "SPEED");
+                }
             } else if (this.gameMode === 'multi') {
                 // Multi Mode Legends
 
                 // Wall Trap (Ghost)
                 if (s1 && s1.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
                 if (s2 && s2.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
+
+                // Slow (Targeted)
+                if (s1 && s1.slowTimer > 0) addTimer('slow', Math.ceil(s1.slowTimer / 1000), "P1 SLOWED");
+                if (s2 && s2.slowTimer > 0) addTimer('slow', Math.ceil(s2.slowTimer / 1000), "P2 SLOWED");
+
+                // Speed (Global - applies to frame rate usually, but logic is tricky in 2P)
+                // Actually 'speed' powerup in 2P sets this.currentSpeed too!
+                if (this.speedEffectTimer > 0) {
+                    addTimer('speed', Math.ceil(this.speedEffectTimer / 1000), "SPEED UP");
+                }
 
                 // Magnet
                 if (s1 && s1.magnetTimer > 0) addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "P1 MAGNET");
