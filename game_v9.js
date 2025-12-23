@@ -54,7 +54,13 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.style.touchAction = 'none';
     // Prevent "Rubber banding" or "Pull to refresh"
     document.body.style.overflow = 'hidden';
-    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('touchmove', (e) => {
+        // ALLOW SCROLLING in Admin Panel list
+        if (e.target.closest('#admin-user-list') || e.target.closest('#admin-screen div')) {
+            return; // Let it scroll
+        }
+        e.preventDefault();
+    }, { passive: false });
     if (canvas) canvas.style.touchAction = 'none';
     // -----------------------------------
 
