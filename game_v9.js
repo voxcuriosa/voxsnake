@@ -1169,18 +1169,17 @@ window.addEventListener('DOMContentLoaded', () => {
             } catch (e) { }
 
             // Fetch Live
-            fetch(`api.php?type=${type}&sort=${sort}&t=${Date.now()}`)
+            return fetch(`api.php?type=${type}&sort=${sort}&t=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
                     localStorage.setItem(cacheKey, JSON.stringify(data));
                     this.renderHighScores(data);
+                    return data; // Pass data to next chain
                 })
                 .catch(err => {
                     console.error("Score Load Error", err);
                     // Fallback to cache without clearing
-                    if (!list.innerHTML.includes('span')) {
-                        list.innerHTML = '<li style="text-align:center; color:#ff5555;">OFFLINE</li>';
-                    }
+                    return [];
                 });
         }
 
@@ -1703,7 +1702,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (this.gameMode === 'single' && !skipNameEntry) {
                     const score = this.snakes[0].score;
                     // Require at least 5 points to trigger Name Entry (anti-spam)
-                    // Also triggers if it qualifies for the list (beat #20)
                     if (score > 5 && this.checkHighScore(score)) {
                         this.currentPendingScore = score;
                         if (playerNameInput) {
@@ -1712,35 +1710,36 @@ window.addEventListener('DOMContentLoaded', () => {
                             playerNameInput.value = savedName || "";
                         }
 
-                        // CALCULATE DISPLAY RANK
-                        try {
-                            // FIX: Use Platform-Specific Cache!
-                            const type = (this.platform === 'pc') ? 'pc' : 'mobile';
-                            const cacheKey = 'snake_highscores_cache_' + type;
+                        // Determine Platform
+                        const type = (this.platform === 'pc') ? 'pc' : 'mobile';
 
-                            const raw = localStorage.getItem(cacheKey);
-                            const scores = JSON.parse(raw || '[]');
+                        // ASYNC FETCH for Accurate Rank
+                        this.loadHighScores(type, 'best').then(freshData => {
+                            try {
+                                // Logic: Count strictly better scores
+                                // Note: freshData is the array of scores
+                                const scores = Array.isArray(freshData) ? freshData : [];
+                                const better = scores.filter(s => s.score >= score).length;
+                                const rank = better + 1;
 
-                            // Count strictly better scores
-                            const better = scores.filter(s => s.score >= score).length;
-                            const rank = better + 1;
+                                const rankMsg = document.getElementById('rank-msg');
+                                if (rankMsg) {
+                                    rankMsg.innerText = `CONGRATULATIONS, YOU ARE NUMBER ${rank}`;
+                                }
+                            } catch (e) { console.error("Rank Calc Error", e); }
 
-                            const rankMsg = document.getElementById('rank-msg');
-                            if (rankMsg) {
-                                rankMsg.innerText = `CONGRATULATIONS, YOU ARE NUMBER ${rank}`;
-                            }
-                        } catch (e) { }
+                            // Show Screen
+                            nameEntryScreen.classList.remove('hidden');
+                            nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
+                            nameEntryScreen.classList.add('active');
+                            nameEntryScreen.style.display = 'flex';
+                            nameEntryScreen.style.opacity = '1';
+                            nameEntryScreen.style.visibility = 'visible';
+                            nameEntryScreen.style.pointerEvents = 'auto';
 
-                        nameEntryScreen.classList.remove('hidden');
-                        nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
-                        nameEntryScreen.classList.add('active');
-                        nameEntryScreen.style.display = 'flex';
-                        // FORCE VISIBILITY (Like Game Over)
-                        nameEntryScreen.style.opacity = '1';
-                        nameEntryScreen.style.visibility = 'visible';
-                        nameEntryScreen.style.pointerEvents = 'auto';
+                            if (playerNameInput) playerNameInput.focus();
+                        });
 
-                        if (playerNameInput) playerNameInput.focus();
                         return;
                     }
                 }
@@ -2731,7 +2730,15 @@ window.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem('playerName', data.user.name);
 
                         alert("Welcome back, " + data.user.name + "!");
-                        this.showMainMenu();
+
+                        // Redirect to Profile
+                        this.hideAllScreens();
+                        const pScreen = document.getElementById('profile-screen');
+                        pScreen.classList.remove('hidden');
+                        pScreen.classList.remove('nuclear-hidden');
+                        pScreen.classList.add('active');
+                        pScreen.style.display = 'block';
+                        this.updateProfileUI(); // Load stats
                     } else {
                         alert("Login Failed: " + data.error);
                     }
@@ -2754,7 +2761,15 @@ window.addEventListener('DOMContentLoaded', () => {
                         this.currentUser = data.user;
                         localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
-                        this.showMainMenu();
+
+                        // Redirect to Profile
+                        this.hideAllScreens();
+                        const pScreen = document.getElementById('profile-screen');
+                        pScreen.classList.remove('hidden');
+                        pScreen.classList.remove('nuclear-hidden');
+                        pScreen.classList.add('active');
+                        pScreen.style.display = 'block';
+                        this.updateProfileUI();
                     } else {
                         alert("Registration Failed: " + data.error);
                     }
@@ -2839,7 +2854,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // --- ADMIN ---
         loadAdmin() {
             if (!this.currentUser || this.currentUser.is_admin != 1) return;
-            const tbody = document.querySelector('#admin-user-table tbody');
+            const tbody = document.getElementById('admin-user-list');
             tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
 
             console.log("Loading Admin List for:", this.currentUser.name);
@@ -2868,14 +2883,14 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         renderAdminList(users) {
-            const tbody = document.querySelector('#admin-user-table tbody');
+            const tbody = document.getElementById('admin-user-list');
             tbody.innerHTML = '';
             users.forEach(u => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${u.id}</td>
                     <td>${u.username} ${u.is_admin == 1 ? '<span style="color:gold">(A)</span>' : ''}</td>
-                    <td>${u.total_score}</td>
+                    <td>${u.total_xp || 0}</td>
                     <td>${u.games_played}</td>
                     <td>
                         <button class="btn-small" onclick="window.gameInstance.resetUser(${u.id}, '${u.username}')" style="color:orange">Reset</button>
