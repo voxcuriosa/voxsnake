@@ -2513,7 +2513,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 // Legend Override
                 if (this.gameMode === 'single') {
                     this.powerUpTypes['ghost'].label = 'GHOST';
-                    this.powerUpTypes['wall'].label = 'Wall';
+                    this.powerUpTypes['wall'].label = 'Mine';
                 } else {
                     this.powerUpTypes['ghost'].label = 'Wall Trap';
                     this.powerUpTypes['wall'].label = 'Mine';
