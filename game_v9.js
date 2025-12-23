@@ -2156,6 +2156,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.spawnFood();
                     this.powerups = [];
                     this.walls = [];
+                    this.projectiles = []; // Clear Torpedoes too!
                     break;
                 case 'shield':
                     user.hasShield = true;
