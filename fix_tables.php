@@ -13,6 +13,7 @@ $cols = [
     'games_played' => "INT DEFAULT 0",
     'best_score' => "INT DEFAULT 0",
     'is_admin' => "TINYINT DEFAULT 0",
+    'created_at' => "DATETIME DEFAULT CURRENT_TIMESTAMP",
     'security_question' => "VARCHAR(255) NULL",
     'security_answer' => "VARCHAR(255) NULL"
 ];

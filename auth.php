@@ -202,7 +202,7 @@ if ($method === 'POST') {
 
         // 2. Perform Action
         if ($action === 'admin_list_users') {
-            $list = $conn->query("SELECT id, username, total_xp, games_played, created_at, is_admin FROM users ORDER BY created_at DESC LIMIT 100");
+            $list = $conn->query("SELECT id, username, total_xp, games_played, created_at, is_admin FROM users ORDER BY id DESC LIMIT 100");
             $users = [];
             while ($u = $list->fetch_assoc())
                 $users[] = $u;
