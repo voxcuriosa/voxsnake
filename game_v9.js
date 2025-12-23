@@ -542,7 +542,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const screenIds = [
                 'main-menu', 'game-over-screen', 'high-score-screen',
-                'join-screen', 'name-entry-screen', 'about-screen', 'lobby-screen'
+                'join-screen', 'name-entry-screen', 'about-screen', 'lobby-screen',
+                'login-screen', 'register-screen', 'profile-screen' // NEW AUTH SCREENS
             ];
             const screens = screenIds.map(id => document.getElementById(id)).filter(Boolean);
             screens.forEach(s => {
