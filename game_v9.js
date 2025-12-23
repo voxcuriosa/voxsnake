@@ -1157,7 +1157,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             const isTotal = (this.viewingSort === 'total');
-            const suffix = isTotal ? ' XP' : '';
+            const suffix = ''; // User requested removal of " XP" suffix
 
             data.forEach((entry, index) => {
                 const li = document.createElement('li');
