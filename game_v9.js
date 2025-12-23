@@ -103,7 +103,7 @@ window.addEventListener('DOMContentLoaded', () => {
         black: '#333333',
         orange: '#ff6600',
         cyan: '#00ffff',
-        red: '#ff0000',
+        red: '#b30000', // Darker Red for Bomb (Distinguish from Food #ff0055)
         silver: '#c0c0c0',
         pink: '#ff69b4',
         green: '#00ff00',
