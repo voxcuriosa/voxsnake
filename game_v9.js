@@ -2295,14 +2295,19 @@ window.addEventListener('DOMContentLoaded', () => {
                     addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
                 }
             } else if (this.gameMode === 'multi') {
-                // Multi Mode Legends (e.g. Wall Trap)
-                // Check BOTH players for Wall Trap
-                if (s1 && s1.wallTrapTimer > 0) {
-                    addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
-                }
-                if (s2 && s2.wallTrapTimer > 0) {
-                    addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
-                }
+                // Multi Mode Legends
+
+                // Wall Trap (Ghost)
+                if (s1 && s1.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
+                if (s2 && s2.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
+
+                // Magnet
+                if (s1 && s1.magnetTimer > 0) addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "P1 MAGNET");
+                if (s2 && s2.magnetTimer > 0) addTimer('magnet', Math.ceil(s2.magnetTimer / 1000), "P2 MAGNET");
+
+                // Shield
+                if (s1 && s1.shieldTimer > 0) addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "P1 SHIELD");
+                if (s2 && s2.shieldTimer > 0) addTimer('shield', Math.ceil(s2.shieldTimer / 1000), "P2 SHIELD");
             }
         }
 
