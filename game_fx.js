@@ -1907,9 +1907,19 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                if (p1d && p2d) { this.gameOver(-1); return; }
-                if (p1d) { this.gameOver(1); return; }
-                if (p2d) { this.gameOver(0); return; }
+                if (p1d && p2d) {
+                    this.triggerDeath(this.snakes[0]);
+                    this.triggerDeath(this.snakes[1]);
+                    this.gameOver(-1); return;
+                }
+                if (p1d) {
+                    this.triggerDeath(this.snakes[0]);
+                    this.gameOver(1); return;
+                }
+                if (p2d) {
+                    this.triggerDeath(this.snakes[1]);
+                    this.gameOver(0); return;
+                }
             }
 
 
@@ -2000,6 +2010,14 @@ window.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        triggerDeath(snake) {
+            if (!snake) return;
+            this.sound.play('die');
+            const head = snake.body[0];
+            this.particles.explode(head.x, head.y, snake.color, 20);
+            this.triggerShake(10);
+        }
+
         checkCollisions() {
             // 5. Check Projectile Collisions
             if (this.projectiles.length > 0) {
@@ -2049,6 +2067,9 @@ window.addEventListener('DOMContentLoaded', () => {
             // 6. Check Deaths
             const deadSnakes = this.snakes.filter(s => s.isDead);
             if (deadSnakes.length > 0) {
+                // Trigger FX for all dead snakes
+                deadSnakes.forEach(s => this.triggerDeath(s));
+
                 // Determine winner based on who is dead
                 if (this.snakes.length === 1) {
                     this.gameOver(0); // Single player, player 1 died
