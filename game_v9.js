@@ -1007,6 +1007,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!playerNameInput) return;
             // Default to "Anonymous" (Mixed Case), but force User Input to Uppercase
             const val = playerNameInput.value.trim();
+            if (val) localStorage.setItem('playerName', val.toUpperCase()); // Remember name
             const name = val ? val.toUpperCase() : "Anonymous";
             const score = this.currentPendingScore;
             const type = this.platform || 'mobile';
@@ -1635,7 +1636,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     // Also triggers if it qualifies for the list (beat #20)
                     if (score > 5 && this.checkHighScore(score)) {
                         this.currentPendingScore = score;
-                        if (playerNameInput) playerNameInput.value = "";
+                        if (playerNameInput) {
+                            // Load saved name if available
+                            const savedName = localStorage.getItem('playerName');
+                            playerNameInput.value = savedName || "";
+                        }
 
                         // CALCULATE DISPLAY RANK
                         try {
