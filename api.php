@@ -8,15 +8,26 @@ $method = $_SERVER['REQUEST_METHOD'];
 // Handle GET (Load High Scores)
 if ($method === 'GET') {
     $type = isset($_GET['type']) ? $_GET['type'] : 'mobile'; // mobile or pc
+    $sort = isset($_GET['sort']) ? $_GET['sort'] : 'best'; // best or total
 
-    // Query: Top 50 scores for this platform
-    // We join with users to get names
-    $sql = "SELECT u.username as name, s.score, s.created_at as date 
-            FROM scores s 
-            JOIN users u ON s.user_id = u.id 
-            WHERE s.platform = ? 
-            ORDER BY s.score DESC 
-            LIMIT 50";
+    if ($sort === 'total') {
+        // Total Score (XP) List per Platform
+        $sql = "SELECT u.username as name, SUM(s.score) as score, MAX(s.created_at) as date 
+                FROM scores s 
+                JOIN users u ON s.user_id = u.id 
+                WHERE s.platform = ? 
+                GROUP BY s.user_id 
+                ORDER BY score DESC 
+                LIMIT 50";
+    } else {
+        // Best Single Game List (Standard)
+        $sql = "SELECT u.username as name, s.score, s.created_at as date 
+                FROM scores s 
+                JOIN users u ON s.user_id = u.id 
+                WHERE s.platform = ? 
+                ORDER BY s.score DESC 
+                LIMIT 50";
+    }
 
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $type);
