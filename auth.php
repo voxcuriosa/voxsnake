@@ -13,10 +13,11 @@ if ($method === 'POST') {
     }
 
     $action = $input['action'];
-    $username = strtoupper(trim($input['username']));
+    // Fix: Check if username exists before trim/upper to avoid Warning
+    $username = isset($input['username']) ? strtoupper(trim($input['username'])) : '';
     $password = isset($input['password']) ? trim($input['password']) : '';
 
-    if (empty($username)) {
+    if (empty($username) && strpos($action, 'admin_') !== 0) {
         echo json_encode(["error" => "Username Required"]);
         exit;
     }
