@@ -852,7 +852,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         submitHighScore() {
             if (!playerNameInput) return;
-            const name = playerNameInput.value.trim().toUpperCase() || "ANON";
+            // Default to "Anonymous" (Mixed Case), but force User Input to Uppercase
+            const val = playerNameInput.value.trim();
+            const name = val ? val.toUpperCase() : "Anonymous";
             const score = this.currentPendingScore;
             const type = this.platform || 'mobile';
 
