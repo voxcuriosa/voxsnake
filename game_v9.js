@@ -1036,11 +1036,18 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             submitHighScore() {
-                if (!playerNameInput) return;
-                // Default to "Anonymous" (Mixed Case), but force User Input to Uppercase
-                const val = playerNameInput.value.trim();
-                if (val) localStorage.setItem('playerName', val.toUpperCase()); // Remember name
-                const name = val ? val.toUpperCase() : "Anonymous";
+                // If Logged In, use that name. If not, use Input or "Anonymous"
+                let name = "Anonymous";
+                if (this.currentUser) {
+                    name = this.currentUser.name;
+                } else if (playerNameInput) {
+                    const val = playerNameInput.value.trim();
+                    if (val) {
+                        name = val.toUpperCase();
+                        localStorage.setItem('playerName', name); // Remember manually entered name
+                    }
+                }
+
                 const score = this.currentPendingScore;
                 const type = this.platform || 'mobile';
 
