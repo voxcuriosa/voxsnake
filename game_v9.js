@@ -2136,8 +2136,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.speedEffectTimer = 3000;
                     break;
                 case 'slow':
-                    this.baseSpeed = this.baseSpeed * 1.10;
-                    this.currentSpeed = this.baseSpeed;
+                    this.currentSpeed = 200; // Slow motion
+                    this.speedEffectTimer = 5000;
                     break;
                 case 'bomb':
                     this.spawnFood();
