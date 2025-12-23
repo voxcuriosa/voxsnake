@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=5.73">
+    <link rel="stylesheet" href="style.css?v=5.74">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -74,7 +74,7 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v5.73</span></h3>
+                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v5.74</span></h3>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
@@ -139,6 +139,9 @@
                         <button id="btn-1p" class="neon-btn">1 PLAYER</button>
                         <button id="btn-2p" class="neon-btn">2 PLAYERS (SAME KEYBOARD)</button>
                         <div style="width:100%; height:1px; background:#333; margin:10px 0;"></div>
+                        <button id="btn-menu-login" class="neon-btn" style="color:#FFD700; border-color:#FFD700;">LOGIN
+                            /
+                            PROFILE</button> <!-- NEW -->
                         <button id="btn-highscores" class="neon-btn">HIGH SCORES</button> <!-- NEW BUTTON -->
                         <button id="btn-host" class="neon-btn" style="color:#00ffff; border-color:#00ffff;">HOST
                             ONLINE</button>
@@ -203,6 +206,44 @@
                     </div>
                     <input type="text" id="player-name-input" placeholder="ENTER NAME" maxlength="10">
                     <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
+                    <div style="margin-top:20px; font-size:0.8rem; color:#888;">
+                        (Tip: Log in to save to your Total Score!)
+                    </div>
+                </div>
+
+                <!-- LOGIN SCREEN -->
+                <div id="login-screen" class="menu-screen hidden">
+                    <h2 class="neon-title">LOGIN</h2>
+                    <input type="text" id="login-user" placeholder="USERNAME" maxlength="12">
+                    <input type="password" id="login-pass" placeholder="PASSWORD" maxlength="20">
+                    <button id="btn-do-login" class="neon-btn">LOG IN</button>
+                    <button id="btn-goto-register" class="neon-btn secondary" style="margin-top:10px;">CREATE
+                        ACCOUNT</button>
+                    <button id="btn-login-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                </div>
+
+                <!-- REGISTER SCREEN -->
+                <div id="register-screen" class="menu-screen hidden">
+                    <h2 class="neon-title">CREATE USER</h2>
+                    <p style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">Password: Min 6 chars (Numbers/Letters)
+                    </p>
+                    <input type="text" id="reg-user" placeholder="USERNAME" maxlength="12">
+                    <input type="password" id="reg-pass" placeholder="PASSWORD" maxlength="20">
+                    <button id="btn-do-register" class="neon-btn">REGISTER</button>
+                    <button id="btn-register-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                </div>
+
+                <!-- PROFILE SCREEN -->
+                <div id="profile-screen" class="menu-screen hidden">
+                    <h2 class="neon-title">MY PROFILE</h2>
+                    <h3 id="profile-name" style="color:#00ffff; margin-bottom:20px;">User</h3>
+                    <div style="text-align:left; margin-bottom:20px; font-size:1.2rem;">
+                        <div>Total Score: <span id="profile-score" style="color:#FFD700;">0</span></div>
+                        <div>Games Played: <span id="profile-games" style="color:#fff;">0</span></div>
+                    </div>
+                    <button id="btn-logout" class="neon-btn" style="border-color:#ff5555; color:#ff5555;">LOG
+                        OUT</button>
+                    <button id="btn-profile-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
                 </div>
 
                 <!-- Online Lobby Screen -->
@@ -317,7 +358,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-    <script src="game_v9.js?v=5.73"></script>
+    <script src="game_v9.js?v=5.74"></script>
 </body>
 
 </html>
