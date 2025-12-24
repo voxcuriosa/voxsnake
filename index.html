@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=6.15">
+    <link rel="stylesheet" href="style.css?v=6.16">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -13,6 +13,8 @@
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon_192.png">
+    <meta name="description"
+        content="Play Neon Snake - An original, retro-style neon snake game. Battle friends in multiplayer combat or challenge the global leaderboard. Fast-paced, competitive, and completely free! Unblocked io game.">
     <meta name="theme-color" content="#000000">
     <script>
         // NUCLEAR CACHE CLEAR: FORCE UNREGISTER ALL SERVICE WORKERS
@@ -36,8 +38,8 @@
             return false;
         };
     </script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
     <!-- ANTI-CACHE HEADERS -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -74,7 +76,7 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h3>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v6.15</span></h3>
+                        <h2>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v6.16</span></h2>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
@@ -84,9 +86,9 @@
                             style="display: flex; gap: 20px; font-size: 0.75rem; text-align: left;">
                             <!-- Global Items -->
                             <div style="flex: 1;">
-                                <h4
+                                <h3
                                     style="margin: 5px 0; color: #fff; border-bottom: 1px solid #444; margin-bottom: 10px;">
-                                    GLOBAL (ALL MODES)</h4>
+                                    GLOBAL (ALL MODES)</h3>
                                 <div style="display: flex; flex-direction: column; gap: 6px;">
                                     <div><span class="dot normal"></span> <strong>Eat:</strong> Grow snake & get +1
                                         Score.</div>
@@ -109,9 +111,9 @@
                             </div>
                             <!-- Combat Items -->
                             <div style="flex: 1; border-left: 1px solid #333; padding-left: 20px;">
-                                <h4
+                                <h3
                                     style="margin: 5px 0; color: #ff0055; border-bottom: 1px solid #444; margin-bottom: 10px;">
-                                    COMBAT (2P ONLY)</h4>
+                                    COMBAT (2P ONLY)</h3>
                                 <div style="display: flex; flex-direction: column; gap: 6px;">
                                     <div><span class="dot brown"></span> <strong>Mines:</strong> Drops a mine (safe for
                                         you).</div>
@@ -421,7 +423,7 @@
                         </div>
                     </div>
 
-                    <h3 style="color: #fff; margin-bottom: 10px;">POWER-UPS</h3>
+                    <h2 style="color: #fff; margin-bottom: 10px;">POWER-UPS</h2>
                     <div
                         style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px;">
                         <!-- Power Up Items -->
@@ -464,10 +466,10 @@
     <!-- External Libraries -->
     <!-- PeerJS already included in head, removing duplicate -->
     <!-- <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
     <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-    <script src="game_v9.js?v=6.15"></script>
+    <script src="game_v9.js?v=6.16" defer></script>
 </body>
 
 </html>
