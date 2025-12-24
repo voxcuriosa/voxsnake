@@ -794,6 +794,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 bindButton(btnHighScores, () => {
                     if (mainMenu) mainMenu.classList.add('hidden');
                     this.showHighScoreScreen(); // Use new helper
+
+                    // SPACE SAVING: Move Title to Main Header
+                    const title = document.querySelector('h1.neon-title');
+                    if (title) title.innerText = "HIGH SCORES";
+
                     // Force Default View: Mobile
                     this.updateTabs('mobile');
                     this.loadHighScores('mobile');
@@ -851,6 +856,10 @@ window.addEventListener('DOMContentLoaded', () => {
             this.isRunning = false;
             this.isPaused = false;
             this.gameMode = null;
+
+            // Restore Title
+            const title = document.querySelector('h1.neon-title');
+            if (title) title.innerText = "NEON SNAKE";
 
             this.hideAllScreens();
 
