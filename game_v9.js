@@ -44,7 +44,18 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
     const ctx = canvas.getContext('2d');
 
-    log("v4.8 (High Score Screen + Cache Fix)...");
+    // Auto-Detect Version
+    let detectedVer = "v?";
+    const scripts = document.getElementsByTagName('script');
+    for (let s of scripts) {
+        if (s.src.includes('game_v9.js?v=')) {
+            detectedVer = "v" + s.src.split('v=')[1];
+            break;
+        }
+    }
+    log("Version: " + detectedVer);
+    const vSpan = document.getElementById('version-number');
+    if (vSpan) vSpan.innerText = detectedVer;
     // alert("VERSION 1.15 UPDATE INSTALLED! \n(Trykk OK for å starte)");
     // alert("VERSION 6.3 INSTALLED! \nCache broken successfully.");
     // log("Screen: " + window.innerWidth + "x" + window.innerHeight);
