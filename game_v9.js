@@ -96,6 +96,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const btnHighScores = document.getElementById('btn-highscores');
     const highScoreScreen = document.getElementById('high-score-screen');
     const btnBackHighScores = document.getElementById('btn-back-highscores');
+    const goLoginBtn = document.getElementById('go-login-btn'); // NEW
 
     // Colors
     const COLORS = {
@@ -761,6 +762,20 @@ window.addEventListener('DOMContentLoaded', () => {
             // Actually, initMultiplayer does `btnHost.onclick`. We should upgrade that too.
 
             if (submitScoreBtn) bindButton(submitScoreBtn, () => this.submitHighScore());
+
+            if (goLoginBtn) {
+                bindButton(goLoginBtn, () => {
+                    // Go to Register Screen
+                    this.hideAllScreens();
+                    const reg = document.getElementById('register-screen');
+                    if (reg) {
+                        reg.classList.remove('hidden');
+                        reg.classList.remove('nuclear-hidden');
+                        reg.style.display = 'block';
+                        reg.classList.add('active');
+                    }
+                });
+            }
 
             // Global Touch Listeners (Window) for maximum reliability
             window.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
@@ -1799,20 +1814,33 @@ window.addEventListener('DOMContentLoaded', () => {
                 // SYNC GAME OVER
                 if (this.isHost) {
                     this.broadcastGameOver(winnerIndex);
+                }
 
-                    // LOG MULTIPLAYER MATCH (Host Only)
-                    if (this.gameMode === 'multi') {
-                        const duration = Math.floor((Date.now() - (this.gameStartTime || Date.now())) / 1000);
-                        const p1Name = this.currentUser ? this.currentUser.name : 'Player 1 (Host)';
-                        // Try to get P2 name from connection or generic
-                        // Currently we don't store P2 name explicitly in this context easily, so defaulting.
-                        // Future: Exchange names in handshake.
-                        const p2Name = 'Player 2 (Client)';
+                // SHOW LOGIN PROMPT IF GUEST
+                if (goLoginBtn) {
+                    if (!this.currentUser) {
+                        goLoginBtn.style.display = 'inline-block';
+                        goLoginBtn.style.width = 'auto'; // Reset width
+                    } else {
+                        goLoginBtn.style.display = 'none';
+                    }
+                }
 
-                        let wName = 'Draw';
-                        if (winnerIndex === 0) wName = p1Name;
-                        if (winnerIndex === 1) wName = p2Name;
+                // LOG MULTIPLAYER MATCH (Host OR Local 2P)
+                const isLocalMulti = (this.gameMode === 'multi' && !this.isClient && !this.isHost);
 
+                if (this.gameMode === 'multi' && (this.isHost || isLocalMulti)) {
+                    const duration = Math.floor((Date.now() - (this.gameStartTime || Date.now())) / 1000);
+                    // Use generic names for Local, or Host name for Online
+                    const p1Name = this.currentUser ? this.currentUser.name : (isLocalMulti ? 'Player 1' : 'Player 1 (Host)');
+                    const p2Name = isLocalMulti ? 'Player 2' : 'Player 2 (Client)';
+
+                    let wName = 'Draw';
+                    if (winnerIndex === 0) wName = p1Name;
+                    if (winnerIndex === 1) wName = p2Name;
+
+                    // Don't log super short games (testing)
+                    if (duration > 5) {
                         this.logMatchToBackend(p1Name, p2Name, wName, duration);
                     }
                 }
@@ -2279,10 +2307,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'ghost':
                     if (isMulti && enemy) {
-                        enemy.wallTrapTimer = 10000;
+                        enemy.wallTrapTimer += 10000;
                         // Feedback? Done in Draw/Legend
                     } else {
-                        user.ghostTimer = 5000;
+                        user.ghostTimer += 5000;
                     }
                     break;
                 case 'speed':
@@ -2305,7 +2333,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'shield':
                     user.hasShield = true;
-                    user.shieldTimer = 10000; // FIX: Initialize timer!
+                    // Fix: Initialize if 0, otherwise add
+                    if (user.shieldTimer <= 0) user.shieldTimer = 10000;
+                    else user.shieldTimer += 10000;
                     break;
                 case 'magnet': user.magnetTimer += 10000; break;
                 case 'wall':
