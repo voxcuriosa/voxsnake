@@ -17,7 +17,7 @@ if ($method === 'POST') {
     $username = isset($input['username']) ? strtoupper(trim($input['username'])) : '';
     $password = isset($input['password']) ? trim($input['password']) : '';
 
-    if (empty($username) && strpos($action, 'admin_') !== 0) {
+    if (empty($username) && strpos($action, 'admin_') !== 0 && $action !== 'log_match' && $action !== 'get_stats') {
         echo json_encode(["error" => "Username Required"]);
         exit;
     }
