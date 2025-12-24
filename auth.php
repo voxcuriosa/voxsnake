@@ -181,6 +181,23 @@ if ($method === 'POST') {
         }
     }
 
+    // --- LOG MULTIPLAYER MATCH ---
+    else if ($action === 'log_match') {
+        $p1 = isset($input['p1']) ? $input['p1'] : 'Unknown';
+        $p2 = isset($input['p2']) ? $input['p2'] : 'Unknown';
+        $winner = isset($input['winner']) ? $input['winner'] : null;
+        $duration = isset($input['duration']) ? intval($input['duration']) : 0;
+
+        $stmt = $conn->prepare("INSERT INTO matches (p1_name, p2_name, winner_name, duration) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("sssi", $p1, $p2, $winner, $duration);
+
+        if ($stmt->execute()) {
+            echo json_encode(["success" => true]);
+        } else {
+            echo json_encode(["error" => $conn->error]);
+        }
+    }
+
     // --- ADMIN ACTIONS ---
     else if (strpos($action, 'admin_') === 0) {
         // 1. Verify Requestor IS Admin
@@ -225,6 +242,17 @@ if ($method === 'POST') {
             $totalGames = $rSum['s'] ?? 0;
 
             echo json_encode(["success" => true, "users" => $users, "total_players" => $totalPlayers, "total_games" => $totalGames]);
+        } else if ($action === 'admin_list_matches') {
+            $sql = "SELECT * FROM matches ORDER BY played_at DESC LIMIT 50";
+            $list = $conn->query($sql);
+            if (!$list) {
+                echo json_encode(["error" => $conn->error]);
+                exit;
+            }
+            $matches = [];
+            while ($m = $list->fetch_assoc())
+                $matches[] = $m;
+            echo json_encode(["success" => true, "matches" => $matches]);
         } else if ($action === 'admin_delete_user') {
             $targetId = isset($input['target_id']) ? intval($input['target_id']) : 0;
             if ($targetId > 0) {

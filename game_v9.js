@@ -1223,6 +1223,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 this.totalFoodEaten = 0;
                 this.isPaused = false;
                 this.lastTime = performance.now();
+                this.gameStartTime = Date.now(); // TRACK DURATION
 
                 console.log("Initializing Snakes...");
                 if (mode === 'single') {
@@ -1788,12 +1789,43 @@ window.addEventListener('DOMContentLoaded', () => {
                 // SYNC GAME OVER
                 if (this.isHost) {
                     this.broadcastGameOver(winnerIndex);
+
+                    // LOG MULTIPLAYER MATCH (Host Only)
+                    if (this.gameMode === 'multi') {
+                        const duration = Math.floor((Date.now() - (this.gameStartTime || Date.now())) / 1000);
+                        const p1Name = this.currentUser ? this.currentUser.name : 'Player 1 (Host)';
+                        // Try to get P2 name from connection or generic
+                        // Currently we don't store P2 name explicitly in this context easily, so defaulting.
+                        // Future: Exchange names in handshake.
+                        const p2Name = 'Player 2 (Client)';
+
+                        let wName = 'Draw';
+                        if (winnerIndex === 0) wName = p1Name;
+                        if (winnerIndex === 1) wName = p2Name;
+
+                        this.logMatchToBackend(p1Name, p2Name, wName, duration);
+                    }
                 }
 
             } catch (err) {
                 console.error(err);
                 alert("Game Over!");
             }
+        }
+
+        logMatchToBackend(p1, p2, winner, duration) {
+            console.log("LOGGING MATCH:", p1, p2, winner, duration);
+            fetch('auth.php', { // Using auth.php as we added the action there
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'log_match',
+                    p1: p1,
+                    p2: p2,
+                    winner: winner,
+                    duration: duration
+                })
+            }).catch(e => console.error("Log Match Error:", e));
         }
 
         saveScoreToBackend(name, score, type) {
@@ -2735,6 +2767,27 @@ window.addEventListener('DOMContentLoaded', () => {
             const btnAdminRefresh = document.getElementById('btn-admin-refresh');
             const btnAdminClose = document.getElementById('btn-admin-close');
 
+            const btnTabUsers = document.getElementById('btn-admin-tab-users');
+            const btnTabMatches = document.getElementById('btn-admin-tab-matches');
+            const viewUsers = document.getElementById('admin-users-view');
+            const viewMatches = document.getElementById('admin-matches-view');
+
+            if (btnTabUsers) btnTabUsers.onclick = () => {
+                viewUsers.classList.remove('hidden');
+                viewMatches.classList.add('hidden');
+                btnTabUsers.classList.add('active'); btnTabUsers.classList.remove('secondary');
+                btnTabMatches.classList.remove('active'); btnTabMatches.classList.add('secondary');
+                this.loadAdmin(); // Reload Users
+            };
+
+            if (btnTabMatches) btnTabMatches.onclick = () => {
+                viewUsers.classList.add('hidden');
+                viewMatches.classList.remove('hidden');
+                btnTabUsers.classList.remove('active'); btnTabUsers.classList.add('secondary');
+                btnTabMatches.classList.add('active'); btnTabMatches.classList.remove('secondary');
+                this.loadAdminMatches(); // Load Matches
+            };
+
             if (btnAdminRefresh) btnAdminRefresh.onclick = () => this.loadAdmin();
             if (btnAdminClose) btnAdminClose.onclick = () => {
                 adminScreen.classList.add('hidden');
@@ -3020,6 +3073,58 @@ window.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-small" onclick="window.gameInstance.resetUser(${u.id}, '${u.username}')" style="color:orange">Reset</button>
                         <button class="btn-small" onclick="window.gameInstance.deleteUser(${u.id}, '${u.username}')" style="color:red">Delete</button>
                     </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async loadAdminMatches() {
+            try {
+                const res = await fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'admin_list_matches', admin_user: this.currentUser.name })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    this.renderMatchList(d.matches);
+                } else {
+                    document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
+            }
+        }
+
+        renderMatchList(matches) {
+            const tbody = document.getElementById('admin-match-list');
+            tbody.innerHTML = '';
+            if (!matches || matches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No matches logged yet.</td></tr>';
+                return;
+            }
+
+            matches.forEach(m => {
+                const tr = document.createElement('tr');
+                // Format Date
+                let dateStr = m.played_at;
+                try { dateStr = new Date(m.played_at).toLocaleString(); } catch (e) { }
+
+                // Format Duration
+                const mins = Math.floor(m.duration / 60);
+                const secs = m.duration % 60;
+                const durStr = (mins > 0 ? mins + "m " : "") + secs + "s";
+
+                const p1Win = (m.winner_name === m.p1_name);
+                const p2Win = (m.winner_name === m.p2_name);
+                const winColor = p1Win ? COLORS.p1 : (p2Win ? COLORS.p2 : '#fff');
+
+                tr.innerHTML = `
+                    <td style="font-size:0.7rem; color:#aaa;">${dateStr}</td>
+                    <td style="color:${COLORS.p1}">${m.p1_name}</td>
+                    <td style="color:${COLORS.p2}">${m.p2_name}</td>
+                    <td style="font-weight:bold; color:${winColor}">${m.winner_name || 'Draw'}</td>
+                    <td>${durStr}</td>
                 `;
                 tbody.appendChild(tr);
             });
