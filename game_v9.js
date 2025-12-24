@@ -2660,12 +2660,31 @@ window.addEventListener('DOMContentLoaded', () => {
             const regScreen = document.getElementById('register-screen');
             const btnDoReg = document.getElementById('btn-do-register');
             const btnRegBack = document.getElementById('btn-register-back');
+            const regSecQ = document.getElementById('reg-sec-q');
+            const regCustomQ = document.getElementById('reg-custom-q');
+
+            if (regSecQ) {
+                regSecQ.onchange = () => {
+                    if (regSecQ.value === 'custom') {
+                        regCustomQ.classList.remove('hidden');
+                        regCustomQ.focus();
+                    } else {
+                        regCustomQ.classList.add('hidden');
+                    }
+                };
+            }
 
             if (btnDoReg) btnDoReg.onclick = () => {
                 const u = document.getElementById('reg-user').value;
                 const p = document.getElementById('reg-pass').value;
-                const sq = document.getElementById('reg-sec-q').value;
+                let sq = document.getElementById('reg-sec-q').value;
                 const sa = document.getElementById('reg-sec-a').value;
+
+                if (sq === 'custom') {
+                    sq = document.getElementById('reg-custom-q').value.trim();
+                    if (!sq) { alert("Please enter your custom question!"); return; }
+                }
+
                 this.register(u, p, sq, sa);
             };
             if (btnRegBack) btnRegBack.onclick = () => {
