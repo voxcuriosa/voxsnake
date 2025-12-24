@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=6.17">
+    <link rel="stylesheet" href="style.css?v=6.18">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
@@ -48,7 +48,7 @@
 </head>
 
 <body>
-    <div class="main-wrapper">
+    <main class="main-wrapper">
         <h1 class="neon-title">NEON SNAKE</h1>
 
         <div id="score-board">
@@ -76,7 +76,7 @@
                 <div id="main-menu" class="menu-screen active">
 
                     <div class="instructions-box">
-                        <h2>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v6.17</span></h2>
+                        <h2>HOW TO PLAY <span style="font-size:0.8rem; color:#666;">v6.15</span></h2>
                         <div class="inst-grid">
                             <div><span class="key">ARROWS / SWIPE</span> P1 Move</div>
                             <div><span class="key">WASD</span> P2 Move</div>
@@ -159,26 +159,26 @@
 
                 <!-- High Score Screen (NEW) -->
                 <div id="high-score-screen" class="menu-screen hidden">
-                    <h2 class="neon-title">HIGH SCORES</h2>
+                    <h2 class="neon-title" style="margin-bottom:10px;">HIGH SCORES</h2>
 
-                    <!-- Platform Tabs -->
-                    <div class="score-tabs"
-                        style="display:flex; gap:10px; margin-bottom:15px; width:100%; justify-content:center;">
-                        <button id="tab-mobile" class="neon-btn small active"
-                            style="flex:1; max-width:150px; min-width:auto; padding:8px;">MOBILE</button>
-                        <button id="tab-pc" class="neon-btn small secondary"
-                            style="flex:1; max-width:150px; min-width:auto; padding:8px;">PC</button>
-                    </div>
+                    <div id="hs-controls" style="width:100%;">
+                        <!-- Platform Tabs -->
+                        <div class="score-tabs">
+                            <div style="font-size:0.7rem; color:#888; margin-bottom:2px;">PLATFORM</div>
+                            <div style="display:flex; gap:5px;">
+                                <button id="tab-mobile" class="neon-btn small active">MOBILE</button>
+                                <button id="tab-pc" class="neon-btn small secondary">PC</button>
+                            </div>
+                        </div>
 
-                    <!-- Scoring Mode Tabs -->
-                    <div class="score-tabs"
-                        style="display:flex; gap:10px; margin-bottom:15px; width:100%; justify-content:center;">
-                        <button id="sort-best" class="neon-btn small active"
-                            style="flex:1; max-width:150px; min-width:auto; padding:8px; font-size:0.7rem;">BEST
-                            SCORE</button>
-                        <button id="sort-total" class="neon-btn small secondary"
-                            style="flex:1; max-width:150px; min-width:auto; padding:8px; font-size:0.7rem;">TOTAL
-                            SCORE</button>
+                        <!-- Scoring Mode Tabs -->
+                        <div class="score-tabs">
+                            <div style="font-size:0.7rem; color:#888; margin-bottom:2px;">VIEW</div>
+                            <div style="display:flex; gap:5px;">
+                                <button id="sort-best" class="neon-btn small active">BEST SCORE</button>
+                                <button id="sort-total" class="neon-btn small secondary">TOTAL XP</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="high-scores"
@@ -461,15 +461,15 @@
             </div> <!-- END UI LAYER -->
 
         </div>
-    </div>
+        </div>
 
-    <!-- External Libraries -->
-    <!-- PeerJS already included in head, removing duplicate -->
-    <!-- <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+        <!-- External Libraries -->
+        <!-- PeerJS already included in head, removing duplicate -->
+        <!-- <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script> -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
-    <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-    <script src="game_v9.js?v=6.17" defer></script>
+        <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
+        <script src="game_v9.js?v=6.18" defer></script>
 </body>
 
 </html>

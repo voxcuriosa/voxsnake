@@ -434,8 +434,45 @@ h2 {
 
     #high-score-list li {
         font-size: 1rem;
-        padding: 8px 15px;
+        padding: 5px 15px;
     }
+
+    /* Side-by-side controls on PC */
+    #hs-controls {
+        display: flex;
+        flex-direction: row;
+        gap: 40px;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .score-tabs {
+        flex: 1;
+        max-width: 300px;
+    }
+}
+
+/* Default HS Controls (Mobile) */
+#hs-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.score-tabs {
+    width: 100%;
+    max-width: 400px;
+}
+
+.neon-btn.small {
+    flex: 1;
+    padding: 8px;
+    font-size: 0.8rem;
+    min-width: auto;
+    margin: 0;
+    /* Override default btn margin */
 }
 
 .legend-item {
