@@ -55,8 +55,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // Prevent "Rubber banding" or "Pull to refresh"
     document.body.style.overflow = 'hidden';
     document.addEventListener('touchmove', (e) => {
-        // ALLOW SCROLLING in Admin Panel list
-        if (e.target.closest('#admin-user-list') || e.target.closest('#admin-screen div')) {
+        // ALLOW SCROLLING in Menus, High Scores, and Admin Panel
+        // If the touch target is inside a .menu-screen (like Main Menu or High Scores), allow default scroll.
+        if (e.target.closest('.menu-screen') || e.target.closest('#admin-screen') || e.target.closest('.admin-view-container')) {
             return; // Let it scroll
         }
         e.preventDefault();
