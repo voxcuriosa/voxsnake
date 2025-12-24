@@ -24,7 +24,8 @@ def bump_version():
         # Let's find all occurrences of v(\d+\.\d+) and update them IF they are the same version.
         
         # 1. Extract current version
-        match = re.search(r'v(\d+\.\d+)', content)
+        # 1. Extract current version
+        match = re.search(r'(?:v=|v)(\d+\.\d+)', content)
         if not match:
             print("No version found in index.html (looking for vX.Y)")
             return
