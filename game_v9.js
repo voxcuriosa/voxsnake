@@ -334,8 +334,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (newHead.x === w.x && newHead.y === w.y) {
                         if (this.ghostTimer > 0) break; // Ghost passes through
 
-                        // MINE LOGIC: Allow Owner to pass through their own walls (Multiplayer)
-                        if (w.ownerId !== undefined && w.ownerId === this.id) {
+                        // MINE LOGIC: Allow Owner to pass through their own walls (Multiplayer ONLY)
+                        // In Single Player, you should die if you hit your own mine.
+                        if (!isSingleMode && w.ownerId !== undefined && w.ownerId === this.id) {
                             // Safe! (It's a mine, and I placed it)
                             break;
                         }
@@ -2928,6 +2929,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 console.log("Admin Data:", d);
                 if (d.success) {
+                    // Update Global Stats
+                    if (document.getElementById('stat-total-players'))
+                        document.getElementById('stat-total-players').innerText = d.total_players || 0;
+                    if (document.getElementById('stat-total-games'))
+                        document.getElementById('stat-total-games').innerText = d.total_games || 0;
+
                     if (d.users.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
                     } else {

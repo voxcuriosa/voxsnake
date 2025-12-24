@@ -204,7 +204,8 @@ if ($method === 'POST') {
 
         // 2. Perform Action
         if ($action === 'admin_list_users') {
-            $sql = "SELECT id, username, total_xp, games_played, created_at, is_admin FROM users ORDER BY id DESC LIMIT 100";
+            // Updated to fetch Global Stats
+            $sql = "SELECT id, username, total_xp, games_played, created_at, is_admin FROM users ORDER BY id DESC LIMIT 200";
             $list = $conn->query($sql);
             if (!$list) {
                 echo json_encode(["error" => "SQL Error: " . $conn->error]);
@@ -213,7 +214,17 @@ if ($method === 'POST') {
             $users = [];
             while ($u = $list->fetch_assoc())
                 $users[] = $u;
-            echo json_encode(["success" => true, "users" => $users]);
+
+            // Global Stats
+            $qCount = $conn->query("SELECT COUNT(*) as c FROM users");
+            $rCount = $qCount->fetch_assoc();
+            $totalPlayers = $rCount['c'];
+
+            $qSum = $conn->query("SELECT SUM(games_played) as s FROM users");
+            $rSum = $qSum->fetch_assoc();
+            $totalGames = $rSum['s'] ?? 0;
+
+            echo json_encode(["success" => true, "users" => $users, "total_players" => $totalPlayers, "total_games" => $totalGames]);
         } else if ($action === 'admin_delete_user') {
             $targetId = isset($input['target_id']) ? intval($input['target_id']) : 0;
             if ($targetId > 0) {
