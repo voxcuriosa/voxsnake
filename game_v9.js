@@ -1533,7 +1533,11 @@ window.addEventListener('DOMContentLoaded', () => {
             let valid = false;
             let pos = {};
             let attempts = 0;
-            while (!valid && attempts < 50) {
+            let valid = false;
+            let pos = {};
+            let attempts = 0;
+            // Increased attempts for long snakes
+            while (!valid && attempts < 100) {
                 attempts++;
                 pos = {
                     x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
@@ -1547,19 +1551,40 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         isOccupied(pos) {
+            // Safety: Round input position to ensure integer comparison
+            const px = Math.round(pos.x);
+            const py = Math.round(pos.y);
+
             if (this.foods) {
                 for (let f of this.foods) {
-                    if (f.x === pos.x && f.y === pos.y) return true;
+                    if (Math.round(f.x) === px && Math.round(f.y) === py) return true;
                 }
             }
-            for (let snake of this.snakes) {
-                for (let segment of snake.body) {
-                    if (pos.x === segment.x && pos.y === segment.y) return true;
+            if (this.snakes) {
+                for (let snake of this.snakes) {
+                    if (!snake || !snake.body) continue;
+                    for (let segment of snake.body) {
+                        // Float-safe integer comparison
+                        if (Math.round(segment.x) === px && Math.round(segment.y) === py) return true;
+                    }
                 }
             }
-            for (let w of this.walls) if (pos.x === w.x && pos.y === w.y) return true;
-            for (let p of this.powerups) if (pos.x === p.x && pos.y === p.y) return true;
-            for (let proj of this.projectiles) if (pos.x === proj.x && pos.y === proj.y) return true; // Check projectiles
+            if (this.walls) {
+                for (let w of this.walls) {
+                    if (Math.round(w.x) === px && Math.round(w.y) === py) return true;
+                }
+            }
+            if (this.powerups) {
+                for (let p of this.powerups) {
+                    if (Math.round(p.x) === px && Math.round(p.y) === py) return true;
+                }
+            }
+            // Projectiles usually move fast, but safe to check
+            if (this.projectiles) {
+                for (let proj of this.projectiles) {
+                    if (Math.round(proj.x) === px && Math.round(proj.y) === py) return true;
+                }
+            }
             return false;
         }
 
