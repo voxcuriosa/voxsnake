@@ -1533,9 +1533,6 @@ window.addEventListener('DOMContentLoaded', () => {
             let valid = false;
             let pos = {};
             let attempts = 0;
-            let valid = false;
-            let pos = {};
-            let attempts = 0;
             // Increased attempts for long snakes
             while (!valid && attempts < 100) {
                 attempts++;
