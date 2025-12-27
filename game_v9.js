@@ -106,40 +106,59 @@ window.addEventListener('DOMContentLoaded', () => {
     const restartBtn = document.getElementById('restart-btn');
     const btnInstall = document.getElementById('btn-install-app');
 
-    // --- PWA INSTALL LOGIC (v6.58) ---
+    // --- PWA INSTALL LOGIC (v6.65 Refined) ---
     let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent Chrome 67 and earlier from automatically showing the prompt
-        e.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
-        console.log("PWA Install Capable!");
-        // Update UI notify the user they can add to home screen
-        if (btnInstall) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    // HIDE BY DEFAULT (Reset from diagnostic)
+    if (btnInstall) btnInstall.style.display = 'none';
+
+    if (!isStandalone) {
+        // 1. Android / Chrome Logic
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log("PWA Install Capable!");
+            if (btnInstall) {
+                btnInstall.innerText = "INSTALL APP ⬇️"; // Standard Text
+                btnInstall.classList.remove('hidden');
+                btnInstall.style.display = 'block';
+            }
+        });
+
+        // 2. iOS Logic (Manual Instruction)
+        if (isIOS && btnInstall) {
+            btnInstall.innerText = "INSTALL APP (iOS: Share -> Add to Home)";
             btnInstall.classList.remove('hidden');
             btnInstall.style.display = 'block';
         }
-    });
+    }
 
     if (btnInstall) {
         btnInstall.onclick = () => {
-            // Hide the app provided install promotion
-            btnInstall.style.display = 'none';
-            // Show the install prompt
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                // Wait for the user to respond to the prompt
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the A2HS prompt');
-                    } else {
-                        console.log('User dismissed the A2HS prompt');
-                    }
-                    deferredPrompt = null;
-                });
+            if (isIOS) {
+                alert("To install on iOS:\n1. Tap the Share Button (Square with arrow)\n2. Scroll down to 'Add to Home Screen'\n3. Tap 'Add'");
+            } else {
+                // Android / PC
+                btnInstall.style.display = 'none';
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('User accepted the A2HS prompt');
+                        } else {
+                            console.log('User dismissed the A2HS prompt');
+                        }
+                        deferredPrompt = null;
+                    });
+                } else {
+                    alert("Install not available or already installed.");
+                }
             }
         };
     }
+    // ---------------------------------
     // ---------------------------------
     const menuBtn = document.getElementById('menu-btn');
     const scoreP1El = document.getElementById('score-p1');
@@ -719,6 +738,14 @@ window.addEventListener('DOMContentLoaded', () => {
                             // RESOLUTION SYNC
                             // alert("HOST RX HELLO: " + data.width + "x" + data.height); // DEBUG
                             console.log("Client Resolution:", data.width, data.height);
+
+                            // NAME SYNC (v6.65 Fix)
+                            if (data.username) {
+                                this.remotePlayerName = data.username;
+                                console.log("Remote Player Name Synced:", this.remotePlayerName);
+                                this.updateScoreUI();
+                            }
+
                             // Lock it in
                             this.multiplayerTargetWidth = data.width;
                             this.multiplayerTargetHeight = data.height;
