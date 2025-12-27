@@ -1369,103 +1369,57 @@ window.addEventListener('DOMContentLoaded', () => {
         resize() {
             const container = canvas.parentElement;
 
-            // NEW LOGIC: Use getBoundingClientRect for accurate remaining space
-            const sb = document.getElementById('score-board');
-            let headerBottom = 0;
-            if (sb) {
-                // Determine exactly where the UI ends
-                // Add a small buffer (e.g. 10px) to ensure we don't start immediately touching the text
-                headerBottom = sb.getBoundingClientRect().bottom + 5;
-            } else {
-                headerBottom = 100; // Fallback
-            }
+            // CSS-DRIVEN RESIZE v7.0
+            // Goal: Let Flexbox determine the available space, then snap the canvas to fit.
+            if (!container) return;
 
-            // Native Window Dimensions
-            // Native Window Dimensions
-            let availableW = window.innerWidth;
+            // 1. Unlock Container & Shrink Canvas to allow contraction
+            container.style.width = '100%';
+            container.style.height = '';
+            container.style.flex = '1';
+            canvas.style.height = '0px';
+            canvas.style.width = '0px';
 
-            // NEW ROBUST LOGIC v6.41:
-            // Calculate available height based on where the container ACTUALLY starts.
-            // This automatically accounts for all previous elements (Header, Scoreboard) AND their margins.
-            let containerTop = 0;
-            if (container) {
-                const rect = container.getBoundingClientRect();
-                containerTop = rect.top;
-                // Double check negative/weird values (rare but possible on init)
-                if (containerTop < 0 || containerTop > window.innerHeight / 2) {
-                    // Fallback if layout isn't ready
-                    const sb = document.getElementById('score-board');
-                    containerTop = sb ? sb.getBoundingClientRect().bottom + 10 : 100;
-                }
-            } else {
-                containerTop = 100;
-            }
+            // 2. Measure the available space provided by Flexbox
+            // clientHeight excludes border, which is exactly what we want for the inner canvas
+            // We subtract a small safety buffer (10px) to prevent sub-pixel rounding issues causing scrollbars
+            let availableW = container.clientWidth - 4;
+            let availableH = container.clientHeight - 10;
 
-            // Safety Buffers
-            // PC: Needs to account for border (4px) + slight visual breathing room (10px) = 14-15px
-            // Mobile: Needs to account for address bars/safe areas. 30px was too small. 80px too big. Trying 60px.
-
-            let safetyMargin = 15; // PC
-            if (this.platform === 'mobile') {
-                safetyMargin = 60;
-            }
-
-            let availableH = window.innerHeight - containerTop - safetyMargin;
-
-            // BORDER already accounted for in safety margin effectively, but let's be explicit
-            // The container grows by 4px due to border.
-            // If we set height X, container becomes X+4.
-            // So availableH must be the INNER height.
-            availableH -= 4;
-            availableW -= 4;
-
-            // Robustness
-            if (!availableW || availableW <= 10) availableW = window.innerWidth - 4;
-            if (!availableH || availableH <= 10) availableH = window.innerHeight - 4;
-
+            // 3. Fallbacks
             if (availableW < 300) availableW = 300;
             if (availableH < 300) availableH = 300;
 
-            // 1. Determine LOGICAL Resolution
-            // Default: Fit to available space
+            // 4. Multiplayer Sync Override
             let logicalW = availableW;
             let logicalH = availableH;
 
-            // Multiplayer Override: Force SYNC
-            // Ensure we use target width anytime it is available (Host or Client Logic already sets it)
             if (this.multiplayerTargetWidth) {
-                if (typeof log !== 'undefined') log(`FORCE SYNC: Using Target ${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight} (Mode: ${this.gameMode})`);
-                // Use the smallest constraint to ensure it fits on ALL screens
+                if (typeof log !== 'undefined') log(`FORCE SYNC: Using Target ${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight}`);
                 logicalW = Math.min(availableW, this.multiplayerTargetWidth);
                 logicalH = Math.min(availableH, this.multiplayerTargetHeight);
             }
 
-            // Snap to Grid (Floor)
-            this.cols = Math.floor(availableW / GRID_SIZE);
-            this.rows = Math.floor(availableH / GRID_SIZE);
+            // 5. Box Snap (Grid Alignment)
+            this.cols = Math.floor(logicalW / GRID_SIZE);
+            this.rows = Math.floor(logicalH / GRID_SIZE);
 
-            // 3. Set Canvas Resolution (PHYSICAL)
-            // This is the EXACT size of the gameplay area
+            // 6. Set Physical Dimensions
             CANVAS_WIDTH = this.cols * GRID_SIZE;
             CANVAS_HEIGHT = this.rows * GRID_SIZE;
 
             canvas.width = CANVAS_WIDTH;
             canvas.height = CANVAS_HEIGHT;
 
-            // 4. Shrink-Wrap Container to Eliminate Gaps
-            // Since the border is on the container, we must ensure the container is EXACTLY
-            // the size of the canvas + border width (4px total, 2px each side).
-            // We use '4px' because we subtracted it earlier (or logic dictates border width).
-
-            // Sync with CSS size (should map 1:1)
+            // 7. Lock Container to Exact Pixel Size (Shrink-Wrap)
+            // This prevents the container from being slightly larger than the canvas (gap)
+            // We include +4px for the border if the border is on the container
             canvas.style.width = CANVAS_WIDTH + "px";
             canvas.style.height = CANVAS_HEIGHT + "px";
 
-            if (container) {
-                container.style.width = (CANVAS_WIDTH + 4) + 'px';
-                container.style.height = (CANVAS_HEIGHT + 4) + 'px';
-                container.style.flex = 'none'; // Lock size
-            }
+            container.style.width = (CANVAS_WIDTH + 4) + 'px';
+            container.style.height = (CANVAS_HEIGHT + 4) + 'px';
+            container.style.flex = 'none'; // Lock it down again
 
             this.maxX = this.cols - 1;
             this.maxY = this.rows - 1;
