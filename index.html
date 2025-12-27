@@ -149,6 +149,8 @@
                     </div>
 
                     <div class="menu-options">
+                        <button id="btn-install-app" class="neon-btn hidden"
+                            style="border-color:#00ff00; color:#00ff00; margin-bottom:10px;">INSTALL APP ⬇️</button>
                         <button id="btn-resume" class="neon-btn hidden">RESUME</button>
                         <button id="btn-1p" class="neon-btn">1 PLAYER</button>
                         <button id="btn-2p" class="neon-btn">2 PLAYERS (SAME KEYBOARD)</button>
@@ -315,6 +317,12 @@
                             <p>Best PC: <span id="profile-best-pc" class="highlight">-</span></p>
                             <p>Joined: <span id="profile-joined" class="highlight">-</span></p>
                         </div>
+                    </div>
+
+                    <!-- MATCH HISTORY (v6.58) -->
+                    <div id="profile-match-history"
+                        style="max-height: 200px; overflow-y: auto; font-size: 0.8rem; margin-top: 20px; border-top: 1px solid #333; padding-top:10px; color:#aaa;">
+                        Loading recent matches...
                     </div>
 
                     <!-- ADMIN BUTTON (Hidden by default) -->

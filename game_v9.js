@@ -98,6 +98,43 @@ window.addEventListener('DOMContentLoaded', () => {
     const gameOverScreen = document.getElementById('game-over-screen');
     const winnerText = document.getElementById('winner-text');
     const restartBtn = document.getElementById('restart-btn');
+    const btnInstall = document.getElementById('btn-install-app');
+
+    // --- PWA INSTALL LOGIC (v6.58) ---
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt = e;
+        console.log("PWA Install Capable!");
+        // Update UI notify the user they can add to home screen
+        if (btnInstall) {
+            btnInstall.classList.remove('hidden');
+            btnInstall.style.display = 'block';
+        }
+    });
+
+    if (btnInstall) {
+        btnInstall.onclick = () => {
+            // Hide the app provided install promotion
+            btnInstall.style.display = 'none';
+            // Show the install prompt
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the A2HS prompt');
+                    } else {
+                        console.log('User dismissed the A2HS prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        };
+    }
+    // ---------------------------------
     const menuBtn = document.getElementById('menu-btn');
     const scoreP1El = document.getElementById('score-p1');
     const scoreP2El = document.getElementById('score-p2');
@@ -3192,6 +3229,56 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 console.error("Stats Network Error:", err);
+            }
+
+            // Fetch Match History (v6.57)
+            this.fetchProfileMatchHistory(this.currentUser.name);
+        }
+
+        async fetchProfileMatchHistory(username) {
+            const container = document.getElementById('profile-match-history');
+            if (!container) return;
+
+            container.innerHTML = "Loading matches...";
+
+            try {
+                const res = await fetch(`api_matches.php?action=history&player=${encodeURIComponent(username)}`);
+                const data = await res.json();
+
+                if (data.history && data.history.length > 0) {
+                    let html = '<ul style="list-style:none; padding:0; margin:0;">';
+                    data.history.forEach(m => {
+                        const isP1 = (m.p1_name === username);
+                        const opponent = isP1 ? m.p2_name : m.p1_name;
+                        const won = (m.winner_name === username);
+                        const draw = (m.winner_name === 'DRAW' || !m.winner_name);
+
+                        let resultColor = won ? '#00ff88' : '#ff5555';
+                        let resultText = "WON";
+                        if (draw) { resultColor = '#aaa'; resultText = "DRAW"; }
+                        else if (!won) { resultText = "LOST"; }
+
+                        // Format Date (Simple)
+                        const date = new Date(m.played_at).toLocaleDateString();
+
+                        html += `
+                            <li style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #444;">
+                                <span>vs <span style="color:#00ffff">${opponent}</span></span>
+                                <div>
+                                    <span style="color:${resultColor}; font-weight:bold; margin-right:10px;">${resultText}</span>
+                                    <span style="color:#666; font-size:0.7rem;">${date}</span>
+                                </div>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = "No matches played yet.";
+                }
+            } catch (e) {
+                console.error("Profile History Error", e);
+                container.innerHTML = "Failed to load history.";
             }
         }
 
