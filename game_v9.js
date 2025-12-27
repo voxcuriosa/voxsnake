@@ -1934,22 +1934,42 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // LOG MULTIPLAYER MATCH (Host OR Local 2P)
-                const isLocalMulti = (this.gameMode === 'multi' && !this.isClient && !this.isHost);
+                // REPLACED WITH NEW STATS LOGIC (v6.54)
+                if (this.gameMode === 'multi') {
+                    let p1Name = "PLAYER 1";
+                    let p2Name = "PLAYER 2";
 
-                if (this.gameMode === 'multi' && (this.isHost || isLocalMulti)) {
-                    const duration = Math.floor((Date.now() - (this.gameStartTime || Date.now())) / 1000);
-                    // Use generic names for Local, or Host name for Online
-                    const p1Name = this.currentUser ? this.currentUser.name : (isLocalMulti ? 'Player 1' : 'Player 1 (Host)');
-                    const p2Name = isLocalMulti ? 'Player 2' : 'Player 2 (Client)';
+                    // Resolve Names from HUD
+                    const p1Label = document.getElementById('p1-name-label');
+                    const p2Label = document.getElementById('p2-name-label');
+                    if (p1Label) p1Name = p1Label.innerText;
+                    if (p2Label) p2Name = p2Label.innerText;
 
-                    let wName = 'Draw';
-                    if (winnerIndex === 0) wName = p1Name;
-                    if (winnerIndex === 1) wName = p2Name;
+                    let winnerName = "DRAW";
+                    if (winnerIndex === 0) winnerName = p1Name;
+                    if (winnerIndex === 1) winnerName = p2Name;
 
-                    // Don't log super short games (testing)
-                    if (duration > 5) {
-                        this.logMatchToBackend(p1Name, p2Name, wName, duration);
+                    // Update Title Logic to match Names
+                    if (winnerText) {
+                        if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
+                        else if (winnerIndex === 0) { msg = p1Name + " WINS!"; color = COLORS.p1; }
+                        else { msg = p2Name + " WINS!"; color = COLORS.p2; }
+                        winnerText.innerText = msg;
+                        winnerText.style.color = color;
                     }
+
+                    // MATCH STATS (Host Records, Both Display)
+                    if (!this.isClient) {
+                        // Only Host records.
+                        // BUT: Local Multi? If Local Multi, we are Host.
+                        this.recordMatchStats(p1Name, p2Name, winnerName);
+                    }
+                    this.displayH2HStats(p1Name, p2Name);
+
+                } else {
+                    // Clear stats container if single player
+                    const statsContainer = document.getElementById('h2h-stats-container');
+                    if (statsContainer) statsContainer.innerHTML = "";
                 }
 
             } catch (err) {
