@@ -23,17 +23,13 @@
         content="Play Neon Snake - An original, retro-style neon snake game. Battle friends in multiplayer combat or challenge the global leaderboard. Fast-paced, competitive, and completely free! Unblocked io game.">
     <meta name="theme-color" content="#000000">
     <script>
-        // NUCLEAR CACHE CLEAR: FORCE UNREGISTER ALL SERVICE WORKERS
+        // PWA SERVICE WORKER REGISTRATION
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (registrations) {
-                for (let registration of registrations) {
-                    console.log('Unregistering SW:', registration);
-                    registration.unregister();
-                }
-                // Force reload if we found and killed one? 
-                // No, just unregister so next load is fresh.
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW Registered!', reg.scope))
+                    .catch(err => console.error('SW Fail:', err));
             });
-            // DO NOT REGISTER NEW SW YET. Let's run raw for a version.
         }
     </script>
 
@@ -494,7 +490,8 @@
                                 (2P):</strong><br>Fires 4 deadly projectiles.</div>
                     </div>
 
-                    <button id="about-back-btn" class="neon-btn secondary">BACK</button>
+                    <button id="about-back-btn" class="neon-btn secondary"
+                        style="margin: 20px auto 0 auto; display: block;">BACK</button>
                 </div>
 
             </div> <!-- END UI LAYER -->
@@ -508,7 +505,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=6.62" defer></script>
+        <script src="game_v9.js?v=6.63" defer></script>
 </body>
 
 </html>
