@@ -569,14 +569,19 @@ h2 {
 /* Mobile adjustments */
 @media (max-width: 768px) {
     .neon-title {
-        font-size: 1.5rem;
-        margin-bottom: 5px;
+        font-size: 1.2rem;
+        /* Smaller title on mobile */
+        margin-bottom: 2px;
+        /* Reduce gap */
+        margin-top: 5px;
+        /* Ensure visible at top */
     }
 
     #score-board {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         padding: 0 5px;
-        margin-bottom: 5px;
+        margin-bottom: 2px;
+        /* Reduce gap to canvas */
     }
 
     /* HIDE LOCAL MULTIPLAYER ON MOBILE */
@@ -642,4 +647,8 @@ h2 {
 canvas {
     /* box-sizing: border-box; REMOVED to fix missing top border */
     display: block;
+    /* Force border explicitly just in case */
+    border-top: 2px solid #00ff88;
+    border-bottom: 2px solid #00ff88;
+    box-sizing: content-box;
 }
