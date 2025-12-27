@@ -1369,28 +1369,43 @@ window.addEventListener('DOMContentLoaded', () => {
         resize() {
             const container = canvas.parentElement;
 
-            // CSS-DRIVEN RESIZE v7.0
-            // Goal: Let Flexbox determine the available space, then snap the canvas to fit.
+            // LAYOUT FIX v8.0 (DEFENSIVE HYBRID)
+            // Goal: Guarantee visibility by taking the conservative minimum of available space.
             if (!container) return;
 
-            // 1. Unlock Container & Shrink Canvas to allow contraction
+            // 1. Reset Container to allow measurement
             container.style.width = '100%';
             container.style.height = '';
             container.style.flex = '1';
             canvas.style.height = '0px';
             canvas.style.width = '0px';
 
-            // 2. Measure the available space provided by Flexbox
-            // clientHeight excludes border, which is exactly what we want for the inner canvas
-            // We subtract a small safety buffer (10px) to prevent sub-pixel rounding issues causing scrollbars
-            let availableW = container.clientWidth - 4;
-            let availableH = container.clientHeight - 10;
+            // 2. Measure Method A: Flexbox (Trusted, but sometimes includes hidden parts)
+            const flexH = container.clientHeight;
 
-            // 3. Fallbacks
+            // 3. Measure Method B: Window Math (Raw, but ignores margins sometimes)
+            // We calculate exactly how much space is left from the container's top to the window bottom
+            const rect = container.getBoundingClientRect();
+            const top = rect.top > 0 ? rect.top : 100; // Fallback if 0
+            const mathH = window.innerHeight - top;
+
+            // 4. THE SAFE CHOICE
+            // Use the SMALLER of the two. This ensures we don't overflow if Flexbox thinks it has more space than the Window actually has.
+            let availableH = Math.min(flexH, mathH);
+            let availableW = container.clientWidth - 4; // Border safety
+
+            // 5. THE SAFETY BUFFER (The "Finger Width" Guarantee)
+            // We subtract a strict 40px. 
+            // - On Mobile: This clears the address bar / home swipe bar.
+            // - On PC: This clears typical taskbars or window borders.
+            const SAFETY_BUFFER = 40;
+            availableH -= SAFETY_BUFFER;
+
+            // 6. Limits
             if (availableW < 300) availableW = 300;
             if (availableH < 300) availableH = 300;
 
-            // 4. Multiplayer Sync Override
+            // 7. Multiplayer Sync Override
             let logicalW = availableW;
             let logicalH = availableH;
 
@@ -1400,20 +1415,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 logicalH = Math.min(availableH, this.multiplayerTargetHeight);
             }
 
-            // 5. Box Snap (Grid Alignment)
+            // 8. Box Snap (Grid Alignment)
             this.cols = Math.floor(logicalW / GRID_SIZE);
             this.rows = Math.floor(logicalH / GRID_SIZE);
 
-            // 6. Set Physical Dimensions
+            // 9. Set Physical Dimensions
             CANVAS_WIDTH = this.cols * GRID_SIZE;
             CANVAS_HEIGHT = this.rows * GRID_SIZE;
 
             canvas.width = CANVAS_WIDTH;
             canvas.height = CANVAS_HEIGHT;
 
-            // 7. Lock Container to Exact Pixel Size (Shrink-Wrap)
-            // This prevents the container from being slightly larger than the canvas (gap)
-            // We include +4px for the border if the border is on the container
+            // 10. Lock Container (Shrink-Wrap)
             canvas.style.width = CANVAS_WIDTH + "px";
             canvas.style.height = CANVAS_HEIGHT + "px";
 
