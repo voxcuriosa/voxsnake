@@ -1368,16 +1368,22 @@ window.addEventListener('DOMContentLoaded', () => {
 
         resize() {
             const container = canvas.parentElement;
-            // Native Window/Container Dimensions
-            let availableW = container ? container.clientWidth : window.innerWidth;
-            let availableH = container ? container.clientHeight : window.innerHeight;
 
-            // BORDER & SAFETY (CSS applies 2px border = 4px total)
-            // The container HAS the border now. We need to fit INSIDE it.
-            // If we don't subtract the border width from the available space, the canvas might overflow or be scaled down visually
-            // while retaining the wrong logical size.
-            // Actually, clientWidth/Height implies PADDING box, but usually excludes BORDER if box-sizing is border-box?
-            // Let's subtract 4px just to be safe and ensure we are strictly inside the green lines.
+            // Measure UI Consumption (Title + Scoreboard) to determine max Game Height
+            let uiHeight = 0;
+            const sb = document.getElementById('score-board');
+            const h1 = document.querySelector('.neon-title');
+            const footer = document.querySelector('.mobile-controls'); // If any
+
+            if (sb) uiHeight += sb.offsetHeight + 10; // approx margin
+            if (h1) uiHeight += h1.offsetHeight + 10;
+
+            // Native Window Dimensions
+            let availableW = window.innerWidth;
+            let availableH = window.innerHeight - uiHeight;
+
+            // BORDER & SAFETY
+            // We need to subtract the border width (4px) because the container will forced to include it
             availableW -= 4;
             availableH -= 4;
 
@@ -1411,25 +1417,35 @@ window.addEventListener('DOMContentLoaded', () => {
                 logicalH = Math.min(availableH, this.multiplayerTargetHeight);
             }
 
-            // Snap to Grid
-            CANVAS_WIDTH = Math.floor((logicalW - 4) / GRID_SIZE) * GRID_SIZE;
-            CANVAS_HEIGHT = Math.floor((logicalH - 4) / GRID_SIZE) * GRID_SIZE;
+            // Snap to Grid (Floor)
+            this.cols = Math.floor(availableW / GRID_SIZE);
+            this.rows = Math.floor(availableH / GRID_SIZE);
 
-            // Update Canvas Logical Size
+            // 3. Set Canvas Resolution (PHYSICAL)
+            // This is the EXACT size of the gameplay area
+            CANVAS_WIDTH = this.cols * GRID_SIZE;
+            CANVAS_HEIGHT = this.rows * GRID_SIZE;
+
             canvas.width = CANVAS_WIDTH;
             canvas.height = CANVAS_HEIGHT;
 
-            // 2. Visual Scaling (Fit to Window via CSS)
-            // We want the canvas to be as big as possible on screen, but locked to aspect ratio.
-            const scaleX = availableW / CANVAS_WIDTH;
-            const scaleY = availableH / CANVAS_HEIGHT;
-            const scale = Math.min(scaleX, scaleY) * 0.95; // 95% margin
+            // 4. Shrink-Wrap Container to Eliminate Gaps
+            // Since the border is on the container, we must ensure the container is EXACTLY
+            // the size of the canvas + border width (4px total, 2px each side).
+            // We use '4px' because we subtracted it earlier (or logic dictates border width).
 
-            canvas.style.width = Math.floor(CANVAS_WIDTH * scale) + 'px';
-            canvas.style.height = Math.floor(CANVAS_HEIGHT * scale) + 'px';
+            // Sync with CSS size (should map 1:1)
+            canvas.style.width = CANVAS_WIDTH + "px";
+            canvas.style.height = CANVAS_HEIGHT + "px";
 
-            // Center the canvas if needed (flex does this usually, but good to be sure)
-            // canvas.style.marginTop = ... handled by flex center
+            if (container) {
+                container.style.width = (CANVAS_WIDTH + 4) + 'px';
+                container.style.height = (CANVAS_HEIGHT + 4) + 'px';
+                container.style.flex = 'none'; // Lock size
+            }
+
+            this.maxX = this.cols - 1;
+            this.maxY = this.rows - 1;
 
             // 3. UI Updates based on device
             const btn1P = document.getElementById('btn-1p');
