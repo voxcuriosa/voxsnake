@@ -45,6 +45,8 @@ body {
     height: 100dvh;
     /* Fill screen exactly */
     overflow: hidden;
+    align-items: center;
+    /* Center horizontally (because flex-dir is column) */
 }
 
 .game-container {

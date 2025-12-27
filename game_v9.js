@@ -999,7 +999,8 @@ window.addEventListener('DOMContentLoaded', () => {
                                 this.conn.send({
                                     type: 'hello',
                                     width: window.innerWidth,
-                                    height: window.innerHeight
+                                    height: window.innerHeight,
+                                    username: this.currentUser ? this.currentUser.name : 'Guest'
                                 });
                             }
                         }, 1000);
