@@ -1321,27 +1321,44 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
 
-                // UPDATE P1 HUD NAME & BEST SCORE
+                // UPDATE HUD NAMES (v6.48 Logic)
                 const p1Label = document.getElementById('p1-name-label');
+                const p2Label = document.getElementById('p2-name-label');
                 const p1Best = document.getElementById('p1-best-score');
-                if (p1Label) {
-                    // FIX v6.45: Show Name in 2P Mode too!
-                    if (this.currentUser) {
-                        p1Label.innerText = this.currentUser.name.toUpperCase();
-                        p1Label.style.color = "#00ff88"; // Green for P1
 
-                        if (p1Best) {
-                            p1Best.innerText = "LOADING...";
-                            this.updatePersonalBestDisplay();
+                if (p1Label) {
+                    if (this.isClient) {
+                        // I AM CLIENT (P2)
+                        // P1 is Host (Default "HOST", updated via sync)
+                        // P2 is ME
+                        p1Label.innerText = "HOST";
+                        p1Label.style.color = "#00ff88";
+
+                        if (p2Label && this.currentUser) {
+                            p2Label.innerText = this.currentUser.name.toUpperCase();
                         }
                     } else {
-                        p1Label.innerText = "PLAYER 1";
-                        p1Label.style.color = ""; // Default
+                        // I AM HOST (P1) or SINGLE PLAYER
+                        // P1 is ME
+                        if (this.currentUser) {
+                            p1Label.innerText = this.currentUser.name.toUpperCase();
+                            p1Label.style.color = "#00ff88";
+                        } else {
+                            p1Label.innerText = "PLAYER 1";
+                            p1Label.style.color = "";
+                        }
 
-                        // Show Global Best fallback
-                        if (p1Best) {
-                            p1Best.innerText = "";
+                        // P2 is "PLAYER 2" or "JOINING..." (updated via sync)
+                        if (p2Label) p2Label.innerText = "PLAYER 2";
+                    }
+
+                    if (p1Best) {
+                        // Only show best score if Single Player or Host for now
+                        if (!this.isClient) {
+                            p1Best.innerText = "LOADING...";
                             this.updatePersonalBestDisplay();
+                        } else {
+                            p1Best.innerText = "";
                         }
                     }
                 }
@@ -2519,10 +2536,17 @@ window.addEventListener('DOMContentLoaded', () => {
             if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
             if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
 
-            // REMOTE NAME SYNC (v6.46)
+            // REMOTE NAME SYNC (v6.48)
             if (this.remotePlayerName) {
-                const p2Label = document.getElementById('p2-name-label');
-                if (p2Label) p2Label.innerText = this.remotePlayerName;
+                if (this.isClient) {
+                    // If I am Client, Remote Name is the HOST (P1)
+                    const p1Label = document.getElementById('p1-name-label');
+                    if (p1Label) p1Label.innerText = this.remotePlayerName;
+                } else {
+                    // If I am Host, Remote Name is the CLIENT (P2)
+                    const p2Label = document.getElementById('p2-name-label');
+                    if (p2Label) p2Label.innerText = this.remotePlayerName;
+                }
             }
         }
 

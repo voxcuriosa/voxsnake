@@ -70,6 +70,18 @@ else if ($method === 'POST') {
     $user_id = $user['id'];
 
     // 2. Insert Score
+    // FIX v6.48: Check for exact duplicates first!
+    $check = $conn->prepare("SELECT id FROM scores WHERE user_id = ? AND score = ? AND platform = ?");
+    $check->bind_param("iis", $user_id, $score, $type);
+    $check->execute();
+    $existing = $check->get_result();
+
+    if ($existing->num_rows > 0) {
+        // Prevent Duplicate
+        echo json_encode(["success" => true, "rank" => "Existing"]);
+        exit;
+    }
+
     $sql_score = "INSERT INTO scores (user_id, score, platform) VALUES (?, ?, ?)";
     $stmt = $conn->prepare($sql_score);
     $stmt->bind_param("iis", $user_id, $score, $type);
