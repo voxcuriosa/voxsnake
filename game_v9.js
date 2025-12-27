@@ -3133,175 +3133,173 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         async updatePersonalBestDisplay() {
-            if (!this.currentUser) return;
             const targetEl = document.getElementById('p1-best-score');
             if (!targetEl) return;
+
+            if (this.currentUser) {
+                try {
+                    const response = await fetch('auth.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.stats) {
+                        const mobileBest = data.stats.best_mobile || 0;
+                        const pcBest = data.stats.best_pc || 0;
+                        targetEl.innerHTML = `BEST: M:${mobileBest} | PC:${pcBest}`;
+                    }
+                } catch (e) {
+                    console.log("Failed to load Personal Best");
+                }
+            } else {
+                // FALLBACK: Load Global High Score for Guest
+                // Check Cache first for instant load
+                const type = this.platform || 'mobile';
+                try {
+                    const raw = localStorage.getItem('snake_highscores_cache_' + type);
+                    if (raw) {
+                        const scores = JSON.parse(raw);
+                        if (scores && scores.length > 0) {
+                            targetEl.innerHTML = `BEST: ${scores[0].score} (${scores[0].name})`;
+                            return; // Done
+                        }
+                    }
+                } catch (e) { }
+
+                targetEl.innerHTML = "BEST: ---";
+            }
+        }
+
+        // --- PROPER RECOVERY ---
+        recoverStep1() {
+            const u = document.getElementById('rec-user').value;
+            if (!u) { alert("Enter username first"); return; }
+            fetch('auth.php', {
+                method: 'POST', body: JSON.stringify({ action: 'get_question', username: u })
+            })
+                .then(r => r.json()).then(d => {
+                    if (d.success) {
+                        document.getElementById('rec-step-2').classList.remove('hidden');
+                        document.getElementById('rec-question-display').innerText = d.question;
+                    } else { alert(d.error); }
+                });
+        }
+
+        recoverStep2() {
+            const u = document.getElementById('rec-user').value;
+            const ans = document.getElementById('rec-answer').value;
+            const newP = document.getElementById('rec-new-pass').value;
+            if (!ans || !newP) { alert("Fill all fields"); return; }
+
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'reset_password', username: u, security_answer: ans, new_password: newP })
+            })
+                .then(r => r.json()).then(d => {
+                    if (d.success) {
+                        alert("Password Reset Successful! Please Login.");
+                        document.getElementById('recovery-screen').classList.add('hidden');
+                        const log = document.getElementById('login-screen');
+                        log.classList.remove('hidden');
+                        log.classList.remove('nuclear-hidden');
+                        log.style.display = 'block';
+                    } else { alert(d.error); }
+                });
+        }
+
+        // --- ADMIN ---
+        async loadAdmin() {
+            if (!this.currentUser || this.currentUser.is_admin != 1) return;
+            const tbody = document.getElementById('admin-user-list');
+            tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+            console.log("Loading Admin List for:", this.currentUser.name);
 
             try {
                 const response = await fetch('auth.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+                    body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
                 });
-                const data = await response.json();
-                if (data.success && data.stats) {
-                    const mobileBest = data.stats.best_mobile || 0;
-                    const pcBest = data.stats.best_pc || 0;
-                    targetEl.innerHTML = `BEST: M:${mobileBest} | PC:${pcBest}`;
+
+                const text = await response.text();
+                let d;
+                try {
+                    d = JSON.parse(text);
+                } catch (e) {
+                    console.error("JSON PARSE ERROR:", text);
+                    alert("SERVER ERROR:\n" + text.substring(0, 500));
+                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Server Error (Check Alert)</td></tr>';
+                    return;
                 }
-            } catch (e) {
-                console.log("Failed to load Personal Best");
-            }
-        } else {
-        // FALLBACK: Load Global High Score for Guest
-        const targetEl = document.getElementById('p1-best-score');
-        if (!targetEl) return;
 
-        // Check Cache first for instant load
-        const type = this.platform || 'mobile';
-        try {
-            const raw = localStorage.getItem('snake_highscores_cache_' + type);
-            if (raw) {
-                const scores = JSON.parse(raw);
-                if (scores && scores.length > 0) {
-                    targetEl.innerHTML = `BEST: ${scores[0].score} (${scores[0].name})`;
-                    return; // Done
+                console.log("Admin Data:", d);
+                if (d.success) {
+                    // Update Global Stats
+                    if (document.getElementById('stat-total-players'))
+                        document.getElementById('stat-total-players').innerText = d.total_players || 0;
+                    if (document.getElementById('stat-total-games'))
+                        document.getElementById('stat-total-games').innerText = d.total_games || 0;
+
+                    if (d.users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
+                    } else {
+                        // Cache for sorting
+                        this.adminUsersCache = d.users;
+                        this.adminSortDir = -1;
+                        this.renderAdminList(this.adminUsersCache);
+                    }
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
                 }
+            } catch (err) {
+                console.error("Network Error:", err);
+                tbody.innerHTML = '<tr><td colspan="5" style="color:red">Network Error</td></tr>';
             }
-        } catch (e) { }
-
-        targetEl.innerHTML = "BEST: ---";
-    }
-}
-
-        // --- PROPER RECOVERY ---
-        recoverStep1() {
-    const u = document.getElementById('rec-user').value;
-    if(!u) { alert("Enter username first"); return; }
-            fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_question', username: u })
-})
-    .then(r => r.json()).then(d => {
-        if (d.success) {
-            document.getElementById('rec-step-2').classList.remove('hidden');
-            document.getElementById('rec-question-display').innerText = d.question;
-        } else { alert(d.error); }
-    });
         }
 
-recoverStep2() {
-    const u = document.getElementById('rec-user').value;
-    const ans = document.getElementById('rec-answer').value;
-    const newP = document.getElementById('rec-new-pass').value;
-    if (!ans || !newP) { alert("Fill all fields"); return; }
+        sortAdminList(key) {
+            if (!this.adminUsersCache) return;
 
-    fetch('auth.php', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'reset_password', username: u, security_answer: ans, new_password: newP })
-    })
-        .then(r => r.json()).then(d => {
-            if (d.success) {
-                alert("Password Reset Successful! Please Login.");
-                document.getElementById('recovery-screen').classList.add('hidden');
-                const log = document.getElementById('login-screen');
-                log.classList.remove('hidden');
-                log.classList.remove('nuclear-hidden');
-                log.style.display = 'block';
-            } else { alert(d.error); }
-        });
-}
-
-        // --- ADMIN ---
-        async loadAdmin() {
-    if (!this.currentUser || this.currentUser.is_admin != 1) return;
-    const tbody = document.getElementById('admin-user-list');
-    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
-
-    console.log("Loading Admin List for:", this.currentUser.name);
-
-    try {
-        const response = await fetch('auth.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
-        });
-
-        const text = await response.text();
-        let d;
-        try {
-            d = JSON.parse(text);
-        } catch (e) {
-            console.error("JSON PARSE ERROR:", text);
-            alert("SERVER ERROR:\n" + text.substring(0, 500));
-            tbody.innerHTML = '<tr><td colspan="5" style="color:red">Server Error (Check Alert)</td></tr>';
-            return;
-        }
-
-        console.log("Admin Data:", d);
-        if (d.success) {
-            // Update Global Stats
-            if (document.getElementById('stat-total-players'))
-                document.getElementById('stat-total-players').innerText = d.total_players || 0;
-            if (document.getElementById('stat-total-games'))
-                document.getElementById('stat-total-games').innerText = d.total_games || 0;
-
-            if (d.users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
+            // Toggle direction
+            if (this.adminSortKey === key) {
+                this.adminSortDir *= -1;
             } else {
-                // Cache for sorting
-                this.adminUsersCache = d.users;
-                this.adminSortDir = -1;
-                this.renderAdminList(this.adminUsersCache);
+                this.adminSortKey = key;
+                this.adminSortDir = (key === 'username') ? 1 : -1; // Name ASC, nums DESC
             }
-        } else {
-            tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
-        }
-    } catch (err) {
-        console.error("Network Error:", err);
-        tbody.innerHTML = '<tr><td colspan="5" style="color:red">Network Error</td></tr>';
-    }
-}
 
-sortAdminList(key) {
-    if (!this.adminUsersCache) return;
+            this.adminUsersCache.sort((a, b) => {
+                let valA = a[key];
+                let valB = b[key];
 
-    // Toggle direction
-    if (this.adminSortKey === key) {
-        this.adminSortDir *= -1;
-    } else {
-        this.adminSortKey = key;
-        this.adminSortDir = (key === 'username') ? 1 : -1; // Name ASC, nums DESC
-    }
+                // Numeric Check
+                if (key === 'id' || key === 'total_xp' || key === 'games_played') {
+                    valA = parseInt(valA) || 0;
+                    valB = parseInt(valB) || 0;
+                } else {
+                    valA = (valA || "").toString().toLowerCase();
+                    valB = (valB || "").toString().toLowerCase();
+                }
 
-    this.adminUsersCache.sort((a, b) => {
-        let valA = a[key];
-        let valB = b[key];
+                if (valA < valB) return -1 * this.adminSortDir;
+                if (valA > valB) return 1 * this.adminSortDir;
+                return 0;
+            });
 
-        // Numeric Check
-        if (key === 'id' || key === 'total_xp' || key === 'games_played') {
-            valA = parseInt(valA) || 0;
-            valB = parseInt(valB) || 0;
-        } else {
-            valA = (valA || "").toString().toLowerCase();
-            valB = (valB || "").toString().toLowerCase();
+            this.renderAdminList(this.adminUsersCache);
         }
 
-        if (valA < valB) return -1 * this.adminSortDir;
-        if (valA > valB) return 1 * this.adminSortDir;
-        return 0;
-    });
+        renderAdminList(users) {
+            const tbody = document.getElementById('admin-user-list');
+            tbody.innerHTML = '';
 
-    this.renderAdminList(this.adminUsersCache);
-}
+            const data = users || this.adminUsersCache || [];
 
-renderAdminList(users) {
-    const tbody = document.getElementById('admin-user-list');
-    tbody.innerHTML = '';
-
-    const data = users || this.adminUsersCache || [];
-
-    data.forEach(u => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
+            data.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
                     <td>${u.id}</td>
                     <td>${u.username} ${u.is_admin == 1 ? '<span style="color:gold">(A)</span>' : ''}</td>
                     <td>${u.total_xp || 0}</td>
@@ -3311,94 +3309,94 @@ renderAdminList(users) {
                         <button class="btn-small" onclick="window.gameInstance.deleteUser(${u.id}, '${u.username}')" style="color:red">Delete</button>
                     </td>
                 `;
-        tbody.appendChild(tr);
-    });
-}
+                tbody.appendChild(tr);
+            });
+        }
 
         async loadAdminMatches() {
-    try {
-        const res = await fetch('auth.php', {
-            method: 'POST',
-            body: JSON.stringify({ action: 'admin_list_matches', admin_user: this.currentUser.name })
-        });
-        const d = await res.json();
-        if (d.success) {
-            this.renderMatchList(d.matches);
-        } else {
-            document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
+            try {
+                const res = await fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'admin_list_matches', admin_user: this.currentUser.name })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    this.renderMatchList(d.matches);
+                } else {
+                    document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
+            }
         }
-    } catch (e) {
-        console.error(e);
-        document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
-    }
-}
 
-renderMatchList(matches) {
-    const tbody = document.getElementById('admin-match-list');
-    tbody.innerHTML = '';
-    if (!matches || matches.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">No matches logged yet.</td></tr>';
-        return;
-    }
+        renderMatchList(matches) {
+            const tbody = document.getElementById('admin-match-list');
+            tbody.innerHTML = '';
+            if (!matches || matches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No matches logged yet.</td></tr>';
+                return;
+            }
 
-    matches.forEach(m => {
-        const tr = document.createElement('tr');
-        // Format Date
-        let dateStr = m.played_at;
-        try { dateStr = new Date(m.played_at).toLocaleString(); } catch (e) { }
+            matches.forEach(m => {
+                const tr = document.createElement('tr');
+                // Format Date
+                let dateStr = m.played_at;
+                try { dateStr = new Date(m.played_at).toLocaleString(); } catch (e) { }
 
-        // Format Duration
-        const mins = Math.floor(m.duration / 60);
-        const secs = m.duration % 60;
-        const durStr = (mins > 0 ? mins + "m " : "") + secs + "s";
+                // Format Duration
+                const mins = Math.floor(m.duration / 60);
+                const secs = m.duration % 60;
+                const durStr = (mins > 0 ? mins + "m " : "") + secs + "s";
 
-        const p1Win = (m.winner_name === m.p1_name);
-        const p2Win = (m.winner_name === m.p2_name);
-        const winColor = p1Win ? COLORS.p1 : (p2Win ? COLORS.p2 : '#fff');
+                const p1Win = (m.winner_name === m.p1_name);
+                const p2Win = (m.winner_name === m.p2_name);
+                const winColor = p1Win ? COLORS.p1 : (p2Win ? COLORS.p2 : '#fff');
 
-        tr.innerHTML = `
+                tr.innerHTML = `
                     <td style="font-size:0.7rem; color:#aaa;">${dateStr}</td>
                     <td style="color:${COLORS.p1}">${m.p1_name}</td>
                     <td style="color:${COLORS.p2}">${m.p2_name}</td>
                     <td style="font-weight:bold; color:${winColor}">${m.winner_name || 'Draw'}</td>
                     <td>${durStr}</td>
                 `;
-        tbody.appendChild(tr);
-    });
-}
+                tbody.appendChild(tr);
+            });
+        }
 
-deleteUser(id, name) {
-    if (!confirm("DELETE User '" + name + "'?\\nThis cannot be undone!")) return;
-    fetch('auth.php', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'admin_delete_user', admin_user: this.currentUser.name, target_id: id })
-    }).then(r => r.json()).then(d => {
-        if (d.success) { alert("Deleted."); this.loadAdmin(); }
-        else alert(d.error);
-    });
-}
+        deleteUser(id, name) {
+            if (!confirm("DELETE User '" + name + "'?\\nThis cannot be undone!")) return;
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'admin_delete_user', admin_user: this.currentUser.name, target_id: id })
+            }).then(r => r.json()).then(d => {
+                if (d.success) { alert("Deleted."); this.loadAdmin(); }
+                else alert(d.error);
+            });
+        }
 
-resetUser(id, name) {
-    if (!confirm("Reset Password for '" + name + "' to 'changeme'?")) return;
-    fetch('auth.php', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'admin_reset_user', admin_user: this.currentUser.name, target_id: id })
-    }).then(r => r.json()).then(d => {
-        if (d.success) { alert("Reset to 'changeme'."); }
-        else alert(d.error);
-    });
-}
+        resetUser(id, name) {
+            if (!confirm("Reset Password for '" + name + "' to 'changeme'?")) return;
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'admin_reset_user', admin_user: this.currentUser.name, target_id: id })
+            }).then(r => r.json()).then(d => {
+                if (d.success) { alert("Reset to 'changeme'."); }
+                else alert(d.error);
+            });
+        }
     }
 
 
-// Initialize Game
-window.gameInstance = new Game();
-window.gameInstance.loop(0);
+    // Initialize Game
+    window.gameInstance = new Game();
+    window.gameInstance.loop(0);
 
-// Hard Reload if version mismatch (Simple check)
-if (location.search.indexOf('v=5.6') === -1) {
-    // console.log("Updating URL version...");
-    // history.replaceState({}, '', location.pathname + '?v=5.6');
-}
+    // Hard Reload if version mismatch (Simple check)
+    if (location.search.indexOf('v=5.6') === -1) {
+        // console.log("Updating URL version...");
+        // history.replaceState({}, '', location.pathname + '?v=5.6');
+    }
 
 }); // MAIN WRAPPER END
