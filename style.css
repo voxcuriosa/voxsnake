@@ -640,8 +640,6 @@ h2 {
 }
 
 canvas {
-    box-sizing: border-box;
-    /* Ensure border doesn't add to width/height */
+    /* box-sizing: border-box; REMOVED to fix missing top border */
     display: block;
-    /* Remove inline-block spacing */
 }

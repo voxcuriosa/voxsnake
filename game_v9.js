@@ -1326,7 +1326,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (p1Label) {
                     if (this.currentUser && mode === 'single') {
                         p1Label.innerText = this.currentUser.name.toUpperCase();
-                        p1Label.style.color = "#00ffff"; // Cyan for user
+                        p1Label.style.color = "#00ff88"; // Green for P1
 
                         if (p1Best) {
                             p1Best.innerText = "LOADING...";
