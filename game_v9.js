@@ -2846,24 +2846,29 @@ window.addEventListener('DOMContentLoaded', () => {
             const btnQuickRegister = document.getElementById('btn-quick-register');
 
             if (btnQuickLogin) {
-                bindButton(btnQuickLogin, () => {
+                btnQuickLogin.onclick = (e) => {
+                    // Prevent default form submission if any
+                    e.preventDefault();
+
                     this.hideAllScreens();
                     this.returnToNameEntry = true; // Flag to return
                     if (loginScreen) {
                         loginScreen.classList.remove('hidden'); loginScreen.classList.remove('nuclear-hidden');
                         loginScreen.classList.add('active'); loginScreen.style.display = 'block';
                     }
-                });
+                };
             }
             if (btnQuickRegister) {
-                bindButton(btnQuickRegister, () => {
+                btnQuickRegister.onclick = (e) => {
+                    e.preventDefault();
+
                     this.hideAllScreens();
                     this.returnToNameEntry = true; // Flag to return
                     if (regScreen) {
                         regScreen.classList.remove('hidden'); regScreen.classList.remove('nuclear-hidden');
                         regScreen.classList.add('active'); regScreen.style.display = 'block';
                     }
-                });
+                };
             }
 
             // RECOVERY SCREEN
