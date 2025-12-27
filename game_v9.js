@@ -1382,8 +1382,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // Native Window Dimensions
             let availableW = window.innerWidth;
-            // Available Height = Total Window - Header Bottom - Bottom Margin (e.g. 5px)
-            let availableH = window.innerHeight - headerBottom - 5;
+            // Available Height = Total Window - Header Bottom - Bottom Margin
+            // Updated v6.40: Increased safety buffers based on user feedback.
+            // PC: Taskbar/Status bar issues -> needs reasonable buffer.
+            // Mobile: Address bar/Safe area -> needs moderate buffer (less than 80, more than 5).
+
+            let safetyMargin = 10; // Default PC Buffer
+            if (this.platform === 'mobile') {
+                safetyMargin = 30; // Mobile Buffer (Compromise)
+            }
+
+            let availableH = window.innerHeight - headerBottom - safetyMargin;
 
             // BORDER & SAFETY
             // We need to subtract the border width (4px) because the container will forced to include it
