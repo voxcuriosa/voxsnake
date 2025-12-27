@@ -55,9 +55,11 @@ body {
     justify-content: center;
     align-items: center;
     background: #050505;
-    /* Border removed from container to avoid "Invisible Wall" confusion */
-    /* border: 2px solid #00ff88; */
-    /* box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); */
+    /* Border Restored to Container for guaranteed visibility */
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    box-sizing: border-box;
+    /* Ensure border acts correctly */
     width: 100vw;
     /* Flexible Height for PC/Mobile Layout consistency */
     height: auto;
@@ -74,9 +76,9 @@ body {
 canvas {
     display: block;
     box-sizing: border-box;
-    /* FIX: Include border in width/height to prevent overflow clipping */
-    border: 2px solid #00ff88;
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    /* Border removed from canvas, handled by container */
+    border: none;
+    box-shadow: none;
     /* Centering handled by flex parent */
     touch-action: none;
 }
@@ -645,10 +647,7 @@ h2 {
 }
 
 canvas {
-    /* box-sizing: border-box; REMOVED to fix missing top border */
     display: block;
-    /* Force border explicitly just in case */
-    border-top: 2px solid #00ff88;
-    border-bottom: 2px solid #00ff88;
     box-sizing: content-box;
+    border: none;
 }
