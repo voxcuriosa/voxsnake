@@ -1324,7 +1324,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 const p1Label = document.getElementById('p1-name-label');
                 const p1Best = document.getElementById('p1-best-score');
                 if (p1Label) {
-                    if (this.currentUser && mode === 'single') {
+                    // FIX v6.45: Show Name in 2P Mode too!
+                    if (this.currentUser) {
                         p1Label.innerText = this.currentUser.name.toUpperCase();
                         p1Label.style.color = "#00ff88"; // Green for P1
 
