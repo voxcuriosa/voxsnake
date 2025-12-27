@@ -39,6 +39,12 @@ window.addEventListener('unhandledrejection', function (event) {
 
 // MAIN WRAPPER START
 window.addEventListener('DOMContentLoaded', () => {
+    // DIAGNOSTIC ALERT (v6.64)
+    // alert("UPDATED: v6.64 LOADED!"); // Commented out to avoid annoying loop, using Version Text instead.
+
+    // Better: Update the Version text immediately to debug
+    const vCheck = document.getElementById('version-number');
+    if (vCheck) vCheck.innerText = "v6.64 (DEBUG)";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2845,7 +2851,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 walls: this.walls,
                 projectiles: this.projectiles,
                 dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
-                hostName: this.currentUser ? this.currentUser.name : 'HOST' // v6.57 Fix
+                hostName: this.currentUser ? this.currentUser.name : 'HOST_6.64' // v6.64 Debug
             };
 
             try {
