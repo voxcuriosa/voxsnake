@@ -3429,6 +3429,54 @@ window.addEventListener('DOMContentLoaded', () => {
                 else alert(d.error);
             });
         }
+
+        async recordMatchStats(p1, p2, winnerName) {
+            try {
+                await fetch('api_matches.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ p1, p2, winner: winnerName })
+                });
+            } catch (e) { console.error("Stats Upload Error", e); }
+        }
+
+        async displayH2HStats(p1, p2) {
+            const container = document.getElementById('h2h-stats-container');
+            if (!container) return;
+
+            container.innerHTML = "LOADING STATS...";
+            container.style.display = "block";
+
+            try {
+                // Wait small delay to ensure DB write (stats are fresh)
+                await new Promise(r => setTimeout(r, 500));
+
+                const res = await fetch(`api_matches.php?action=h2h&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}`);
+                const data = await res.json();
+
+                if (data.total) {
+                    const w1 = data.wins1;
+                    const w2 = data.wins2;
+                    const d = data.draws;
+
+                    // Format: "P1 vs P2"
+                    // "P1: X wins | P2: Y wins | Draws: Z"
+                    container.innerHTML = `
+                        <div style="margin-top:10px; padding:10px; border:1px solid #333; background:rgba(0,0,0,0.5); border-radius:5px;">
+                            <div style="font-size:0.8rem; color:#888; margin-bottom:5px;">MATCH HISTORY</div>
+                            <div style="font-size:0.9rem; color:#00ff88;">${p1}: <span style="color:#fff">${w1}</span></div>
+                            <div style="font-size:0.9rem; color:#00ffff;">${p2}: <span style="color:#fff">${w2}</span></div>
+                            <div style="font-size:0.8rem; color:#888; margin-top:3px;">DRAWS: ${d}</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = "FIRST MATCH RECORDED!";
+                }
+
+            } catch (e) {
+                container.innerHTML = "";
+            }
+        }
     }
 
 
