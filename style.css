@@ -632,3 +632,16 @@ h2 {
     outline: none;
     text-transform: uppercase;
 }
+
+#auth-options-container button {
+    font-size: 0.8rem;
+    padding: 8px 15px;
+    min-width: 100px;
+}
+
+canvas {
+    box-sizing: border-box;
+    /* Ensure border doesn't add to width/height */
+    display: block;
+    /* Remove inline-block spacing */
+}

@@ -1319,7 +1319,32 @@ window.addEventListener('DOMContentLoaded', () => {
                 scoreBoard.classList.remove('hidden');
 
                 if (p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
+
+                // UPDATE P1 HUD NAME & BEST SCORE
+                const p1Label = document.getElementById('p1-name-label');
+                const p1Best = document.getElementById('p1-best-score');
+                if (p1Label) {
+                    if (this.currentUser && mode === 'single') {
+                        p1Label.innerText = this.currentUser.name.toUpperCase();
+                        p1Label.style.color = "#00ffff"; // Cyan for user
+
+                        if (p1Best) {
+                            p1Best.innerText = "LOADING...";
+                            this.updatePersonalBestDisplay();
+                        }
+                    } else {
+                        p1Label.innerText = "PLAYER 1";
+                        p1Label.style.color = ""; // Default
+                        if (p1Best) p1Best.innerText = "";
+                    }
+                }
+
                 this.updateScoreUI();
+
+                // WAKE LOCK (Mobile/iPhone Fix)
+                if ('wakeLock' in navigator) {
+                    try { navigator.wakeLock.request('screen'); } catch (e) { }
+                }
 
                 if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
@@ -1353,8 +1378,10 @@ window.addEventListener('DOMContentLoaded', () => {
             // MOBILE SAFE AREA (Bottom Bar)
             // If on mobile (height > width usually), subtract a tiny bit to avoid the white bar covering grid
             // But only if we are using full window height
-            if (availableH >= window.innerHeight - 50 && availableH > availableW) {
-                availableH -= 40; // 40px safety for swipe bar/notch
+            // MOBILE SAFE AREA (Bottom Bar)
+            // Increased safety margin for mobile to prevent cutoff
+            if (this.platform === 'mobile') {
+                availableH -= 80; // Increased from 40 to 80 (User reported cutoff)
             }
 
             if (availableW < 300) availableW = 300;
@@ -1427,7 +1454,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 attempts++;
                 newFood = {
                     x: Math.floor(Math.random() * maxX),
-                    y: Math.floor(Math.random() * maxY)
+                    y: Math.floor(Math.random() * maxY),
+                    createdAt: Date.now() // Add timestamp for respawn logic
                 };
                 valid = !this.isOccupied(newFood);
             }
@@ -1807,6 +1835,12 @@ window.addEventListener('DOMContentLoaded', () => {
                             nameEntryScreen.style.pointerEvents = 'auto';
 
                             if (playerNameInput) playerNameInput.focus();
+
+                            // Show Auth Options if Guest
+                            const authContainer = document.getElementById('auth-options-container');
+                            if (authContainer) {
+                                authContainer.style.display = this.currentUser ? 'none' : 'block';
+                            }
                         });
 
                         return;
@@ -1996,6 +2030,14 @@ window.addEventListener('DOMContentLoaded', () => {
             // Power-Up Lifespan
             const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
             this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
+
+            // Food Lifespan (Respawn Red Food/All Food after 30s)
+            const foodCountBefore = this.foods.length;
+            this.foods = this.foods.filter(f => now - (f.createdAt || now) < 30000); // 30s limit
+            // Respawn if any expired
+            if (this.foods.length < foodCountBefore) {
+                this.spawnFood();
+            }
 
             // Capture OLD HEADS (Before Move) for Swap Detection
             const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
@@ -2799,6 +2841,31 @@ window.addEventListener('DOMContentLoaded', () => {
                 loginScreen.style.display = 'block';
             };
 
+            // NEW AUTH LISTENERS (Name Entry Screen)
+            const btnQuickLogin = document.getElementById('btn-quick-login');
+            const btnQuickRegister = document.getElementById('btn-quick-register');
+
+            if (btnQuickLogin) {
+                bindButton(btnQuickLogin, () => {
+                    this.hideAllScreens();
+                    this.returnToNameEntry = true; // Flag to return
+                    if (loginScreen) {
+                        loginScreen.classList.remove('hidden'); loginScreen.classList.remove('nuclear-hidden');
+                        loginScreen.classList.add('active'); loginScreen.style.display = 'block';
+                    }
+                });
+            }
+            if (btnQuickRegister) {
+                bindButton(btnQuickRegister, () => {
+                    this.hideAllScreens();
+                    this.returnToNameEntry = true; // Flag to return
+                    if (regScreen) {
+                        regScreen.classList.remove('hidden'); regScreen.classList.remove('nuclear-hidden');
+                        regScreen.classList.add('active'); regScreen.style.display = 'block';
+                    }
+                });
+            }
+
             // RECOVERY SCREEN
             const recScreen = document.getElementById('recovery-screen');
             const btnCheckUser = document.getElementById('btn-check-user');
@@ -2908,13 +2975,34 @@ window.addEventListener('DOMContentLoaded', () => {
 
                         alert("Welcome back, " + data.user.name + "!");
 
-                        // Redirect to Profile
-                        this.hideAllScreens();
-                        const pScreen = document.getElementById('profile-screen');
-                        pScreen.classList.remove('hidden');
-                        pScreen.classList.remove('nuclear-hidden');
-                        pScreen.classList.add('active');
-                        pScreen.style.display = 'block';
+                        alert("Welcome back, " + data.user.name + "!");
+
+                        // Redirect Logic
+                        if (this.returnToNameEntry) {
+                            this.returnToNameEntry = false;
+                            this.hideAllScreens();
+                            // Restore Score Screen
+                            const ne = document.getElementById('name-entry-screen');
+                            if (ne) {
+                                ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                                ne.classList.add('active'); ne.style.display = 'flex';
+                                // Auto Update Name
+                                const inp = document.getElementById('player-name-input');
+                                if (inp) inp.value = this.currentUser.name;
+                                // Hide Auth Options
+                                const ao = document.getElementById('auth-options-container');
+                                if (ao) ao.style.display = 'none';
+                            }
+                        } else {
+                            // Redirect to Profile
+                            this.hideAllScreens();
+                            const pScreen = document.getElementById('profile-screen');
+                            pScreen.classList.remove('hidden');
+                            pScreen.classList.remove('nuclear-hidden');
+                            pScreen.classList.add('active');
+                            pScreen.style.display = 'block';
+                            this.updateProfileUI(); // Load stats
+                        }
                         this.updateProfileUI(); // Load stats
                     } else {
                         alert("Login Failed: " + data.error);
@@ -2939,13 +3027,31 @@ window.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
 
-                        // Redirect to Profile
-                        this.hideAllScreens();
-                        const pScreen = document.getElementById('profile-screen');
-                        pScreen.classList.remove('hidden');
-                        pScreen.classList.remove('nuclear-hidden');
-                        pScreen.classList.add('active');
-                        pScreen.style.display = 'block';
+                        localStorage.setItem('playerName', data.user.name);
+
+                        // Redirect Logic
+                        if (this.returnToNameEntry) {
+                            this.returnToNameEntry = false;
+                            this.hideAllScreens();
+                            const ne = document.getElementById('name-entry-screen');
+                            if (ne) {
+                                ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                                ne.classList.add('active'); ne.style.display = 'flex';
+                                const inp = document.getElementById('player-name-input');
+                                if (inp) inp.value = this.currentUser.name;
+                                const ao = document.getElementById('auth-options-container');
+                                if (ao) ao.style.display = 'none';
+                            }
+                        } else {
+                            // Redirect to Profile
+                            this.hideAllScreens();
+                            const pScreen = document.getElementById('profile-screen');
+                            pScreen.classList.remove('hidden');
+                            pScreen.classList.remove('nuclear-hidden');
+                            pScreen.classList.add('active');
+                            pScreen.style.display = 'block';
+                            this.updateProfileUI();
+                        }
                         this.updateProfileUI();
                     } else {
                         alert("Registration Failed: " + data.error);
@@ -3008,6 +3114,28 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 console.error("Stats Network Error:", err);
+            }
+        }
+
+        async updatePersonalBestDisplay() {
+            if (!this.currentUser) return;
+            const targetEl = document.getElementById('p1-best-score');
+            if (!targetEl) return;
+
+            try {
+                const response = await fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+                });
+                const data = await response.json();
+                if (data.success && data.stats) {
+                    const mobileBest = data.stats.best_mobile || 0;
+                    const pcBest = data.stats.best_pc || 0;
+                    targetEl.innerHTML = `BEST: M:${mobileBest} | PC:${pcBest}`;
+                }
+            } catch (e) {
+                console.log("Failed to load Personal Best");
             }
         }
 

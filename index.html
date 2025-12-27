@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
-    <link rel="stylesheet" href="style.css?v=6.28">
+    <link rel="stylesheet" href="style.css?v=6.3">
     <!-- Optimized Font Loading (Non-Blocking) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,7 +59,11 @@
 
         <div id="score-board">
             <div class="score-box p1">
-                <span>PLAYER 1</span>
+                <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                    <span id="p1-name-label">PLAYER 1</span>
+                    <span id="p1-best-score"
+                        style="font-size:0.6rem; color:#888; letter-spacing:1px; margin-top:-2px;"></span>
+                </div>
                 <span id="score-p1" class="score-digit">0</span>
             </div>
 
@@ -214,7 +218,22 @@
                         style="color:#FFD700; font-size:1rem; margin-bottom:15px; font-weight:bold; text-transform:uppercase;">
                     </div>
                     <input type="text" id="player-name-input" placeholder="ENTER NAME" maxlength="10">
-                    <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
+
+                    <div style="display:flex; flex-direction:column; gap:10px; width:100%; align-items:center;">
+                        <button id="submit-score-btn" class="neon-btn">SUBMIT</button>
+
+                        <!-- NEW AUTH OPTIONS -->
+                        <div id="auth-options-container"
+                            style="display:none; width:100%; border-top:1px solid #333; padding-top:15px; margin-top:10px;">
+                            <p style="color:#888; font-size:0.8rem; margin-bottom:10px;">OR SAVE TO ACCOUNT:</p>
+                            <div style="display:flex; gap:10px; justify-content:center;">
+                                <button id="btn-quick-login" class="neon-btn small"
+                                    style="color:#FFD700; border-color:#FFD700;">LOGIN</button>
+                                <button id="btn-quick-register" class="neon-btn small secondary">CREATE USER</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="margin-top:20px; font-size:0.8rem; color:#888;">
                         (Tip: Log in to save to your Total Score!)
                     </div>
@@ -476,7 +495,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=6.28" defer></script>
+        <script src="game_v9.js?v=6.3" defer></script>
 </body>
 
 </html>
