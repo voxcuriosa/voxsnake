@@ -1381,23 +1381,43 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // Native Window Dimensions
+            // Native Window Dimensions
             let availableW = window.innerWidth;
-            // Available Height = Total Window - Header Bottom - Bottom Margin
-            // Updated v6.40: Increased safety buffers based on user feedback.
-            // PC: Taskbar/Status bar issues -> needs reasonable buffer.
-            // Mobile: Address bar/Safe area -> needs moderate buffer (less than 80, more than 5).
 
-            let safetyMargin = 10; // Default PC Buffer
-            if (this.platform === 'mobile') {
-                safetyMargin = 30; // Mobile Buffer (Compromise)
+            // NEW ROBUST LOGIC v6.41:
+            // Calculate available height based on where the container ACTUALLY starts.
+            // This automatically accounts for all previous elements (Header, Scoreboard) AND their margins.
+            let containerTop = 0;
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                containerTop = rect.top;
+                // Double check negative/weird values (rare but possible on init)
+                if (containerTop < 0 || containerTop > window.innerHeight / 2) {
+                    // Fallback if layout isn't ready
+                    const sb = document.getElementById('score-board');
+                    containerTop = sb ? sb.getBoundingClientRect().bottom + 10 : 100;
+                }
+            } else {
+                containerTop = 100;
             }
 
-            let availableH = window.innerHeight - headerBottom - safetyMargin;
+            // Safety Buffers
+            // PC: Needs to account for border (4px) + slight visual breathing room (10px) = 14-15px
+            // Mobile: Needs to account for address bars/safe areas. 30px was too small. 80px too big. Trying 60px.
 
-            // BORDER & SAFETY
-            // We need to subtract the border width (4px) because the container will forced to include it
-            availableW -= 4;
+            let safetyMargin = 15; // PC
+            if (this.platform === 'mobile') {
+                safetyMargin = 60;
+            }
+
+            let availableH = window.innerHeight - containerTop - safetyMargin;
+
+            // BORDER already accounted for in safety margin effectively, but let's be explicit
+            // The container grows by 4px due to border.
+            // If we set height X, container becomes X+4.
+            // So availableH must be the INNER height.
             availableH -= 4;
+            availableW -= 4;
 
             // Robustness
             if (!availableW || availableW <= 10) availableW = window.innerWidth - 4;
