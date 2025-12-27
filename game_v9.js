@@ -2518,6 +2518,12 @@ window.addEventListener('DOMContentLoaded', () => {
         updateScoreUI() {
             if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
             if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
+
+            // REMOTE NAME SYNC (v6.46)
+            if (this.remotePlayerName) {
+                const p2Label = document.getElementById('p2-name-label');
+                if (p2Label) p2Label.innerText = this.remotePlayerName;
+            }
         }
 
         updateDynamicLegend() {
