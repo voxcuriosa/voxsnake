@@ -1029,6 +1029,11 @@ window.addEventListener('DOMContentLoaded', () => {
                                 }
                             }
 
+                            // SYNC HOST NAME (v6.52 Fix)
+                            if (data.hostName) {
+                                this.remotePlayerName = data.hostName.toUpperCase();
+                            }
+
                             if (!this.isRunning) {
                                 lobby.classList.add('hidden');
                                 lobby.classList.remove('active');
