@@ -70,8 +70,9 @@ else if ($method === 'POST') {
     $user_id = $user['id'];
 
     // 2. Insert Score
-    // FIX v6.48: Check for exact duplicates first!
-    $check = $conn->prepare("SELECT id FROM scores WHERE user_id = ? AND score = ? AND platform = ?");
+    // FIX v6.49: Time-Based Deduplication (15s buffer)
+    // Only block if we find the SAME score for SAME user on SAME platform submitted < 15s ago.
+    $check = $conn->prepare("SELECT id FROM scores WHERE user_id = ? AND score = ? AND platform = ? AND created_at > (NOW() - INTERVAL 15 SECOND)");
     $check->bind_param("iis", $user_id, $score, $type);
     $check->execute();
     $existing = $check->get_result();
