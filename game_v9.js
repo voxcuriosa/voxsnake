@@ -1369,18 +1369,21 @@ window.addEventListener('DOMContentLoaded', () => {
         resize() {
             const container = canvas.parentElement;
 
-            // Measure UI Consumption (Title + Scoreboard) to determine max Game Height
-            let uiHeight = 0;
+            // NEW LOGIC: Use getBoundingClientRect for accurate remaining space
             const sb = document.getElementById('score-board');
-            const h1 = document.querySelector('.neon-title');
-            const footer = document.querySelector('.mobile-controls'); // If any
-
-            if (sb) uiHeight += sb.offsetHeight + 10; // approx margin
-            if (h1) uiHeight += h1.offsetHeight + 10;
+            let headerBottom = 0;
+            if (sb) {
+                // Determine exactly where the UI ends
+                // Add a small buffer (e.g. 10px) to ensure we don't start immediately touching the text
+                headerBottom = sb.getBoundingClientRect().bottom + 5;
+            } else {
+                headerBottom = 100; // Fallback
+            }
 
             // Native Window Dimensions
             let availableW = window.innerWidth;
-            let availableH = window.innerHeight - uiHeight;
+            // Available Height = Total Window - Header Bottom - Bottom Margin (e.g. 5px)
+            let availableH = window.innerHeight - headerBottom - 5;
 
             // BORDER & SAFETY
             // We need to subtract the border width (4px) because the container will forced to include it
@@ -1390,15 +1393,6 @@ window.addEventListener('DOMContentLoaded', () => {
             // Robustness
             if (!availableW || availableW <= 10) availableW = window.innerWidth - 4;
             if (!availableH || availableH <= 10) availableH = window.innerHeight - 4;
-
-            // MOBILE SAFE AREA (Bottom Bar)
-            // If on mobile (height > width usually), subtract a tiny bit to avoid the white bar covering grid
-            // But only if we are using full window height
-            // MOBILE SAFE AREA (Bottom Bar)
-            // Increased safety margin for mobile to prevent cutoff
-            if (this.platform === 'mobile') {
-                availableH -= 80; // Increased from 40 to 80 (User reported cutoff)
-            }
 
             if (availableW < 300) availableW = 300;
             if (availableH < 300) availableH = 300;
