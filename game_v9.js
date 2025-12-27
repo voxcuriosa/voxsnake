@@ -2844,7 +2844,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 powerups: this.powerups,
                 walls: this.walls,
                 projectiles: this.projectiles,
-                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT }
+                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
+                hostName: this.currentUser ? this.currentUser.name : 'HOST' // v6.57 Fix
             };
 
             try {
