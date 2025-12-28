@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.09";
+    if (vCheck) vCheck.innerText = "v3.10";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2069,23 +2069,12 @@ window.addEventListener('DOMContentLoaded', () => {
                             const cP2 = '#00ccff';
 
                             const renderStats = (w, l, d, name1, name2) => {
-                                // Grid Layout for Cleanliness (v3.09)
+                                // Single Line Layout (v3.10 request: "Draw on same line, same font size")
                                 return `
-                                    <div style="display:grid; grid-template-columns:1fr auto 1fr; width:100%; align-items:center; gap:10px;">
-                                        <div style="text-align:right; color:${cP1}; font-weight:bold; white-space:nowrap;">
-                                            <div>${name1}</div>
-                                            <div style="font-size:1.2rem;">${w}</div>
-                                        </div>
-                                        
-                                        <div style="text-align:center; color:#888; font-size:0.8rem; display:flex; flex-direction:column;">
-                                            <div style="font-size:1.1rem; color:#fff;">${d}</div>
-                                            <div>DRAW</div>
-                                        </div>
-
-                                        <div style="text-align:left; color:${cP2}; font-weight:bold; white-space:nowrap;">
-                                            <div>${name2}</div>
-                                            <div style="font-size:1.2rem;">${l}</div>
-                                        </div>
+                                    <div style="display:flex; flex-direction:row; width:100%; justify-content:space-between; align-items:center; font-size:1.1rem; font-weight:bold; padding:0 10px;">
+                                        <div style="color:${cP1}; text-align:right;">${name1}: ${w}</div>
+                                        <div style="color:#aaa; font-size:0.9rem; margin:0 15px;">${d} DRAW</div>
+                                        <div style="color:${cP2}; text-align:left;">${name2}: ${l}</div>
                                     </div>
                                 `;
                             };
