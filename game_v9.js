@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.15";
+    if (vCheck) vCheck.innerText = "v3.16";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -3394,9 +3394,16 @@ window.addEventListener('DOMContentLoaded', () => {
                         if (this.pendingMatch) {
                             console.log("Found Pending Match! Syncing...");
                             const pm = this.pendingMatch;
-                            const guestName = (this.customName || "PLAYER 1").toUpperCase();
-                            if (pm.p1 === guestName || pm.p1 === "PLAYER 1") pm.p1 = this.currentUser.name.toUpperCase();
-                            if (pm.winner === guestName || pm.winner === "PLAYER 1") pm.winner = this.currentUser.name.toUpperCase();
+
+                            // v3.16 FIX: Unconditional Host Name Swap
+                            // Since pendingMatch is stored locally on Host, 'p1' is ALWAYS the local user (Guest).
+                            const oldName = pm.p1;
+                            pm.p1 = this.currentUser.name.toUpperCase();
+
+                            // If I won, update winner name too
+                            if (pm.winner === oldName) {
+                                pm.winner = this.currentUser.name.toUpperCase();
+                            }
 
                             // Push Promise
                             syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
@@ -3468,9 +3475,15 @@ window.addEventListener('DOMContentLoaded', () => {
                         if (this.pendingMatch) {
                             console.log("Found Pending Match! Syncing...");
                             const pm = this.pendingMatch;
-                            const guestName = (this.customName || "PLAYER 1").toUpperCase();
-                            if (pm.p1 === guestName || pm.p1 === "PLAYER 1") pm.p1 = this.currentUser.name.toUpperCase();
-                            if (pm.winner === guestName || pm.winner === "PLAYER 1") pm.winner = this.currentUser.name.toUpperCase();
+
+                            // v3.16 FIX: Unconditional Host Name Swap
+                            const oldName = pm.p1;
+                            pm.p1 = this.currentUser.name.toUpperCase();
+
+                            // If I won, update winner name too
+                            if (pm.winner === oldName) {
+                                pm.winner = this.currentUser.name.toUpperCase();
+                            }
 
                             syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
                             this.pendingMatch = null;
