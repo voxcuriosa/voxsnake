@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.13";
+    if (vCheck) vCheck.innerText = "v3.14";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2190,7 +2190,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 };
                 return; // Don't try to log to DB if not logged in
             }
-            fetch('auth.php', {
+            return fetch('auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -3388,60 +3388,57 @@ window.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
 
-                        // RETROACTIVE STAT SAVING (v3.13)
+                        // RETROACTIVE STAT SAVING (v3.14 - Async Fix)
+                        const syncOps = [];
+
                         if (this.pendingMatch) {
                             console.log("Found Pending Match! Syncing...");
                             const pm = this.pendingMatch;
-                            // Replace "PLAYER 1" or Guest Name with Real Name
                             const guestName = (this.customName || "PLAYER 1").toUpperCase();
-
-                            // Heuristic: If P1 was me (Guest), swap it.
                             if (pm.p1 === guestName || pm.p1 === "PLAYER 1") pm.p1 = this.currentUser.name.toUpperCase();
                             if (pm.winner === guestName || pm.winner === "PLAYER 1") pm.winner = this.currentUser.name.toUpperCase();
 
-                            // Re-submit
-                            this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration);
-                            this.pendingMatch = null; // Clear it
+                            // Push Promise
+                            syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
+                            this.pendingMatch = null;
                         }
 
-                        // RETROACTIVE SCORE SAVING (v3.13)
                         if (this.pendingScore) {
                             console.log("Found Pending Score! Syncing...");
                             const ps = this.pendingScore;
-                            // Resubmit with new Username
-                            this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
-                                .then(() => console.log("Retroactive Score Saved"))
-                                .catch(e => console.error("Retroactive Score Error", e));
+                            syncOps.push(
+                                this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
+                                    .then(() => console.log("Retroactive Score Saved"))
+                                    .catch(e => console.error("Retroactive Score Error", e))
+                            );
                             this.pendingScore = null;
                         }
 
-                        // Redirect Logic
-                        if (this.returnToNameEntry) {
-                            this.returnToNameEntry = false;
-                            this.hideAllScreens();
-                            // Restore Score Screen
-                            const ne = document.getElementById('name-entry-screen');
-                            if (ne) {
-                                ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
-                                ne.classList.add('active'); ne.style.display = 'flex';
-                                // Auto Update Name
-                                const inp = document.getElementById('player-name-input');
-                                if (inp) inp.value = this.currentUser.name;
-                                // Hide Auth Options
-                                const ao = document.getElementById('auth-options-container');
-                                if (ao) ao.style.display = 'none';
+                        // WAIT FOR SYNC before loading UI
+                        Promise.all(syncOps).then(() => {
+                            if (this.returnToNameEntry) {
+                                this.returnToNameEntry = false;
+                                this.hideAllScreens();
+                                const ne = document.getElementById('name-entry-screen');
+                                if (ne) {
+                                    ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                                    ne.classList.add('active'); ne.style.display = 'flex';
+                                    const inp = document.getElementById('player-name-input');
+                                    if (inp) inp.value = this.currentUser.name;
+                                    const ao = document.getElementById('auth-options-container');
+                                    if (ao) ao.style.display = 'none';
+                                }
+                            } else {
+                                this.hideAllScreens();
+                                const pScreen = document.getElementById('profile-screen');
+                                pScreen.classList.remove('hidden');
+                                pScreen.classList.remove('nuclear-hidden');
+                                pScreen.classList.add('active');
+                                pScreen.style.display = 'block';
+                                this.updateProfileUI(); // Load stats AFTER sync
                             }
-                        } else {
-                            // Redirect to Profile
-                            this.hideAllScreens();
-                            const pScreen = document.getElementById('profile-screen');
-                            pScreen.classList.remove('hidden');
-                            pScreen.classList.remove('nuclear-hidden');
-                            pScreen.classList.add('active');
-                            pScreen.style.display = 'block';
-                            this.updateProfileUI(); // Load stats
-                        }
-                        this.updateProfileUI(); // Load stats
+                            this.updateProfileUI(); // Extra Load
+                        });
                     } else {
                         alert("Login Failed: " + data.error);
                     }
@@ -3465,57 +3462,56 @@ window.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
 
-                        // RETROACTIVE STAT SAVING (v3.13)
+                        // RETROACTIVE STAT SAVING (v3.14 - Async Fix)
+                        const syncOps = [];
+
                         if (this.pendingMatch) {
                             console.log("Found Pending Match! Syncing...");
                             const pm = this.pendingMatch;
-                            // Replace "PLAYER 1" or Guest Name with Real Name
                             const guestName = (this.customName || "PLAYER 1").toUpperCase();
-
-                            // Heuristic: If P1 was me (Guest), swap it.
                             if (pm.p1 === guestName || pm.p1 === "PLAYER 1") pm.p1 = this.currentUser.name.toUpperCase();
                             if (pm.winner === guestName || pm.winner === "PLAYER 1") pm.winner = this.currentUser.name.toUpperCase();
 
-                            // Re-submit
-                            this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration);
-                            this.pendingMatch = null; // Clear it
+                            syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
+                            this.pendingMatch = null;
                         }
 
-                        // RETROACTIVE SCORE SAVING (v3.13)
                         if (this.pendingScore) {
                             console.log("Found Pending Score! Syncing...");
                             const ps = this.pendingScore;
-                            // Resubmit with new Username
-                            this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
-                                .then(() => console.log("Retroactive Score Saved"))
-                                .catch(e => console.error("Retroactive Score Error", e));
+                            syncOps.push(
+                                this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
+                                    .then(() => console.log("Retroactive Score Saved"))
+                                    .catch(e => console.error("Retroactive Score Error", e))
+                            );
                             this.pendingScore = null;
                         }
 
-                        // Redirect Logic
-                        if (this.returnToNameEntry) {
-                            this.returnToNameEntry = false;
-                            this.hideAllScreens();
-                            const ne = document.getElementById('name-entry-screen');
-                            if (ne) {
-                                ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
-                                ne.classList.add('active'); ne.style.display = 'flex';
-                                const inp = document.getElementById('player-name-input');
-                                if (inp) inp.value = this.currentUser.name;
-                                const ao = document.getElementById('auth-options-container');
-                                if (ao) ao.style.display = 'none';
+                        // WAIT FOR SYNC before loading UI
+                        Promise.all(syncOps).then(() => {
+                            if (this.returnToNameEntry) {
+                                this.returnToNameEntry = false;
+                                this.hideAllScreens();
+                                const ne = document.getElementById('name-entry-screen');
+                                if (ne) {
+                                    ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                                    ne.classList.add('active'); ne.style.display = 'flex';
+                                    const inp = document.getElementById('player-name-input');
+                                    if (inp) inp.value = this.currentUser.name;
+                                    const ao = document.getElementById('auth-options-container');
+                                    if (ao) ao.style.display = 'none';
+                                }
+                            } else {
+                                this.hideAllScreens();
+                                const pScreen = document.getElementById('profile-screen');
+                                pScreen.classList.remove('hidden');
+                                pScreen.classList.remove('nuclear-hidden');
+                                pScreen.classList.add('active');
+                                pScreen.style.display = 'block';
+                                this.updateProfileUI();
                             }
-                        } else {
-                            // Redirect to Profile
-                            this.hideAllScreens();
-                            const pScreen = document.getElementById('profile-screen');
-                            pScreen.classList.remove('hidden');
-                            pScreen.classList.remove('nuclear-hidden');
-                            pScreen.classList.add('active');
-                            pScreen.style.display = 'block';
                             this.updateProfileUI();
-                        }
-                        this.updateProfileUI();
+                        });
                     } else {
                         alert("Registration Failed: " + data.error);
                     }
