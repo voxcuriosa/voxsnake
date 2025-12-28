@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.17";
+    if (vCheck) vCheck.innerText = "v3.18";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -646,7 +646,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 'main-menu', 'game-over-screen', 'high-score-screen',
                 'join-screen', 'name-entry-screen', 'about-screen', 'lobby-screen',
                 'login-screen', 'register-screen', 'profile-screen',
-                'recovery-screen', 'admin-screen' // NEW AUTH SCREENS
+                'recover-screen', 'admin-screen', 'admin-user-stats-modal'
             ];
             const screens = screenIds.map(id => document.getElementById(id)).filter(Boolean);
             screens.forEach(s => {
@@ -655,6 +655,34 @@ window.addEventListener('DOMContentLoaded', () => {
                 s.classList.remove('active');
                 s.style.display = 'none'; // TRIPLE KILL
             });
+        }
+
+        // MISSING METHODS ADDED v3.18
+        showLoginScreen() {
+            this.hideAllScreens();
+            const s = document.getElementById('login-screen');
+            if (s) {
+                s.classList.remove('hidden'); s.classList.remove('nuclear-hidden');
+                s.classList.add('active'); s.style.display = 'block';
+            }
+        }
+
+        showRegisterScreen() {
+            this.hideAllScreens();
+            const s = document.getElementById('register-screen');
+            if (s) {
+                s.classList.remove('hidden'); s.classList.remove('nuclear-hidden');
+                s.classList.add('active'); s.style.display = 'block';
+            }
+        }
+
+        showRecoverScreen() {
+            this.hideAllScreens();
+            const s = document.getElementById('recover-screen');
+            if (s) {
+                s.classList.remove('hidden'); s.classList.remove('nuclear-hidden');
+                s.classList.add('active'); s.style.display = 'block';
+            }
         }
 
         startHost() {
