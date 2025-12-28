@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.05";
+    if (vCheck) vCheck.innerText = "v3.06";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2060,23 +2060,30 @@ window.addEventListener('DOMContentLoaded', () => {
                             else this.sessionStats.draws++;
 
                             // 2. RENDER SESSION STATS IMMEDIATELY (Fallback)
-                            const sP1 = p1Name.toUpperCase();
-                            const sP2 = p2Name.toUpperCase();
+                            const sP1 = (p1Name && p1Name.trim() !== "") ? p1Name.toUpperCase() : "P1";
+                            const sP2 = (p2Name && p2Name.trim() !== "") ? p2Name.toUpperCase() : "P2";
 
-                            // Safe Colors (Fallback if global COLORS missing)
-                            const cP1 = (typeof COLORS !== 'undefined') ? COLORS.p1 : '#00ff88';
-                            const cP2 = (typeof COLORS !== 'undefined') ? COLORS.p2 : '#00ccff';
+                            // Safe Colors (Hardcoded to ensure visibility)
+                            // We ignore global COLORS here to be absolutely sure.
+                            const cP1 = '#00ff88';
+                            const cP2 = '#00ccff';
 
                             const renderStats = (w, l, d, name1, name2) => {
+                                // Force white text for punctuation/numbers to be safe
                                 return `
-                                    <span style="color:${cP1}">${name1}: ${w}W</span>
-                                    <span style="color:#aaa; font-size:1rem;">${d}D</span>
-                                    <span style="color:${cP2}">${name2}: ${l}W</span>
+                                    <span style="color:${cP1}; font-weight:bold;">${name1}: ${w}W</span>
+                                    <span style="color:#ffffff; margin:0 5px;">|</span>
+                                    <span style="color:#ffffff; font-size:1rem;">${d}D</span>
+                                    <span style="color:#ffffff; margin:0 5px;">|</span>
+                                    <span style="color:${cP2}; font-weight:bold;">${name2}: ${l}W</span>
                                 `;
                             };
 
                             // Initial Render (Session Stats) - Replaces content safely
                             h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
+                            h2hContainer.style.opacity = "1"; // Force opacity
+                            h2hContainer.style.display = "flex"; // Force flex
+
 
                             // 3. TRY FETCHING DB STATS (If Online / Logged In)
                             if (this.gameMode === 'multi') {
