@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.85";
+    if (vCheck) vCheck.innerText = "v6.87";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1105,6 +1105,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             // SYNC HOST NAME (v6.52 Fix)
                             if (data.hostName) {
                                 this.remotePlayerName = data.hostName.toUpperCase();
+                                this.updateScoreUI(); // TRIGGER STATS FETCH IMMEDIATELY
                             }
 
                             if (!this.isRunning) {
