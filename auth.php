@@ -166,12 +166,12 @@ if ($method === 'POST') {
             $uid = $userRow['id'];
 
             // Get Best Mobile Score
-            $qMob = $conn->query("SELECT MAX(score) as s FROM scores WHERE user_id = $uid AND device_type = 'mobile'");
+            $qMob = $conn->query("SELECT MAX(score) as s FROM scores WHERE user_id = $uid AND platform = 'mobile'");
             $rMob = $qMob->fetch_assoc();
             $userRow['best_mobile'] = $rMob['s'] ?? 0;
 
             // Get Best PC Score
-            $qPC = $conn->query("SELECT MAX(score) as s FROM scores WHERE user_id = $uid AND device_type = 'pc'");
+            $qPC = $conn->query("SELECT MAX(score) as s FROM scores WHERE user_id = $uid AND platform = 'pc'");
             $rPC = $qPC->fetch_assoc();
             $userRow['best_pc'] = $rPC['s'] ?? 0;
 
