@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.02";
+    if (vCheck) vCheck.innerText = "v3.03";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -540,6 +540,26 @@ window.addEventListener('DOMContentLoaded', () => {
                     this.showMainMenu();
                 });
             }
+        }
+
+        startLocalMultiplayer() {
+            // Multiplayer Local (Same Keyboard)
+            this.gameMode = 'multi';
+            this.isHost = true; // Acts as host
+            this.isClient = false;
+
+            // v3.00: Ensure Fullscreen (Clear any Remote Sync Target)
+            this.multiplayerTargetWidth = null;
+            this.multiplayerTargetHeight = null;
+
+            // v3.03: Initialize Session Stats if not present
+            if (!this.sessionStats) this.sessionStats = { p1: 0, p2: 0, draws: 0 };
+            this.initMultiplayer();
+
+            // Delay resize
+            setTimeout(() => this.resize(), 50);
+            window.addEventListener('resize', () => this.resize());
+            this.startLoop();
         }
 
         initMultiplayer() {
@@ -2029,18 +2049,43 @@ window.addEventListener('DOMContentLoaded', () => {
                             this.recordMatchStats(p1Name.toUpperCase(), p2Name.toUpperCase(), wName.toUpperCase());
                         } catch (e) { console.error("Record Match Error:", e); }
                     }
-                    this.displayH2HStats(p1Name, p2Name);
-
-                    // GAME OVER H2H STATS (v3.01 Fix - Safely Inside Scope)
+                    // GAME OVER H2H STATS (v3.03 Logic)
                     const h2hContainer = document.getElementById('h2h-game-over-stats');
                     if (h2hContainer) {
                         h2hContainer.innerHTML = '';
-                        if (this.gameMode === 'multi') {
-                            const myName = p1Name.toUpperCase();
-                            const oppName = p2Name.toUpperCase();
 
+                        // 1. UPDATE SESSION STATS (Local or Offline Tracking)
+                        if (!this.sessionStats) this.sessionStats = { p1: 0, p2: 0, draws: 0 };
+                        if (winnerIndex === 0) this.sessionStats.p1++;
+                        else if (winnerIndex === 1) this.sessionStats.p2++;
+                        else this.sessionStats.draws++;
+
+                        // 2. RENDER SESSION STATS IMMEDIATELY (Fallback)
+                        // This ensures "Something" is always shown, even if DB fetch fails or isn't needed.
+                        const sP1 = p1Name.toUpperCase();
+                        const sP2 = p2Name.toUpperCase();
+
+                        const renderStats = (w, l, d, name1, name2) => {
+                            return `
+                                <span style="color:${COLORS.p1}">${name1}: ${w}W</span>
+                                <span style="color:#aaa; font-size:1rem;">${d}D</span>
+                                <span style="color:${COLORS.p2}">${name2}: ${l}W</span>
+                            `;
+                        };
+
+                        // Initial Render (Session Stats)
+                        h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
+
+                        // 3. TRY FETCHING DB STATS (If Online / Logged In)
+                        if (this.gameMode === 'multi') {
+                            const myName = sP1;
+                            const oppName = sP2;
+
+                            // Only fetch if meaningful names (ignore default Player 1 vs Player 2 unless we want to persist them?)
+                            // Actually, let's only fetch if names are NOT "PLAYER 1" etc, OR if we are explicitly online.
+                            // But for now, safe to try if names differ.
                             if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
-                                h2hContainer.innerHTML = '<span style="color:#666; font-size:0.8rem;">Loading H2H...</span>';
+                                // We don't verify 'h2hContainer.innerHTML = Loading' anymore, we just let the Session Stats sit there until DB overrides.
                                 fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
                                     .then(r => r.json()).then(d => {
                                         if (d.success && d.matches) {
@@ -2055,15 +2100,10 @@ window.addEventListener('DOMContentLoaded', () => {
                                                     else l++;
                                                 }
                                             });
-                                            h2hContainer.innerHTML = `
-                                                <span style="color:${COLORS.p1}">${myName}: ${w}W</span>
-                                                <span style="color:#aaa; margin:0 10px;">${dr}D</span>
-                                                <span style="color:${COLORS.p2}">${oppName}: ${l}W</span>
-                                            `;
-                                        } else {
-                                            h2hContainer.innerHTML = "";
+                                            // Overwrite with Global Stats if successful
+                                            h2hContainer.innerHTML = renderStats(w, l, dr, myName, oppName);
                                         }
-                                    }).catch(e => h2hContainer.innerHTML = "");
+                                    }).catch(e => { /* Ignore failure, keep Session Stats */ });
                             }
                         }
                     }

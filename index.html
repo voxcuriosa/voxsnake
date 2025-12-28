@@ -167,7 +167,7 @@
 
                         <!-- Moved Install Button Here -->
                         <button id="btn-install-app" class="neon-btn"
-                            style="border-color:#00ff00; color:#00ff00; margin-top:20px; text-transform: none !important;">INSTALL
+                            style="border-color:#00ff00; color:#00ff00; margin-top:20px; text-transform: none !important; font-family:sans-serif !important;">INSTALL
                             APP (iOS:
                             Share->Home)</button>
 
@@ -367,11 +367,11 @@
                         <button id="btn-profile-back" class="neon-btn secondary"
                             style="width:100%; margin:0 auto;">BACK</button>
                     </div>
-                    <!-- BOTTOM SPACER v7.1 -->
+                    <!-- BOTTOM SPACER v7.11 -->
                     <div style="height:80px;"></div>
                 </div>
 
-                <!-- ADMIN H2H VIEW MODAL (v7.1) -->
+                <!-- ADMIN H2H VIEW MODAL (v7.11) -->
                 <div id="admin-user-stats-modal" class="menu-screen hidden"
                     style="z-index:100; background:rgba(0,0,0,0.95); border:2px solid #00ffff; width:90%; max-width:400px; padding:20px;">
                     <h2 id="admin-modal-title" class="neon-title" style="font-size:1.2rem;">USER STATS</h2>
@@ -459,15 +459,16 @@
                     <h2 id="winner-text" class="neon-text-flicker" style="margin-bottom:20px; font-size:2rem;">GAME OVER
                     </h2>
 
-                    <!-- Game Over H2H Stats (v3.00) -->
-                    <div id="h2h-game-over-stats"
-                        style="margin-bottom:20px; display:flex; gap:20px; justify-content:center; font-family:monospace; font-size:1.2rem;">
-                        <!-- Populated by JS -->
-                    </div>
-
-                    <div style="display:flex; gap:20px;">
+                    <!-- Game Over H2H Stats (v3.03 Layout: Restart - H2H - Menu) -->
+                    <div style="display:flex; gap:20px; align-items:center; justify-content:center; flex-wrap:wrap;">
                         <button id="btn-restart" class="neon-btn">RESTART</button>
-                        <button id="btn-back" class="neon-btn secondary">BACK</button>
+
+                        <div id="h2h-game-over-stats"
+                            style="margin:0 10px; font-family:monospace; font-size:1.2rem; display:flex; gap:15px;">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <button id="btn-back" class="neon-btn secondary">MENU</button>
                     </div>
                 </div>
 
@@ -560,7 +561,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=3.02"></script>
+        <script src="game_v9.js?v=3.03"></script>
 </body>
 
 </html>
