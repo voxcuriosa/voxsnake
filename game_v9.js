@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.92";
+    if (vCheck) vCheck.innerText = "v6.93";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2085,7 +2085,14 @@ window.addEventListener('DOMContentLoaded', () => {
                         // Only Host records.
                         try {
                             this.recordMatchStats(p1Name, p2Name, winnerName);
-                        } catch (e) { console.error("Record Error: " + e.message); }
+                        } catch (e) {
+                            console.error("Record Error: " + e.message);
+                            const rToast = document.createElement('div');
+                            rToast.innerText = "DEBUG: CALL ERROR " + e.message;
+                            rToast.style.cssText = "position:fixed; top:210px; left:10px; background:#ff0000; color:white; padding:5px; z-index:9999;";
+                            document.body.appendChild(rToast);
+                            setTimeout(() => rToast.remove(), 10000);
+                        }
                     }
                     this.displayH2HStats(p1Name, p2Name);
 
