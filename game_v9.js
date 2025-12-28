@@ -834,7 +834,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            bindButton(menuBtn, () => location.reload());
+            bindButton(menuBtn, () => {
+                this.stopGame(); // Clean up (peers, loops)
+                this.showMainMenu();
+            });
             bindButton(btnResume, () => this.togglePause());
 
             // Host/Join Buttons too (defined in initMultiplayer, but we can grab them here or leave them default?)
@@ -1172,7 +1175,8 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             const score = this.currentPendingScore;
-            const type = this.platform || 'mobile';
+            // HARDENED CHECK (v6.67): Force PC if screen is wide, ignoring touch capabilities
+            const type = (window.innerWidth > 768) ? 'pc' : 'mobile';
 
             if (submitScoreBtn) {
                 submitScoreBtn.disabled = true;
@@ -2645,12 +2649,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 // I AM PLAYER 2 (Client)
                 // P1 is Host (Remote), P2 is Me (Local)
                 if (this.remotePlayerName && p1Label) p1Label.innerText = this.remotePlayerName;
-                if (this.currentUser && p2Label) p2Label.innerText = this.currentUser.name;
+                if (p2Label) p2Label.innerText = this.currentUser ? this.currentUser.name : "Guest";
 
             } else {
                 // I AM PLAYER 1 (Host/Local)
                 // P1 is Me (Local), P2 is Client (Remote)
-                if (this.currentUser && p1Label) p1Label.innerText = this.currentUser.name;
+                if (p1Label) p1Label.innerText = this.currentUser ? this.currentUser.name : "Guest";
                 if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
             }
         }
