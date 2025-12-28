@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.12";
+    if (vCheck) vCheck.innerText = "v3.13";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1203,6 +1203,10 @@ window.addEventListener('DOMContentLoaded', () => {
             // HARDENED CHECK (v6.67): Force PC if screen is wide, ignoring touch capabilities
             const type = (window.innerWidth > 768) ? 'pc' : 'mobile';
 
+            // PENDING SCORE LOGIC (v3.13)
+            // Always store this, in case they decide to Login/Register right after seeing this screen.
+            this.pendingScore = { score: score, type: type, timestamp: Date.now() };
+
             if (submitScoreBtn) {
                 submitScoreBtn.disabled = true;
                 submitScoreBtn.innerText = "SAVING...";
@@ -2173,6 +2177,19 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         recordMatchStats(p1, p2, winner, duration) {
+            // PENDING MATCH LOGIC (v3.13)
+            // If Guest, save strictly for retroactive sync on login.
+            if (!this.currentUser) {
+                console.log("Guest Match Ended. Storing for potential Login...");
+                this.pendingMatch = {
+                    p1: p1,
+                    p2: p2,
+                    winner: winner,
+                    duration: duration,
+                    timestamp: Date.now()
+                };
+                return; // Don't try to log to DB if not logged in
+            }
             fetch('auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -3365,14 +3382,38 @@ window.addEventListener('DOMContentLoaded', () => {
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
+                        // alert("Login Successful! Welcome, " + data.user.name);
                         this.currentUser = data.user;
-                        localStorage.setItem('snake_user', JSON.stringify(data.user)); // Persist Session
-                        // Also update "Saved Name" for auto-fill in high score (legacy)
+                        this.isGuest = false; // reset
+                        localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
 
-                        alert("Welcome back, " + data.user.name + "!");
+                        // RETROACTIVE STAT SAVING (v3.13)
+                        if (this.pendingMatch) {
+                            console.log("Found Pending Match! Syncing...");
+                            const pm = this.pendingMatch;
+                            // Replace "PLAYER 1" or Guest Name with Real Name
+                            const guestName = (this.customName || "PLAYER 1").toUpperCase();
 
-                        alert("Welcome back, " + data.user.name + "!");
+                            // Heuristic: If P1 was me (Guest), swap it.
+                            if (pm.p1 === guestName || pm.p1 === "PLAYER 1") pm.p1 = this.currentUser.name.toUpperCase();
+                            if (pm.winner === guestName || pm.winner === "PLAYER 1") pm.winner = this.currentUser.name.toUpperCase();
+
+                            // Re-submit
+                            this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration);
+                            this.pendingMatch = null; // Clear it
+                        }
+
+                        // RETROACTIVE SCORE SAVING (v3.13)
+                        if (this.pendingScore) {
+                            console.log("Found Pending Score! Syncing...");
+                            const ps = this.pendingScore;
+                            // Resubmit with new Username
+                            this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
+                                .then(() => console.log("Retroactive Score Saved"))
+                                .catch(e => console.error("Retroactive Score Error", e));
+                            this.pendingScore = null;
+                        }
 
                         // Redirect Logic
                         if (this.returnToNameEntry) {
@@ -3424,7 +3465,32 @@ window.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
 
-                        localStorage.setItem('playerName', data.user.name);
+                        // RETROACTIVE STAT SAVING (v3.13)
+                        if (this.pendingMatch) {
+                            console.log("Found Pending Match! Syncing...");
+                            const pm = this.pendingMatch;
+                            // Replace "PLAYER 1" or Guest Name with Real Name
+                            const guestName = (this.customName || "PLAYER 1").toUpperCase();
+
+                            // Heuristic: If P1 was me (Guest), swap it.
+                            if (pm.p1 === guestName || pm.p1 === "PLAYER 1") pm.p1 = this.currentUser.name.toUpperCase();
+                            if (pm.winner === guestName || pm.winner === "PLAYER 1") pm.winner = this.currentUser.name.toUpperCase();
+
+                            // Re-submit
+                            this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration);
+                            this.pendingMatch = null; // Clear it
+                        }
+
+                        // RETROACTIVE SCORE SAVING (v3.13)
+                        if (this.pendingScore) {
+                            console.log("Found Pending Score! Syncing...");
+                            const ps = this.pendingScore;
+                            // Resubmit with new Username
+                            this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
+                                .then(() => console.log("Retroactive Score Saved"))
+                                .catch(e => console.error("Retroactive Score Error", e));
+                            this.pendingScore = null;
+                        }
 
                         // Redirect Logic
                         if (this.returnToNameEntry) {
