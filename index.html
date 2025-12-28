@@ -325,6 +325,23 @@
                         </div>
                     </div>
 
+                    <!-- H2H SUMMARY BOX (v6.98) -->
+                    <div id="profile-h2h-summary"
+                        style="display:flex; justify-content:space-between; margin-top:15px; background:rgba(0,0,0,0.3); padding:10px; border-radius:10px; border:1px solid #333; text-align:center;">
+                        <div style="flex:1;">
+                            <div style="color:#00ff88; font-size:0.7rem; font-weight:bold;">WINS</div>
+                            <div id="h2h-wins" style="font-size:1.2rem; color:white;">-</div>
+                        </div>
+                        <div style="flex:1; border-left:1px solid #333; border-right:1px solid #333;">
+                            <div style="color:#ff5555; font-size:0.7rem; font-weight:bold;">LOSSES</div>
+                            <div id="h2h-losses" style="font-size:1.2rem; color:white;">-</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="color:#aaa; font-size:0.7rem; font-weight:bold;">DRAWS</div>
+                            <div id="h2h-draws" style="font-size:1.2rem; color:white;">-</div>
+                        </div>
+                    </div>
+
                     <!-- MATCH HISTORY (v6.59) -->
                     <div id="profile-match-history"
                         style="max-height: 200px; overflow-y: auto; font-size: 0.8rem; margin-top: 20px; border-top: 1px solid #333; padding-top:10px; color:#aaa;">
@@ -512,7 +529,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=6.97" defer></script>
+        <script src="game_v9.js?v=6.98" defer></script>
 </body>
 
 </html>

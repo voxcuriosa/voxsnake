@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.96";
+    if (vCheck) vCheck.innerText = "v6.97";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1447,6 +1447,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                this.h2hStatsFetched = false; // Reset for new match statistics fetch
                 this.updateScoreUI();
 
                 // WAKE LOCK (Mobile/iPhone Fix)
@@ -1578,8 +1579,8 @@ window.addEventListener('DOMContentLoaded', () => {
             while (!valid && attempts < 100) {
                 attempts++;
                 newFood = {
-                    x: Math.floor(Math.random() * maxX),
-                    y: Math.floor(Math.random() * maxY),
+                    x: Math.floor(Math.random() * Math.max(1, maxX)),
+                    y: Math.floor(Math.random() * Math.max(1, maxY)),
                     createdAt: Date.now() // Add timestamp for respawn logic
                 };
                 valid = !this.isOccupied(newFood);
@@ -1588,8 +1589,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!valid) {
                 // Force Random if stuck
                 newFood = {
-                    x: Math.floor(Math.random() * maxX),
-                    y: Math.floor(Math.random() * maxY)
+                    x: Math.floor(Math.random() * Math.max(1, maxX)),
+                    y: Math.floor(Math.random() * Math.max(1, maxY))
                 };
             }
 
@@ -1977,6 +1978,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                let msg = "GAME OVER";
+                let color = COLORS.p1;
+
                 // BROADCAST SYNC (Host only sends, Client only receives)
                 try {
                     if (this.isHost) {
@@ -2005,8 +2009,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     // Only Host records to DB
                     if (!this.isClient) {
                         try {
-                            const winnerName = (winnerIndex === -1) ? "DRAW" : (winnerIndex === 0 ? p1Name : p2Name);
-                            this.recordMatchStats(p1Name, p2Name, winnerName);
+                            const wName = (winnerIndex === -1) ? "DRAW" : (winnerIndex === 0 ? p1Name : p2Name);
+                            this.recordMatchStats(p1Name.toUpperCase(), p2Name.toUpperCase(), wName.toUpperCase());
                         } catch (e) { console.error("Record Match Error:", e); }
                     }
                     this.displayH2HStats(p1Name, p2Name);
@@ -2216,12 +2220,15 @@ window.addEventListener('DOMContentLoaded', () => {
             const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
             this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
 
-            // Food Lifespan (Respawn Red Food/All Food after 30s)
+            // Food Lifespan & Minimum Check
             const foodCountBefore = this.foods.length;
             this.foods = this.foods.filter(f => now - (f.createdAt || now) < 30000); // 30s limit
-            // Respawn if any expired
-            if (this.foods.length < foodCountBefore) {
-                this.spawnFood();
+
+            // Ensure at least 3 foods at all times on Host
+            if (this.foods.length < 3) {
+                while (this.foods.length < 3) {
+                    this.spawnFood();
+                }
             }
 
             // Capture OLD HEADS (Before Move) for Swap Detection
@@ -2721,11 +2728,13 @@ window.addEventListener('DOMContentLoaded', () => {
                             const p2Stat = document.getElementById('p2-best-score');
 
                             if (p1Stat) {
+                                p1Stat.parentElement.style.display = 'flex';
                                 p1Stat.innerText = `Wins: ${d.stats.p1_wins}`;
                                 p1Stat.style.fontSize = '0.7rem';
                                 p1Stat.style.color = '#00ff88';
                             }
                             if (p2Stat) {
+                                p2Stat.parentElement.style.display = 'flex';
                                 p2Stat.innerText = `Wins: ${d.stats.p2_wins}`;
                                 p2Stat.style.fontSize = '0.7rem';
                                 p2Stat.style.color = '#00ffff';
@@ -3375,6 +3384,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (data.success && data.matches && data.matches.length > 0) {
                     let html = '<ul style="list-style:none; padding:0; margin:0;">';
+                    let wCount = 0;
+                    let lCount = 0;
+                    let dCount = 0;
+
                     data.matches.forEach(m => {
                         const myName = username.toUpperCase();
                         const wName = (m.winner_name || "").toUpperCase();
@@ -3384,8 +3397,9 @@ window.addEventListener('DOMContentLoaded', () => {
                         let resultText = "DRAW";
                         let resultColor = '#aaa';
 
-                        if (wName === myName) { resultText = "WON"; resultColor = "#00ff88"; }
-                        else if (wName && wName !== "DRAW") { resultText = "LOST"; resultColor = "#ff5555"; }
+                        if (wName === myName) { resultText = "WON"; resultColor = "#00ff88"; wCount++; }
+                        else if (wName === "DRAW" || !wName) { resultText = "DRAW"; resultColor = "#aaa"; dCount++; }
+                        else { resultText = "LOST"; resultColor = "#ff5555"; lCount++; }
 
                         const date = new Date(m.played_at).toLocaleDateString();
 
@@ -3401,8 +3415,24 @@ window.addEventListener('DOMContentLoaded', () => {
                     });
                     html += '</ul>';
                     container.innerHTML = html;
+
+                    // Update Summary
+                    const winEl = document.getElementById('h2h-wins');
+                    const lossEl = document.getElementById('h2h-losses');
+                    const drawEl = document.getElementById('h2h-draws');
+                    if (winEl) winEl.innerText = wCount;
+                    if (lossEl) lossEl.innerText = lCount;
+                    if (drawEl) drawEl.innerText = dCount;
+
                 } else {
                     container.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">No matches played yet.</div>';
+                    // Reset Summary
+                    const winEl = document.getElementById('h2h-wins');
+                    const lossEl = document.getElementById('h2h-losses');
+                    const drawEl = document.getElementById('h2h-draws');
+                    if (winEl) winEl.innerText = '0';
+                    if (lossEl) lossEl.innerText = '0';
+                    if (drawEl) drawEl.innerText = '0';
                 }
             } catch (e) {
                 console.error("Profile History Error:", e);
