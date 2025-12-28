@@ -1897,13 +1897,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 this.isRunning = false;
                 this.isPaused = false;
 
-                // SHOW MASTER UI
-                const uiLayer = document.getElementById('ui-layer');
                 if (uiLayer) {
                     uiLayer.style.display = 'block';
                     // Force reflow
                     uiLayer.offsetHeight;
                 }
+
+                // DEFINE UI ELEMENTS (v6.78 Fix)
+                const winnerText = document.getElementById('winner-text');
+                const btnResume = document.getElementById('btn-resume');
+                const dynamicLegend = document.getElementById('dynamic-legend');
+                const goLoginBtn = document.getElementById('go-login-btn');
+                const playerNameInput = document.getElementById('player-name-input'); // Re-define safely
 
                 mainMenu.classList.remove('active');
                 mainMenu.classList.add('hidden');
@@ -2039,11 +2044,13 @@ window.addEventListener('DOMContentLoaded', () => {
                         winnerText.style.color = color;
                     }
 
-                    // MATCH STATS (Host Records, Both Display)
+                    // MATCH STATS
                     if (!this.isClient) {
-                        // Only Host records.
-                        // BUT: Local Multi? If Local Multi, we are Host.
-                        this.recordMatchStats(p1Name, p2Name, winnerName);
+                        // FORCE ALERT (v6.78)
+                        alert("DEBUG: Recording Match...\n" + p1Name + " vs " + p2Name);
+                        try {
+                            this.recordMatchStats(p1Name, p2Name, winnerName);
+                        } catch (e) { alert("Record Error: " + e.message); }
                     }
                     this.displayH2HStats(p1Name, p2Name);
 
