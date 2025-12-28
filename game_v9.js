@@ -2060,7 +2060,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         recordMatchStats(p1, p2, winner, duration) {
             // DEBUG: Confirm function entry (User reported "No popup")
-            // alert("DEBUG: Recording Match..."); 
+            alert("DEBUG: Recording Match...\n" + p1 + " vs " + p2);
             console.log("LOGGING MATCH:", p1, p2, winner, duration);
             fetch('auth.php', { // Using auth.php as we added the action there
                 method: 'POST',
@@ -2085,6 +2085,38 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 })
                 .catch(e => console.error("Log Match Error:", e));
+        }
+
+        displayH2HStats(p1, p2) {
+            const container = document.getElementById('winner-text'); // Append below winner text
+            if (!container) return;
+
+            // Check if stats box exists, if not create
+            let statsBox = document.getElementById('h2h-stats-box');
+            if (!statsBox) {
+                statsBox = document.createElement('div');
+                statsBox.id = 'h2h-stats-box';
+                statsBox.style.cssText = "margin-top:10px; font-size:1rem; color:#ccc;";
+                container.parentNode.insertBefore(statsBox, container.nextSibling);
+            }
+            statsBox.innerHTML = "Loading Stats...";
+
+            fetch('auth.php', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'get_h2h_stats', p1: p1, p2: p2 })
+            }).then(r => r.json()).then(d => {
+                if (d.success && d.stats) {
+                    statsBox.innerHTML = `
+                        <div style="display:flex; gap:20px; justify-content:center;">
+                            <span style="color:${COLORS.p1}">${p1}: ${d.stats.p1_wins} Wins</span>
+                            <span style="color:#888">Draws: ${d.stats.draws}</span>
+                            <span style="color:${COLORS.p2}">${p2}: ${d.stats.p2_wins} Wins</span>
+                        </div>
+                    `;
+                } else {
+                    statsBox.innerHTML = "";
+                }
+            }).catch(e => console.error(e));
         }
 
         saveScoreToBackend(name, score, type) {
