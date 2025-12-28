@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.10";
+    if (vCheck) vCheck.innerText = "v3.11";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2069,12 +2069,32 @@ window.addEventListener('DOMContentLoaded', () => {
                             const cP2 = '#00ccff';
 
                             const renderStats = (w, l, d, name1, name2) => {
-                                // Single Line Layout (v3.10 request: "Draw on same line, same font size")
+                                // Vertical Stack 3-Column Layout (v3.11)
+                                // User Request: "Draw over score like names", "Same font size", "White color"
+                                const labelStyle = "font-size:0.9rem; font-weight:bold; margin-bottom:2px; letter-spacing:1px;";
+                                const scoreStyle = "font-size:1.4rem; font-weight:bold;";
+
                                 return `
-                                    <div style="display:flex; flex-direction:row; width:100%; justify-content:space-between; align-items:center; font-size:1.1rem; font-weight:bold; padding:0 10px;">
-                                        <div style="color:${cP1}; text-align:right;">${name1}: ${w}</div>
-                                        <div style="color:#aaa; font-size:0.9rem; margin:0 15px;">${d} DRAW</div>
-                                        <div style="color:${cP2}; text-align:left;">${name2}: ${l}</div>
+                                    <div style="display:flex; flex-direction:row; width:100%; justify-content:space-around; align-items:center; text-align:center;">
+                                        
+                                        <!-- Player 1 -->
+                                        <div style="display:flex; flex-direction:column; color:${cP1};">
+                                            <div style="${labelStyle}">${name1}</div>
+                                            <div style="${scoreStyle}">${w}</div>
+                                        </div>
+
+                                        <!-- Draw -->
+                                        <div style="display:flex; flex-direction:column; color:#ffffff;">
+                                            <div style="${labelStyle}">DRAW</div>
+                                            <div style="${scoreStyle}">${d}</div>
+                                        </div>
+
+                                        <!-- Player 2 -->
+                                        <div style="display:flex; flex-direction:column; color:${cP2};">
+                                            <div style="${labelStyle}">${name2}</div>
+                                            <div style="${scoreStyle}">${l}</div>
+                                        </div>
+
                                     </div>
                                 `;
                             };
