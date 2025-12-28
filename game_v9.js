@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.00";
+    if (vCheck) vCheck.innerText = "v3.01";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2031,6 +2031,43 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                     this.displayH2HStats(p1Name, p2Name);
 
+                    // GAME OVER H2H STATS (v3.01 Fix - Safely Inside Scope)
+                    const h2hContainer = document.getElementById('h2h-game-over-stats');
+                    if (h2hContainer) {
+                        h2hContainer.innerHTML = '';
+                        if (this.gameMode === 'multi') {
+                            const myName = p1Name.toUpperCase();
+                            const oppName = p2Name.toUpperCase();
+
+                            if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
+                                h2hContainer.innerHTML = '<span style="color:#666; font-size:0.8rem;">Loading H2H...</span>';
+                                fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
+                                    .then(r => r.json()).then(d => {
+                                        if (d.success && d.matches) {
+                                            let w = 0, l = 0, dr = 0;
+                                            d.matches.forEach(m => {
+                                                const u1 = (m.p1_name || "").toUpperCase();
+                                                const u2 = (m.p2_name || "").toUpperCase();
+                                                const winN = (m.winner_name || "").toUpperCase();
+                                                if ((u1 === myName && u2 === oppName) || (u2 === myName && u1 === oppName)) {
+                                                    if (winN === myName) w++;
+                                                    else if (winN === "DRAW" || !winN || winN === "") dr++;
+                                                    else l++;
+                                                }
+                                            });
+                                            h2hContainer.innerHTML = `
+                                                <span style="color:${COLORS.p1}">${myName}: ${w}W</span>
+                                                <span style="color:#aaa; margin:0 10px;">${dr}D</span>
+                                                <span style="color:${COLORS.p2}">${oppName}: ${l}W</span>
+                                            `;
+                                        } else {
+                                            h2hContainer.innerHTML = "";
+                                        }
+                                    }).catch(e => h2hContainer.innerHTML = "");
+                            }
+                        }
+                    }
+
                 } else {
                     // SINGLE PLAYER MODE
                     if (this.currentUser) {
@@ -2056,52 +2093,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 if (btnResume) btnResume.classList.add('hidden');
                 if (dynamicLegend) dynamicLegend.innerHTML = '';
-
-                // GAME OVER H2H STATS (v3.00)
-                const h2hContainer = document.getElementById('h2h-game-over-stats');
-                if (h2hContainer) {
-                    h2hContainer.innerHTML = ''; // Clear previous
-                    if (this.gameMode === 'multi' && this.remotePlayerName) { // Works for Local Multi too if we fake remotePlayerName or check user names
-                        // Actually, for LOCAL MULTI, p1Name and p2Name are available below.
-                        // Reuse the centralized display logic or fetch here.
-                        // Let's use the fetched H2H logic if available.
-
-                        // FETCH FRESH STATS
-                        const myName = p1Name.toUpperCase(); // In Local 2P, P1 is Left, P2 is Right.
-                        const oppName = p2Name.toUpperCase();
-
-                        // Or use auth.php if online? 
-                        // For Local 2P, if users are logged in, we can fetch.
-                        // If Guest vs Guest, meaningless.
-
-                        if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
-                            h2hContainer.innerHTML = "Loading Stats...";
-                            fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
-                                .then(r => r.json()).then(d => {
-                                    if (d.success && d.matches) {
-                                        let w = 0, l = 0, dr = 0;
-                                        d.matches.forEach(m => {
-                                            const u1 = (m.p1_name || "").toUpperCase();
-                                            const u2 = (m.p2_name || "").toUpperCase();
-                                            const winN = (m.winner_name || "").toUpperCase();
-                                            if ((u1 === myName && u2 === oppName) || (u2 === myName && u1 === oppName)) {
-                                                if (winN === myName) w++;
-                                                else if (winN === "DRAW" || !winN) dr++;
-                                                else l++;
-                                            }
-                                        });
-                                        h2hContainer.innerHTML = `
-                                            <span style="color:${COLORS.p1}">${myName}: ${w}W</span>
-                                            <span style="color:#aaa">${dr}D</span>
-                                            <span style="color:${COLORS.p2}">${oppName}: ${l}W</span>
-                                        `;
-                                    } else {
-                                        h2hContainer.innerHTML = "";
-                                    }
-                                });
-                        }
-                    }
-                }
 
 
             } catch (err) {
