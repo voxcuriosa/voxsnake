@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.87";
+    if (vCheck) vCheck.innerText = "v6.88";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2091,7 +2091,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         setTimeout(() => toast.remove(), 3000);
                     } else {
                         console.error("Match Log Failed:", data);
-                        alert("Match Save Failed: " + (data.error || "Unknown Error"));
+                        alert("Match Save Failed: " + (data.error || "Unknown Error") + "\n\nPLEASE REPORT THIS!");
                     }
                 })
                 .catch(e => {

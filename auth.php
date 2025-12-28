@@ -227,6 +227,23 @@ if ($method === 'POST') {
         $duration = isset($input['duration']) ? intval($input['duration']) : 0;
 
         $stmt = $conn->prepare("INSERT INTO matches (p1_name, p2_name, winner_name, duration) VALUES (?, ?, ?, ?)");
+
+        // SELF-HEALING: Ensure Table Exists (v6.88 Fix)
+        if (!$stmt) {
+            if (strpos($conn->error, "doesn't exist") !== false) {
+                $conn->query("CREATE TABLE IF NOT EXISTS matches (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    p1_name VARCHAR(50),
+                    p2_name VARCHAR(50),
+                    winner_name VARCHAR(50),
+                    duration INT,
+                    played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )");
+                // Retry Prepare
+                $stmt = $conn->prepare("INSERT INTO matches (p1_name, p2_name, winner_name, duration) VALUES (?, ?, ?, ?)");
+            }
+        }
+
         $stmt->bind_param("sssi", $p1, $p2, $winner, $duration);
 
         if ($stmt->execute()) {
