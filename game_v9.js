@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.06";
+    if (vCheck) vCheck.innerText = "v3.07";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2080,20 +2080,25 @@ window.addEventListener('DOMContentLoaded', () => {
                             };
 
                             // Initial Render (Session Stats) - Replaces content safely
-                            h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
-                            h2hContainer.style.opacity = "1"; // Force opacity
-                            h2hContainer.style.display = "flex"; // Force flex
+                            const htmlContent = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
+                            h2hContainer.innerHTML = htmlContent;
 
+                            // DEBUG: FORCE VISIBILITY
+                            h2hContainer.style.opacity = "1";
+                            h2hContainer.style.display = "flex";
+                            // h2hContainer.style.border = "1px solid white"; // Visual outline frame
+                            // alert("DEBUG STATS:\n" + htmlContent); // Uncomment if desperate
 
                             // 3. TRY FETCHING DB STATS (If Online / Logged In)
                             if (this.gameMode === 'multi') {
+                                // ... existing fetch logic ...
                                 const myName = sP1;
                                 const oppName = sP2;
-
                                 if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
                                     fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
                                         .then(r => r.json()).then(d => {
                                             if (d.success && d.matches) {
+                                                // ... calc w, l, dr ...
                                                 let w = 0, l = 0, dr = 0;
                                                 d.matches.forEach(m => {
                                                     const u1 = (m.p1_name || "").toUpperCase();
@@ -2105,15 +2110,15 @@ window.addEventListener('DOMContentLoaded', () => {
                                                         else l++;
                                                     }
                                                 });
-                                                // Overwrite with Global Stats if successful
                                                 h2hContainer.innerHTML = renderStats(w, l, dr, myName, oppName);
                                             }
-                                        }).catch(e => { /* Ignore failure, keep Session Stats */ });
+                                        }).catch(e => { });
                                 }
                             }
                         } catch (e) {
                             console.error("H2H Render Error:", e);
-                            h2hContainer.innerText = "STATS ERROR";
+                            h2hContainer.innerText = "STATS ERROR: " + e.message;
+                            h2hContainer.style.color = "red";
                         }
                     }
 
