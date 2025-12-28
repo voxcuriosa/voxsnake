@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v7.03";
+    if (vCheck) vCheck.innerText = "v7.04";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2731,17 +2731,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 const p1Name = p1Label ? p1Label.innerText.trim() : 'PLAYER 1';
                 const p2Name = p2Label ? p2Label.innerText.trim() : 'PLAYER 2';
 
+                console.log(`H2H LOOKUP: [${p1Name}] vs [${p2Name}]`);
                 this.h2hStatsFetched = true;
                 fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_h2h_stats', p1: p1Name, p2: p2Name }) })
                     .then(r => r.json()).then(d => {
-                        console.log("H2H Stats Loaded:", d);
+                        console.log("HUD H2H Result:", d);
                         const p1Stat = document.getElementById('p1-best-score');
                         const p2Stat = document.getElementById('p2-best-score');
 
                         if (d.success && d.stats) {
-                            const w1 = d.stats.p1_wins || 0;
-                            const w2 = d.stats.p2_wins || 0;
-                            const dr = d.stats.draws || 0;
+                            const w1 = parseInt(d.stats.p1_wins) || 0;
+                            const w2 = parseInt(d.stats.p2_wins) || 0;
+                            const dr = parseInt(d.stats.draws) || 0;
+                            console.log(`HUD H2H Final: W:${w1} L:${w2} D:${dr}`);
 
                             if (p1Stat) {
                                 p1Stat.parentElement.style.display = 'flex';

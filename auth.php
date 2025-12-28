@@ -186,14 +186,14 @@ if ($method === 'POST') {
         $p1 = trim(isset($input['p1']) ? $input['p1'] : '');
         $p2 = trim(isset($input['p2']) ? $input['p2'] : '');
 
-        // Count Wins for P1 vs P2 (Case Insensitive v7.03)
+        // Count Wins for P1 vs P2 (Ultra-Robust v7.04)
         $sql = "SELECT 
-                    SUM(CASE WHEN LOWER(winner_name) = LOWER(?) THEN 1 ELSE 0 END) as p1_wins,
-                    SUM(CASE WHEN LOWER(winner_name) = LOWER(?) THEN 1 ELSE 0 END) as p2_wins,
-                    SUM(CASE WHEN LOWER(winner_name) = 'draw' THEN 1 ELSE 0 END) as draws
+                    SUM(CASE WHEN LOWER(TRIM(winner_name)) = LOWER(TRIM(?)) THEN 1 ELSE 0 END) as p1_wins,
+                    SUM(CASE WHEN LOWER(TRIM(winner_name)) = LOWER(TRIM(?)) THEN 1 ELSE 0 END) as p2_wins,
+                    SUM(CASE WHEN LOWER(TRIM(winner_name)) = 'draw' OR winner_name IS NULL OR TRIM(winner_name) = '' THEN 1 ELSE 0 END) as draws
                 FROM matches 
-                WHERE (LOWER(p1_name) = LOWER(?) AND LOWER(p2_name) = LOWER(?)) 
-                   OR (LOWER(p1_name) = LOWER(?) AND LOWER(p2_name) = LOWER(?))";
+                WHERE (LOWER(TRIM(p1_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(p2_name)) = LOWER(TRIM(?))) 
+                   OR (LOWER(TRIM(p1_name)) = LOWER(TRIM(?)) AND LOWER(TRIM(p2_name)) = LOWER(TRIM(?)))";
 
         $stmt = $conn->prepare($sql);
         // Bind: winner1, winner2, p1-p2, p1-p2 (reversed)
@@ -223,9 +223,9 @@ if ($method === 'POST') {
 
     // --- LOG MULTIPLAYER MATCH ---
     else if ($action === 'log_match') {
-        $p1 = isset($input['p1']) ? $input['p1'] : 'Unknown';
-        $p2 = isset($input['p2']) ? $input['p2'] : 'Unknown';
-        $winner = isset($input['winner']) ? $input['winner'] : null;
+        $p1 = trim(isset($input['p1']) ? $input['p1'] : 'Unknown');
+        $p2 = trim(isset($input['p2']) ? $input['p2'] : 'Unknown');
+        $winner = (isset($input['winner']) && $input['winner']) ? trim($input['winner']) : null;
         $duration = isset($input['duration']) ? intval($input['duration']) : 0;
 
         $stmt = $conn->prepare("INSERT INTO matches (p1_name, p2_name, winner_name, duration) VALUES (?, ?, ?, ?)");
