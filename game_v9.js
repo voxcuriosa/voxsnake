@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.11";
+    if (vCheck) vCheck.innerText = "v3.12";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2809,11 +2809,17 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         updateScoreUI() {
-            // Update HUD (v3.00 Fix - Correct IDs)
             const score1 = document.getElementById('score-p1');
             const score2 = document.getElementById('score-p2');
-            if (score1) score1.innerText = (this.snakes[0] ? this.snakes[0].score : 0);
-            if (score2) score2.innerText = (this.snakes[1] ? this.snakes[1].score : 0);
+
+            // SCORING SOURCE (v3.12 Fix)
+            // Client must read from clientState, Host reads from local snakes
+            let sourceConf = (this.isClient && this.clientState && this.clientState.snakes)
+                ? this.clientState.snakes
+                : this.snakes;
+
+            if (score1) score1.innerText = (sourceConf[0] ? sourceConf[0].score : 0);
+            if (score2) score2.innerText = (sourceConf[1] ? sourceConf[1].score : 0);
 
             // REMOTE NAME SYNC (v6.67 Refined)
             const p1Label = document.getElementById('p1-name-label');
@@ -3120,7 +3126,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 walls: this.walls,
                 projectiles: this.projectiles,
                 dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
-                hostName: this.currentUser ? this.currentUser.name : 'HOST_6.64' // v6.64 Debug
+                hostName: this.currentUser ? this.currentUser.name : (this.customName || 'PLAYER 1') // v3.12 Name Fix
             };
 
             try {
