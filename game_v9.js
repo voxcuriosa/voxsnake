@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.08";
+    if (vCheck) vCheck.innerText = "v3.09";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2063,31 +2063,39 @@ window.addEventListener('DOMContentLoaded', () => {
                             const sP1 = (p1Name && p1Name.trim() !== "") ? p1Name.toUpperCase() : "P1";
                             const sP2 = (p2Name && p2Name.trim() !== "") ? p2Name.toUpperCase() : "P2";
 
-                            // Safe Colors (Hardcoded to ensure visibility)
+                            // Safe Colors (Hardcoded to determine visibility)
                             // We ignore global COLORS here to be absolutely sure.
                             const cP1 = '#00ff88';
                             const cP2 = '#00ccff';
 
                             const renderStats = (w, l, d, name1, name2) => {
-                                // Force white text for punctuation/numbers to be safe
+                                // Grid Layout for Cleanliness (v3.09)
                                 return `
-                                    <span style="color:${cP1}; font-weight:bold;">${name1}: ${w}W</span>
-                                    <span style="color:#ffffff; margin:0 5px;">|</span>
-                                    <span style="color:#ffffff; font-size:1rem;">${d}D</span>
-                                    <span style="color:#ffffff; margin:0 5px;">|</span>
-                                    <span style="color:${cP2}; font-weight:bold;">${name2}: ${l}W</span>
+                                    <div style="display:grid; grid-template-columns:1fr auto 1fr; width:100%; align-items:center; gap:10px;">
+                                        <div style="text-align:right; color:${cP1}; font-weight:bold; white-space:nowrap;">
+                                            <div>${name1}</div>
+                                            <div style="font-size:1.2rem;">${w}</div>
+                                        </div>
+                                        
+                                        <div style="text-align:center; color:#888; font-size:0.8rem; display:flex; flex-direction:column;">
+                                            <div style="font-size:1.1rem; color:#fff;">${d}</div>
+                                            <div>DRAW</div>
+                                        </div>
+
+                                        <div style="text-align:left; color:${cP2}; font-weight:bold; white-space:nowrap;">
+                                            <div>${name2}</div>
+                                            <div style="font-size:1.2rem;">${l}</div>
+                                        </div>
+                                    </div>
                                 `;
                             };
 
                             // Initial Render (Session Stats) - Replaces content safely
-                            const htmlContent = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
-                            h2hContainer.innerHTML = htmlContent;
+                            h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
 
-                            // DEBUG: FORCE VISIBILITY
+                            // Restore Standard Visibility (No Red Borders)
                             h2hContainer.style.opacity = "1";
                             h2hContainer.style.display = "flex";
-                            // h2hContainer.style.border = "1px solid white"; // Visual outline frame
-                            // alert("DEBUG STATS:\n" + htmlContent); // Uncomment if desperate
 
                             // 3. TRY FETCHING DB STATS (If Online / Logged In)
                             if (this.gameMode === 'multi') {
@@ -2117,7 +2125,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             }
                         } catch (e) {
                             console.error("H2H Render Error:", e);
-                            h2hContainer.innerText = "STATS ERROR: " + e.message;
+                            h2hContainer.innerText = "STATS ERROR";
                             h2hContainer.style.color = "red";
                         }
                     }
