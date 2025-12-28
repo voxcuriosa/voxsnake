@@ -181,6 +181,19 @@ if ($method === 'POST') {
         }
     }
 
+    // --- GET MATCH HISTORY (Profile) ---
+    else if ($action === 'get_match_history') {
+        $stmt = $conn->prepare("SELECT * FROM matches WHERE p1_name = ? OR p2_name = ? ORDER BY played_at DESC LIMIT 10");
+        $stmt->bind_param("ss", $username, $username);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $matches = [];
+        while ($row = $res->fetch_assoc()) {
+            $matches[] = $row;
+        }
+        echo json_encode(["success" => true, "matches" => $matches]);
+    }
+
     // --- LOG MULTIPLAYER MATCH ---
     else if ($action === 'log_match') {
         $p1 = isset($input['p1']) ? $input['p1'] : 'Unknown';

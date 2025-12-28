@@ -3279,6 +3279,47 @@ window.addEventListener('DOMContentLoaded', () => {
                 console.error("Stats Network Error:", err);
             }
 
+            // FETCH MATCH HISTORY (v6.72)
+            try {
+                const mhRes = await fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'get_match_history', username: this.currentUser.name })
+                });
+                const mhData = await mhRes.json();
+                const mhList = document.getElementById('profile-matches-list');
+
+                if (mhList) {
+                    mhList.innerHTML = ''; // Clear previous
+                    if (mhData.success && mhData.matches && mhData.matches.length > 0) {
+                        mhData.matches.forEach(m => {
+                            const li = document.createElement('li');
+                            li.style.cssText = "display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #333; color:#ccc; font-size:0.85rem;";
+
+                            // Determine Result
+                            const wName = (m.winner_name || "").toUpperCase();
+                            const myName = this.currentUser.name.toUpperCase();
+                            let result = "DRAW";
+                            let color = "#888";
+
+                            if (wName === myName) { result = "WIN"; color = "#00ff00"; }
+                            else if (wName && wName !== "DRAW") { result = "LOSS"; color = "#ff0000"; }
+
+                            const vsName = (m.p1_name.toUpperCase() === myName) ? m.p2_name : m.p1_name;
+                            const date = new Date(m.played_at).toLocaleDateString();
+
+                            li.innerHTML = `
+                                <span><span style="color:${color}; font-weight:bold;">${result}</span> vs ${vsName}</span>
+                                <span style="font-size:0.75rem; color:#666;">${date}</span>
+                            `;
+                            mhList.appendChild(li);
+                        });
+                    } else {
+                        mhList.innerHTML = '<li style="text-align:center; color:#666; padding:10px;">No matches played yet.</li>';
+                    }
+                }
+            } catch (e) { console.error("Match History Error", e); }
+
             // Fetch Match History (v6.57)
             this.fetchProfileMatchHistory(this.currentUser.name);
         }
