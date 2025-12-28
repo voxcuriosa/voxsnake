@@ -367,11 +367,11 @@
                         <button id="btn-profile-back" class="neon-btn secondary"
                             style="width:100%; margin:0 auto;">BACK</button>
                     </div>
-                    <!-- BOTTOM SPACER v7.11 -->
+                    <!-- BOTTOM SPACER v7.12 -->
                     <div style="height:80px;"></div>
                 </div>
 
-                <!-- ADMIN H2H VIEW MODAL (v7.11) -->
+                <!-- ADMIN H2H VIEW MODAL (v7.12) -->
                 <div id="admin-user-stats-modal" class="menu-screen hidden"
                     style="z-index:100; background:rgba(0,0,0,0.95); border:2px solid #00ffff; width:90%; max-width:400px; padding:20px;">
                     <h2 id="admin-modal-title" class="neon-title" style="font-size:1.2rem;">USER STATS</h2>
@@ -460,12 +460,14 @@
                     </h2>
 
                     <!-- Game Over H2H Stats (v3.03 Layout: Restart - H2H - Menu) -->
-                    <div style="display:flex; gap:20px; align-items:center; justify-content:center; flex-wrap:wrap;">
+                    <!-- Game Over H2H Stats (v3.04 Layout: Restart - H2H - Menu [VERTICAL]) -->
+                    <div
+                        style="display:flex; flex-direction:column; gap:15px; align-items:center; justify-content:center; width:100%;">
                         <button id="btn-restart" class="neon-btn">RESTART</button>
 
                         <div id="h2h-game-over-stats"
-                            style="margin:0 10px; font-family:monospace; font-size:1.2rem; display:flex; gap:15px;">
-                            <!-- Populated by JS -->
+                            style="margin:5px 0; font-family:monospace; font-size:1.2rem; display:flex; gap:15px; min-height:1.5rem; align-items:center; justify-content:center;">
+                            <span style="color:#666; font-size:0.8rem;">WAITING FOR STATS...</span>
                         </div>
 
                         <button id="btn-back" class="neon-btn secondary">MENU</button>
@@ -561,7 +563,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=3.03"></script>
+        <script src="game_v9.js?v=3.04"></script>
 </body>
 
 </html>
