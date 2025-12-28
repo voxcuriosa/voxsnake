@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.95";
+    if (vCheck) vCheck.innerText = "v6.96";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1977,74 +1977,66 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                let msg = "GAME OVER";
-                let color = COLORS.p1;
-                if (this.currentUser && this.gameMode === 'single') {
-                    // Feedback for User
-                    msg = "SCORE SAVED!";
-                    color = "#00ffff";
-                }
-
-                // SYNC GAME OVER
+                // BROADCAST SYNC (Host only sends, Client only receives)
                 try {
                     if (this.isHost) {
                         this.broadcastGameOver(winnerIndex);
                     }
                 } catch (e) { console.error("Broadcast Error", e); }
 
-                // SHOW LOGIN PROMPT IF GUEST
+                // SHOW LOGIN PROMPT IF GUEST (ON GAME OVER)
                 if (goLoginBtn) {
-                    if (!this.currentUser) {
-                        goLoginBtn.style.display = 'inline-block';
-                        goLoginBtn.style.width = 'auto'; // Reset width
-                    } else {
-                        goLoginBtn.style.display = 'none';
-                    }
+                    goLoginBtn.style.display = (!this.currentUser) ? 'inline-block' : 'none';
                 }
 
-                // LOG MULTIPLAYER MATCH (Host OR Local 2P)
-                // REPLACED WITH NEW STATS LOGIC (v6.54)
                 if (this.gameMode === 'multi') {
-
+                    // MULTIPLAYER MODE: Resolve names for UI
                     let p1Name = "PLAYER 1";
                     let p2Name = "PLAYER 2";
-
-                    // Resolve Names from HUD
                     const p1Label = document.getElementById('p1-name-label');
                     const p2Label = document.getElementById('p2-name-label');
                     if (p1Label) p1Name = p1Label.innerText;
                     if (p2Label) p2Name = p2Label.innerText;
 
-                    let winnerName = "DRAW";
-                    if (winnerIndex === 0) winnerName = p1Name;
-                    if (winnerIndex === 1) winnerName = p2Name;
+                    if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
+                    else if (winnerIndex === 0) { msg = p1Name + " WINS!"; color = COLORS.p1; }
+                    else { msg = p2Name + " WINS!"; color = COLORS.p2; }
 
-                    // Update Title Logic to match Names
-                    if (winnerText) {
-                        if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
-                        else if (winnerIndex === 0) { msg = p1Name + " WINS!"; color = COLORS.p1; }
-                        else { msg = p2Name + " WINS!"; color = COLORS.p2; }
-                        winnerText.innerText = msg;
-                        winnerText.style.color = color;
-                    }
-
-                    // MATCH STATS
+                    // Only Host records to DB
                     if (!this.isClient) {
                         try {
+                            const winnerName = (winnerIndex === -1) ? "DRAW" : (winnerIndex === 0 ? p1Name : p2Name);
                             this.recordMatchStats(p1Name, p2Name, winnerName);
-                        } catch (e) {
-                            console.error("Record Error: " + e.message);
-                        }
+                        } catch (e) { console.error("Record Match Error:", e); }
                     }
                     this.displayH2HStats(p1Name, p2Name);
 
-
-
                 } else {
-                    // Clear stats container if single player
+                    // SINGLE PLAYER MODE
+                    if (this.currentUser) {
+                        msg = "SCORE SAVED!";
+                        color = "#00ffff";
+                    }
                     const statsContainer = document.getElementById('h2h-stats-container');
                     if (statsContainer) statsContainer.innerHTML = "";
                 }
+
+                // --- SHOW THE SCREEN ---
+                if (winnerText) {
+                    winnerText.innerText = msg;
+                    winnerText.style.color = color;
+                }
+
+                gameOverScreen.classList.remove('hidden');
+                gameOverScreen.classList.remove('nuclear-hidden');
+                gameOverScreen.classList.add('active');
+                gameOverScreen.style.display = 'flex';
+                gameOverScreen.style.opacity = '1';
+                gameOverScreen.style.visibility = 'visible';
+
+                if (btnResume) btnResume.classList.add('hidden');
+                if (dynamicLegend) dynamicLegend.innerHTML = '';
+
 
             } catch (err) {
                 console.error(err);
@@ -3363,46 +3355,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 console.error("Stats Network Error:", err);
             }
 
-            // FETCH MATCH HISTORY (v6.72)
-            try {
-                const mhRes = await fetch('auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_match_history', username: this.currentUser.name })
-                });
-                const mhData = await mhRes.json();
-                const mhList = document.getElementById('profile-matches-list');
-
-                if (mhList) {
-                    mhList.innerHTML = ''; // Clear previous
-                    if (mhData.success && mhData.matches && mhData.matches.length > 0) {
-                        mhData.matches.forEach(m => {
-                            const li = document.createElement('li');
-                            li.style.cssText = "display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #333; color:#ccc; font-size:0.85rem;";
-
-                            // Determine Result
-                            const wName = (m.winner_name || "").toUpperCase();
-                            const myName = this.currentUser.name.toUpperCase();
-                            let result = "DRAW";
-                            let color = "#888";
-
-                            if (wName === myName) { result = "WIN"; color = "#00ff00"; }
-                            else if (wName && wName !== "DRAW") { result = "LOSS"; color = "#ff0000"; }
-
-                            const vsName = (m.p1_name.toUpperCase() === myName) ? m.p2_name : m.p1_name;
-                            const date = new Date(m.played_at).toLocaleDateString();
-
-                            li.innerHTML = `
-                                <span><span style="color:${color}; font-weight:bold;">${result}</span> vs ${vsName}</span>
-                                <span style="font-size:0.75rem; color:#666;">${date}</span>
-                            `;
-                            mhList.appendChild(li);
-                        });
-                    } else {
-                        mhList.innerHTML = '<li style="text-align:center; color:#666; padding:10px;">No matches played yet.</li>';
-                    }
-                }
-            } catch (e) { console.error("Match History Error", e); }
 
             // Fetch Match History (v6.57)
             this.fetchProfileMatchHistory(this.currentUser.name);
@@ -3415,31 +3367,34 @@ window.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = "Loading matches...";
 
             try {
-                const res = await fetch(`api_matches.php?action=history&player=${encodeURIComponent(username)}`);
+                const res = await fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_match_history', username: username })
+                });
                 const data = await res.json();
 
-                if (data.history && data.history.length > 0) {
+                if (data.success && data.matches && data.matches.length > 0) {
                     let html = '<ul style="list-style:none; padding:0; margin:0;">';
-                    data.history.forEach(m => {
-                        const isP1 = (m.p1_name === username);
+                    data.matches.forEach(m => {
+                        const myName = username.toUpperCase();
+                        const wName = (m.winner_name || "").toUpperCase();
+                        const isP1 = (m.p1_name.toUpperCase() === myName);
                         const opponent = isP1 ? m.p2_name : m.p1_name;
-                        const won = (m.winner_name === username);
-                        const draw = (m.winner_name === 'DRAW' || !m.winner_name);
 
-                        let resultColor = won ? '#00ff88' : '#ff5555';
-                        let resultText = "WON";
-                        if (draw) { resultColor = '#aaa'; resultText = "DRAW"; }
-                        else if (!won) { resultText = "LOST"; }
+                        let resultText = "DRAW";
+                        let resultColor = '#aaa';
 
-                        // Format Date (Simple)
+                        if (wName === myName) { resultText = "WON"; resultColor = "#00ff88"; }
+                        else if (wName && wName !== "DRAW") { resultText = "LOST"; resultColor = "#ff5555"; }
+
                         const date = new Date(m.played_at).toLocaleDateString();
 
                         html += `
-                            <li style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #444;">
-                                <span>vs <span style="color:#00ffff">${opponent}</span></span>
+                            <li style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333;">
+                                <span>vs <span style="color:#00ffff">${opponent.toUpperCase()}</span></span>
                                 <div>
                                     <span style="color:${resultColor}; font-weight:bold; margin-right:10px;">${resultText}</span>
-                                    <span style="color:#666; font-size:0.7rem;">${date}</span>
+                                    <span style="color:#666; font-size:0.75rem;">${date}</span>
                                 </div>
                             </li>
                         `;
@@ -3447,11 +3402,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     html += '</ul>';
                     container.innerHTML = html;
                 } else {
-                    container.innerHTML = "No matches played yet.";
+                    container.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">No matches played yet.</div>';
                 }
             } catch (e) {
-                console.error("Profile History Error", e);
-                container.innerHTML = "Failed to load history.";
+                console.error("Profile History Error:", e);
+                container.innerHTML = "";
             }
         }
 
