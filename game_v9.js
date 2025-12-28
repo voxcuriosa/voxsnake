@@ -1893,7 +1893,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         gameOver(winnerIndex, skipNameEntry = false) {
             try {
-                alert(`DIAGNOSTIC (v6.77):\nMode: ${this.gameMode}\nHost: ${this.isHost}\nClient: ${this.isClient}`);
                 this.isRunning = false;
                 this.isPaused = false;
 
@@ -2045,12 +2044,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // MATCH STATS
+                    // MATCH STATS
                     if (!this.isClient) {
-                        // FORCE ALERT (v6.78)
-                        alert("DEBUG: Recording Match...\n" + p1Name + " vs " + p2Name);
+                        // Only Host records.
                         try {
                             this.recordMatchStats(p1Name, p2Name, winnerName);
-                        } catch (e) { alert("Record Error: " + e.message); }
+                        } catch (e) { console.error("Record Error: " + e.message); }
                     }
                     this.displayH2HStats(p1Name, p2Name);
 
@@ -2067,10 +2066,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         recordMatchStats(p1, p2, winner, duration) {
-            // DEBUG: Confirm function entry (User reported "No popup")
-            alert("DEBUG: Recording Match...\n" + p1 + " vs " + p2);
             console.log("LOGGING MATCH:", p1, p2, winner, duration);
-            fetch('auth.php', { // Using auth.php as we added the action there
+            fetch('auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2090,1347 +2087,1392 @@ window.addEventListener('DOMContentLoaded', () => {
                         setTimeout(() => toast.remove(), 3000);
                     } else {
                         console.error("Match Log Failed:", data);
+                        alert("Match Save Failed: " + (data.error || "Unknown Error"));
                     }
                 })
-                .catch(e => console.error("Log Match Error:", e));
+                .catch(e => {
+                    console.error("Log Match Error:", e);
+                    alert("Network Error Saving Match: " + e.message);
+                });
+        }
+    }).then(res => res.json())
+    .then(data => {
+        if (data && data.success) {
+            const toast = document.createElement('div');
+            toast.innerText = "MATCH SAVED! 💾";
+            toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00ff00; color:black; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999;";
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        } else {
+            console.error("Match Log Failed:", data);
+            alert("Match Save Failed: " + (data.error || "Unknown Error"));
+        }
+    })
+    .catch(e => {
+        console.error("Log Match Error:", e);
+        alert("Network Error Saving Match: " + e.message);
+    });
+        }
+method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+    action: 'log_match',
+    p1: p1,
+    p2: p2,
+    winner: winner,
+    duration: duration
+})
+            }).then(res => res.json())
+    .then(data => {
+        if (data && data.success) {
+            const toast = document.createElement('div');
+            toast.innerText = "MATCH SAVED! 💾";
+            toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00ff00; color:black; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999;";
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        } else {
+            console.error("Match Log Failed:", data);
+        }
+    })
+    .catch(e => console.error("Log Match Error:", e));
         }
 
-        displayH2HStats(p1, p2) {
-            const container = document.getElementById('winner-text'); // Append below winner text
-            if (!container) return;
+displayH2HStats(p1, p2) {
+    const container = document.getElementById('winner-text'); // Append below winner text
+    if (!container) return;
 
-            // Check if stats box exists, if not create
-            let statsBox = document.getElementById('h2h-stats-box');
-            if (!statsBox) {
-                statsBox = document.createElement('div');
-                statsBox.id = 'h2h-stats-box';
-                statsBox.style.cssText = "margin-top:10px; font-size:1rem; color:#ccc;";
-                container.parentNode.insertBefore(statsBox, container.nextSibling);
-            }
-            statsBox.innerHTML = "Loading Stats...";
+    // Check if stats box exists, if not create
+    let statsBox = document.getElementById('h2h-stats-box');
+    if (!statsBox) {
+        statsBox = document.createElement('div');
+        statsBox.id = 'h2h-stats-box';
+        statsBox.style.cssText = "margin-top:10px; font-size:1rem; color:#ccc;";
+        container.parentNode.insertBefore(statsBox, container.nextSibling);
+    }
+    statsBox.innerHTML = "Loading Stats...";
 
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'get_h2h_stats', p1: p1, p2: p2 })
-            }).then(r => r.json()).then(d => {
-                if (d.success && d.stats) {
-                    statsBox.innerHTML = `
+    fetch('auth.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'get_h2h_stats', p1: p1, p2: p2 })
+    }).then(r => r.json()).then(d => {
+        if (d.success && d.stats) {
+            statsBox.innerHTML = `
                         <div style="display:flex; gap:20px; justify-content:center;">
                             <span style="color:${COLORS.p1}">${p1}: ${d.stats.p1_wins} Wins</span>
                             <span style="color:#888">Draws: ${d.stats.draws}</span>
                             <span style="color:${COLORS.p2}">${p2}: ${d.stats.p2_wins} Wins</span>
                         </div>
                     `;
+        } else {
+            statsBox.innerHTML = "";
+        }
+    }).catch(e => console.error(e));
+}
+
+saveScoreToBackend(name, score, type) {
+    return fetch('api.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, score: score, type: type })
+    })
+        .then(res => res.json())
+        .catch(err => {
+            console.error("Save Score Error:", err);
+            return { success: false };
+        });
+}
+
+broadcastGameOver(winnerIndex) {
+    if (!this.isHost || !this.conn || !this.conn.open) return;
+
+    // REDUNDANT BROADCAST (Fix for Mobile Packet Loss)
+    // Send 10 times over 1 second to ensure delivery
+    let count = 0;
+    const spam = setInterval(() => {
+        if (this.conn && this.conn.open) {
+            try {
+                this.conn.send({ type: 'gameover', winner: winnerIndex });
+            } catch (e) { }
+        }
+        count++;
+        if (count >= 10) clearInterval(spam);
+    }, 100);
+}
+
+// Fix Restart Button visibility for Client
+// Ensure buttons are rebound or checked in GameOver
+triggerShieldEffect(x, y) {
+    // Visual Flare
+    const div = document.createElement('div');
+    div.innerText = "SHIELD BLOCKED!";
+    div.style.position = 'absolute';
+    div.style.left = (x * GRID_SIZE) + 'px';
+    div.style.top = (y * GRID_SIZE) + 'px';
+    div.style.color = '#fff';
+    div.style.fontWeight = 'bold';
+    div.style.textShadow = '0 0 5px #000';
+    div.style.zIndex = '100';
+    div.style.pointerEvents = 'none';
+    div.className = 'shield-broken-msg'; // Add class for animation
+    document.body.appendChild(div);
+
+    // Animate up and fade
+    let op = 1;
+    let top = y * GRID_SIZE;
+    const anim = setInterval(() => {
+        op -= 0.05;
+        top -= 1;
+        div.style.opacity = op;
+        div.style.top = top + 'px';
+        if (op <= 0) {
+            clearInterval(anim);
+            div.remove();
+        }
+    }, 50);
+
+    // Flash Screen
+    const flash = document.createElement('div');
+    flash.style.position = 'fixed';
+    flash.style.top = '0'; flash.style.left = '0';
+    flash.style.width = '100vw'; flash.style.height = '100vh';
+    flash.style.background = 'rgba(255, 255, 255, 0.3)';
+    flash.style.zIndex = '99';
+    flash.style.pointerEvents = 'none';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 100);
+}
+
+update() {
+    if (this.isPaused) return;
+    // CRITICAL FIX: Client is a PURE RENDERER. Do not run local physics!
+    if (this.isClient) return;
+
+    const now = Date.now();
+    // Use true delta time for smoother timers if framerate dips
+    // Note: this.lastTime is updated at end of loop(), but here we need delta for logic.
+    // Actually, the loop runs at `currentSpeed` interval!
+    // Standard loop: requestAnimationFrame runs freely?
+    // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
+    // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
+    // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower!
+    // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
+    const tickRate = this.currentSpeed;
+
+    if (this.speedEffectTimer > 0) {
+        this.speedEffectTimer -= tickRate;
+        if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+    }
+
+    // Power-Up Lifespan
+    const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
+    this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
+
+    // Food Lifespan (Respawn Red Food/All Food after 30s)
+    const foodCountBefore = this.foods.length;
+    this.foods = this.foods.filter(f => now - (f.createdAt || now) < 30000); // 30s limit
+    // Respawn if any expired
+    if (this.foods.length < foodCountBefore) {
+        this.spawnFood();
+    }
+
+    // Capture OLD HEADS (Before Move) for Swap Detection
+    const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
+    const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
+
+    // Update Snakes (Collision & Movement)
+    this.snakes.forEach(s => {
+        // SLOW EFFECT (Individual)
+        if (s.slowTimer > 0) {
+            s.slowTimer -= tickRate;
+            // Skip every other frame to simulate 50% speed
+            s.slowSkip = !s.slowSkip;
+            if (s.slowSkip) return;
+        }
+
+        s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
+            // Shield Break Callback (Particles?)
+            this.triggerShieldEffect(x, y);
+        });
+    });
+
+    this.updateProjectiles(this.currentSpeed); // Move projectiles
+
+    this.checkCollisions();    // GAME OVER CHECKS - ROBUST MODE
+    // Use snake count to ensure Multi physics runs even if gameMode string is glitchy
+    if (this.snakes.length === 1) {
+        if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
+            this.gameOver();
+            return;
+        }
+    } else if (this.snakes.length > 1) {
+        let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+        let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+
+        // Head-to-Head/Body collision logic
+        const h1 = this.snakes[0].body[0];
+        const h2 = this.snakes[1].body[0];
+        const headOn = (h1.x === h2.x && h1.y === h2.y);
+
+        // P1 Head hits P2 Body
+        // If Head-on, we skip index 0 here and handle it in specific block
+        this.snakes[1].body.forEach((seg, idx) => {
+            if (headOn && idx === 0) return; // Handled later
+
+            if (h1.x === seg.x && h1.y === seg.y) {
+                // COLLISION!
+                if (this.snakes[0].hasShield) {
+                    // P1 has shield: Survives crash
+                    this.snakes[0].hasShield = false;
+                    this.triggerShieldEffect(h1.x, h1.y);
+
+                    // SHIELD SMASH: If P2 does NOT have shield (and we hit body)
+                    // P2 dies! (Shield as weapon)
+                    if (!this.snakes[1].hasShield) {
+                        p2d = true;
+                    }
+                    // If P2 HAS shield, P2 survives, P1 shield just broke. 
+                    // (Bouncing off Armor)
                 } else {
-                    statsBox.innerHTML = "";
-                }
-            }).catch(e => console.error(e));
-        }
-
-        saveScoreToBackend(name, score, type) {
-            return fetch('api.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, score: score, type: type })
-            })
-                .then(res => res.json())
-                .catch(err => {
-                    console.error("Save Score Error:", err);
-                    return { success: false };
-                });
-        }
-
-        broadcastGameOver(winnerIndex) {
-            if (!this.isHost || !this.conn || !this.conn.open) return;
-
-            // REDUNDANT BROADCAST (Fix for Mobile Packet Loss)
-            // Send 10 times over 1 second to ensure delivery
-            let count = 0;
-            const spam = setInterval(() => {
-                if (this.conn && this.conn.open) {
-                    try {
-                        this.conn.send({ type: 'gameover', winner: winnerIndex });
-                    } catch (e) { }
-                }
-                count++;
-                if (count >= 10) clearInterval(spam);
-            }, 100);
-        }
-
-        // Fix Restart Button visibility for Client
-        // Ensure buttons are rebound or checked in GameOver
-        triggerShieldEffect(x, y) {
-            // Visual Flare
-            const div = document.createElement('div');
-            div.innerText = "SHIELD BLOCKED!";
-            div.style.position = 'absolute';
-            div.style.left = (x * GRID_SIZE) + 'px';
-            div.style.top = (y * GRID_SIZE) + 'px';
-            div.style.color = '#fff';
-            div.style.fontWeight = 'bold';
-            div.style.textShadow = '0 0 5px #000';
-            div.style.zIndex = '100';
-            div.style.pointerEvents = 'none';
-            div.className = 'shield-broken-msg'; // Add class for animation
-            document.body.appendChild(div);
-
-            // Animate up and fade
-            let op = 1;
-            let top = y * GRID_SIZE;
-            const anim = setInterval(() => {
-                op -= 0.05;
-                top -= 1;
-                div.style.opacity = op;
-                div.style.top = top + 'px';
-                if (op <= 0) {
-                    clearInterval(anim);
-                    div.remove();
-                }
-            }, 50);
-
-            // Flash Screen
-            const flash = document.createElement('div');
-            flash.style.position = 'fixed';
-            flash.style.top = '0'; flash.style.left = '0';
-            flash.style.width = '100vw'; flash.style.height = '100vh';
-            flash.style.background = 'rgba(255, 255, 255, 0.3)';
-            flash.style.zIndex = '99';
-            flash.style.pointerEvents = 'none';
-            document.body.appendChild(flash);
-            setTimeout(() => flash.remove(), 100);
-        }
-
-        update() {
-            if (this.isPaused) return;
-            // CRITICAL FIX: Client is a PURE RENDERER. Do not run local physics!
-            if (this.isClient) return;
-
-            const now = Date.now();
-            // Use true delta time for smoother timers if framerate dips
-            // Note: this.lastTime is updated at end of loop(), but here we need delta for logic.
-            // Actually, the loop runs at `currentSpeed` interval!
-            // Standard loop: requestAnimationFrame runs freely?
-            // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
-            // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
-            // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower!
-            // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
-            const tickRate = this.currentSpeed;
-
-            if (this.speedEffectTimer > 0) {
-                this.speedEffectTimer -= tickRate;
-                if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
-            }
-
-            // Power-Up Lifespan
-            const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
-            this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
-
-            // Food Lifespan (Respawn Red Food/All Food after 30s)
-            const foodCountBefore = this.foods.length;
-            this.foods = this.foods.filter(f => now - (f.createdAt || now) < 30000); // 30s limit
-            // Respawn if any expired
-            if (this.foods.length < foodCountBefore) {
-                this.spawnFood();
-            }
-
-            // Capture OLD HEADS (Before Move) for Swap Detection
-            const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
-            const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
-
-            // Update Snakes (Collision & Movement)
-            this.snakes.forEach(s => {
-                // SLOW EFFECT (Individual)
-                if (s.slowTimer > 0) {
-                    s.slowTimer -= tickRate;
-                    // Skip every other frame to simulate 50% speed
-                    s.slowSkip = !s.slowSkip;
-                    if (s.slowSkip) return;
-                }
-
-                s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
-                    // Shield Break Callback (Particles?)
-                    this.triggerShieldEffect(x, y);
-                });
-            });
-
-            this.updateProjectiles(this.currentSpeed); // Move projectiles
-
-            this.checkCollisions();    // GAME OVER CHECKS - ROBUST MODE
-            // Use snake count to ensure Multi physics runs even if gameMode string is glitchy
-            if (this.snakes.length === 1) {
-                if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
-                    this.gameOver();
-                    return;
-                }
-            } else if (this.snakes.length > 1) {
-                let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-                let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-
-                // Head-to-Head/Body collision logic
-                const h1 = this.snakes[0].body[0];
-                const h2 = this.snakes[1].body[0];
-                const headOn = (h1.x === h2.x && h1.y === h2.y);
-
-                // P1 Head hits P2 Body
-                // If Head-on, we skip index 0 here and handle it in specific block
-                this.snakes[1].body.forEach((seg, idx) => {
-                    if (headOn && idx === 0) return; // Handled later
-
-                    if (h1.x === seg.x && h1.y === seg.y) {
-                        // COLLISION!
-                        if (this.snakes[0].hasShield) {
-                            // P1 has shield: Survives crash
-                            this.snakes[0].hasShield = false;
-                            this.triggerShieldEffect(h1.x, h1.y);
-
-                            // SHIELD SMASH: If P2 does NOT have shield (and we hit body)
-                            // P2 dies! (Shield as weapon)
-                            if (!this.snakes[1].hasShield) {
-                                p2d = true;
-                            }
-                            // If P2 HAS shield, P2 survives, P1 shield just broke. 
-                            // (Bouncing off Armor)
-                        } else {
-                            // No shield: P1 dies
-                            p1d = true;
-                        }
-                    }
-                });
-
-                // P2 Head hits P1 Body
-                this.snakes[0].body.forEach((seg, idx) => {
-                    if (headOn && idx === 0) return;
-
-                    if (h2.x === seg.x && h2.y === seg.y) {
-                        if (this.snakes[1].hasShield) {
-                            this.snakes[1].hasShield = false;
-                            this.triggerShieldEffect(h2.x, h2.y);
-                            if (!this.snakes[0].hasShield) {
-                                p1d = true; // SMASH
-                            }
-                        } else {
-                            p2d = true;
-                        }
-                    }
-                });
-
-                // HEAD-ON COLLISION (Same Tile)
-                if (headOn) {
-                    const p1Shield = this.snakes[0].hasShield;
-                    const p2Shield = this.snakes[1].hasShield;
-
-                    if (p1Shield && p2Shield) {
-                        // BOUNCE / MUTUAL BREAK
-                        this.snakes[0].hasShield = false;
-                        this.snakes[1].hasShield = false;
-                        this.triggerShieldEffect(h1.x, h1.y);
-                        // No deaths
-                    } else if (p1Shield) {
-                        // P1 Wins
-                        this.snakes[0].hasShield = false;
-                        this.triggerShieldEffect(h1.x, h1.y);
-                        p2d = true;
-                    } else if (p2Shield) {
-                        // P2 Wins
-                        this.snakes[1].hasShield = false;
-                        this.triggerShieldEffect(h1.x, h1.y);
-                        p1d = true;
-                    } else {
-                        // NO SHIELDS: MUTUAL DESTRUCTION
-                        p1d = true;
-                        p2d = true;
-                    }
-                }
-
-                // HEAD SWAP COLLISION (Passed through each other)
-                if (oldH1 && oldH2) {
-                    if (h1.x === oldH2.x && h1.y === oldH2.y && h2.x === oldH1.x && h2.y === oldH1.y) {
-                        // FIX: Check Shields!
-                        const p1Shield = this.snakes[0].hasShield;
-                        const p2Shield = this.snakes[1].hasShield;
-
-                        if (p1Shield && p2Shield) {
-                            this.snakes[0].hasShield = false;
-                            this.snakes[1].hasShield = false;
-                            this.triggerShieldEffect(h1.x, h1.y);
-                        } else if (p1Shield) {
-                            p2d = true;
-                            this.snakes[0].hasShield = false;
-                        } else if (p2Shield) {
-                            p1d = true;
-                            this.snakes[1].hasShield = false;
-                        } else {
-                            p1d = true; p2d = true;
-                            console.log("CRITICAL: HEAD SWAP DETECTED! FORCE GAME OVER.");
-                        }
-                    }
-                }
-
-                if (p1d && p2d) {
-                    this.triggerDeath(this.snakes[0]);
-                    this.triggerDeath(this.snakes[1]);
-                    this.gameOver(-1); return;
-                }
-                if (p1d) {
-                    this.triggerDeath(this.snakes[0]);
-                    this.gameOver(1); return;
-                }
-                if (p2d) {
-                    this.triggerDeath(this.snakes[1]);
-                    this.gameOver(0); return;
+                    // No shield: P1 dies
+                    p1d = true;
                 }
             }
+        });
+
+        // P2 Head hits P1 Body
+        this.snakes[0].body.forEach((seg, idx) => {
+            if (headOn && idx === 0) return;
+
+            if (h2.x === seg.x && h2.y === seg.y) {
+                if (this.snakes[1].hasShield) {
+                    this.snakes[1].hasShield = false;
+                    this.triggerShieldEffect(h2.x, h2.y);
+                    if (!this.snakes[0].hasShield) {
+                        p1d = true; // SMASH
+                    }
+                } else {
+                    p2d = true;
+                }
+            }
+        });
+
+        // HEAD-ON COLLISION (Same Tile)
+        if (headOn) {
+            const p1Shield = this.snakes[0].hasShield;
+            const p2Shield = this.snakes[1].hasShield;
+
+            if (p1Shield && p2Shield) {
+                // BOUNCE / MUTUAL BREAK
+                this.snakes[0].hasShield = false;
+                this.snakes[1].hasShield = false;
+                this.triggerShieldEffect(h1.x, h1.y);
+                // No deaths
+            } else if (p1Shield) {
+                // P1 Wins
+                this.snakes[0].hasShield = false;
+                this.triggerShieldEffect(h1.x, h1.y);
+                p2d = true;
+            } else if (p2Shield) {
+                // P2 Wins
+                this.snakes[1].hasShield = false;
+                this.triggerShieldEffect(h1.x, h1.y);
+                p1d = true;
+            } else {
+                // NO SHIELDS: MUTUAL DESTRUCTION
+                p1d = true;
+                p2d = true;
+            }
+        }
+
+        // HEAD SWAP COLLISION (Passed through each other)
+        if (oldH1 && oldH2) {
+            if (h1.x === oldH2.x && h1.y === oldH2.y && h2.x === oldH1.x && h2.y === oldH1.y) {
+                // FIX: Check Shields!
+                const p1Shield = this.snakes[0].hasShield;
+                const p2Shield = this.snakes[1].hasShield;
+
+                if (p1Shield && p2Shield) {
+                    this.snakes[0].hasShield = false;
+                    this.snakes[1].hasShield = false;
+                    this.triggerShieldEffect(h1.x, h1.y);
+                } else if (p1Shield) {
+                    p2d = true;
+                    this.snakes[0].hasShield = false;
+                } else if (p2Shield) {
+                    p1d = true;
+                    this.snakes[1].hasShield = false;
+                } else {
+                    p1d = true; p2d = true;
+                    console.log("CRITICAL: HEAD SWAP DETECTED! FORCE GAME OVER.");
+                }
+            }
+        }
+
+        if (p1d && p2d) {
+            this.triggerDeath(this.snakes[0]);
+            this.triggerDeath(this.snakes[1]);
+            this.gameOver(-1); return;
+        }
+        if (p1d) {
+            this.triggerDeath(this.snakes[0]);
+            this.gameOver(1); return;
+        }
+        if (p2d) {
+            this.triggerDeath(this.snakes[1]);
+            this.gameOver(0); return;
+        }
+    }
 
 
 
 
-            // Timed Powerup Spawning (Independent of eating)
-            if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
-                this.spawnPowerUp();
-                this.lastPowerUpTime = now;
-                // Randomize next delay: 5s to 15s
-                this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+    // Timed Powerup Spawning (Independent of eating)
+    if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
+        this.spawnPowerUp();
+        this.lastPowerUpTime = now;
+        // Randomize next delay: 5s to 15s
+        this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+    }
+
+    // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
+    this.snakes.forEach(s => {
+        let ate = false;
+        let ateIndex = -1;
+
+        for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
+            const f = this.foods[fIdx];
+
+            // Regular Eat
+            if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                ate = true;
+                ateIndex = fIdx;
+                break;
             }
 
-            // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
-            this.snakes.forEach(s => {
-                let ate = false;
-                let ateIndex = -1;
+            // Magnet Logic (Pull closest food)
+            else if (s.magnetTimer > 0) {
+                const head = s.body[0];
+                const dx = f.x - head.x;
+                const dy = f.y - head.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
 
-                for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
-                    const f = this.foods[fIdx];
+                if (dist < 15 && dist > 0) {
+                    // Pull food closer
+                    if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
+                    else f.y -= Math.sign(dy);
 
-                    // Regular Eat
+                    // Check capture
                     if (s.body[0].x === f.x && s.body[0].y === f.y) {
                         ate = true;
                         ateIndex = fIdx;
                         break;
                     }
+                }
+            }
+        }
 
-                    // Magnet Logic (Pull closest food)
-                    else if (s.magnetTimer > 0) {
-                        const head = s.body[0];
-                        const dx = f.x - head.x;
-                        const dy = f.y - head.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (ate && ateIndex !== -1) {
+            // Remove the eaten piece
+            this.foods.splice(ateIndex, 1);
 
-                        if (dist < 15 && dist > 0) {
-                            // Pull food closer
-                            if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
-                            else f.y -= Math.sign(dy);
+            this.baseSpeed *= 0.99;
+            if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
 
-                            // Check capture
-                            if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                                ate = true;
-                                ateIndex = fIdx;
-                                break;
+            s.growPending++;
+            s.score++;
+            this.totalFoodEaten++;
+
+            // Trigger FX for eating
+            this.sound.play('eat');
+            this.particles.explode(s.body[0].x, s.body[0].y, COLORS.food, 5);
+
+            // Spawn Replacement right away to keep map full
+            this.spawnFood();
+            // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
+            // User asked for "random", not "just when eaten".
+            // But maybe small chance?
+            if (Math.random() < 0.2) this.spawnPowerUp();
+
+            this.updateScoreUI();
+        }
+    });
+
+    // Eat Powerups
+    this.snakes.forEach((s, sIdx) => {
+        const head = s.body[0];
+        for (let i = 0; i < this.powerups.length; i++) {
+            const p = this.powerups[i];
+            if (head.x === p.x && head.y === p.y) {
+                this.applyPowerUp(s, p.type, sIdx);
+                this.powerups.splice(i, 1);
+                break;
+            }
+        }
+    });
+}
+
+triggerDeath(snake) {
+    if (!snake) return;
+    this.sound.play('die');
+    const head = snake.body[0];
+    this.particles.explode(head.x, head.y, snake.color, 20);
+    this.triggerShake(10);
+
+    // HAPTIC FEEDBACK (Android only usually)
+    if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(400); // Long vibration for death
+    }
+}
+
+checkCollisions() {
+    // 5. Check Projectile Collisions
+    if (this.projectiles.length > 0) {
+        for (let pIndex = this.projectiles.length - 1; pIndex >= 0; pIndex--) {
+            const p = this.projectiles[pIndex];
+            let projectileHit = false;
+
+            for (let s of this.snakes) {
+                // Don't hit owner
+                if (s.id === p.ownerId) continue;
+
+                // Projectile Hit Snake
+                s.body.forEach((seg, i) => {
+                    if (p.x === seg.x && p.y === seg.y) {
+                        // Hit!
+                        this.sound.play('explode');
+                        this.particles.explode(p.x, p.y, COLORS.orange, 15);
+                        this.triggerShake(5);
+
+                        // Haptic Hit
+                        if (window.navigator && window.navigator.vibrate) {
+                            window.navigator.vibrate(100);
+                        }
+
+                        projectileHit = true; // Mark projectile for removal
+
+                        // Head Hit
+                        if (i === 0) {
+                            if (s.hasShield) {
+                                s.hasShield = false;
+                                this.triggerShieldEffect(p.x, p.y);
+                            } else {
+                                s.isDead = true;
+                            }
+                        } else { // Body Hit
+                            if (s.hasShield) {
+                                s.hasShield = false;
+                                this.triggerShieldEffect(p.x, p.y);
+                            } else {
+                                s.isDead = true;
                             }
                         }
                     }
-                }
-
-                if (ate && ateIndex !== -1) {
-                    // Remove the eaten piece
-                    this.foods.splice(ateIndex, 1);
-
-                    this.baseSpeed *= 0.99;
-                    if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
-
-                    s.growPending++;
-                    s.score++;
-                    this.totalFoodEaten++;
-
-                    // Trigger FX for eating
-                    this.sound.play('eat');
-                    this.particles.explode(s.body[0].x, s.body[0].y, COLORS.food, 5);
-
-                    // Spawn Replacement right away to keep map full
-                    this.spawnFood();
-                    // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
-                    // User asked for "random", not "just when eaten".
-                    // But maybe small chance?
-                    if (Math.random() < 0.2) this.spawnPowerUp();
-
-                    this.updateScoreUI();
-                }
-            });
-
-            // Eat Powerups
-            this.snakes.forEach((s, sIdx) => {
-                const head = s.body[0];
-                for (let i = 0; i < this.powerups.length; i++) {
-                    const p = this.powerups[i];
-                    if (head.x === p.x && head.y === p.y) {
-                        this.applyPowerUp(s, p.type, sIdx);
-                        this.powerups.splice(i, 1);
-                        break;
-                    }
-                }
-            });
-        }
-
-        triggerDeath(snake) {
-            if (!snake) return;
-            this.sound.play('die');
-            const head = snake.body[0];
-            this.particles.explode(head.x, head.y, snake.color, 20);
-            this.triggerShake(10);
-
-            // HAPTIC FEEDBACK (Android only usually)
-            if (window.navigator && window.navigator.vibrate) {
-                window.navigator.vibrate(400); // Long vibration for death
-            }
-        }
-
-        checkCollisions() {
-            // 5. Check Projectile Collisions
-            if (this.projectiles.length > 0) {
-                for (let pIndex = this.projectiles.length - 1; pIndex >= 0; pIndex--) {
-                    const p = this.projectiles[pIndex];
-                    let projectileHit = false;
-
-                    for (let s of this.snakes) {
-                        // Don't hit owner
-                        if (s.id === p.ownerId) continue;
-
-                        // Projectile Hit Snake
-                        s.body.forEach((seg, i) => {
-                            if (p.x === seg.x && p.y === seg.y) {
-                                // Hit!
-                                this.sound.play('explode');
-                                this.particles.explode(p.x, p.y, COLORS.orange, 15);
-                                this.triggerShake(5);
-
-                                // Haptic Hit
-                                if (window.navigator && window.navigator.vibrate) {
-                                    window.navigator.vibrate(100);
-                                }
-
-                                projectileHit = true; // Mark projectile for removal
-
-                                // Head Hit
-                                if (i === 0) {
-                                    if (s.hasShield) {
-                                        s.hasShield = false;
-                                        this.triggerShieldEffect(p.x, p.y);
-                                    } else {
-                                        s.isDead = true;
-                                    }
-                                } else { // Body Hit
-                                    if (s.hasShield) {
-                                        s.hasShield = false;
-                                        this.triggerShieldEffect(p.x, p.y);
-                                    } else {
-                                        s.isDead = true;
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    if (projectileHit) {
-                        this.projectiles.splice(pIndex, 1); // Destroy projectile
-                    }
-                }
-            }
-
-            // 6. Check Deaths
-            const deadSnakes = this.snakes.filter(s => s.isDead);
-            if (deadSnakes.length > 0) {
-                // Trigger FX for all dead snakes
-                deadSnakes.forEach(s => this.triggerDeath(s));
-
-                // Determine winner based on who is dead
-                if (this.snakes.length === 1) {
-                    this.gameOver(0); // Single player, player 1 died
-                } else if (this.snakes.length > 1) {
-                    const p1Dead = this.snakes[0].isDead;
-                    const p2Dead = this.snakes[1].isDead;
-
-                    if (p1Dead && p2Dead) {
-                        this.gameOver(-1); // Draw
-                    } else if (p1Dead) {
-                        this.gameOver(1); // Player 1 died, Player 2 wins
-                    } else if (p2Dead) {
-                        this.gameOver(0); // Player 2 died, Player 1 wins
-                    }
-                }
-            }
-        }
-
-        applyPowerUp(user, type, userIdx) {
-            const enemy = this.snakes[userIdx === 0 ? 1 : 0];
-            const isMulti = this.gameMode === 'multi';
-
-            // Trigger FX for pickup
-            this.sound.play('pickup');
-
-            switch (type) {
-                case 'blind':
-                    if (isMulti && enemy) {
-                        // PC: 2 seconds (Invisible Snake)
-                        // Mobile: 5 seconds (Black Screen) - though invisible snake works there too if logic applied
-                        // User specifically asked for this change for 2P PC.
-                        const duration = (this.platform === 'pc') ? 2000 : 5000;
-                        enemy.blindTimer = duration;
-                    }
-                    break;
-                case 'ghost':
-                    if (isMulti && enemy) {
-                        enemy.wallTrapTimer += 10000;
-                        // Feedback? Done in Draw/Legend
-                    } else {
-                        user.ghostTimer += 5000;
-                    }
-                    break;
-                case 'speed':
-                    this.currentSpeed = 50;
-                    this.speedEffectTimer = 3000;
-                    break;
-                case 'slow':
-                    if (isMulti && enemy) {
-                        enemy.slowTimer = 10000; // 10s Slow for Enemy
-                    } else {
-                        this.currentSpeed = 200; // Global Slow Motion (1P)
-                        this.speedEffectTimer = 5000;
-                    }
-                    break;
-                case 'bomb':
-                    this.spawnFood();
-                    this.powerups = [];
-                    this.walls = [];
-                    this.projectiles = []; // Clear Torpedoes too!
-                    break;
-                case 'shield':
-                    user.hasShield = true;
-                    // Fix: Initialize if 0, otherwise add
-                    if (user.shieldTimer <= 0) user.shieldTimer = 10000;
-                    else user.shieldTimer += 10000;
-                    break;
-                case 'magnet': user.magnetTimer += 10000; break;
-                case 'wall':
-                    const tail = user.body[user.body.length - 1];
-                    // Multi: Add Owner ID for Safe Passage
-                    // Single: No owner needed (or same logic works if ID matches)
-                    this.walls.push({ x: tail.x, y: tail.y, ownerId: user.id });
-                    break;
-                case 'ice':
-                    if (isMulti && enemy) enemy.frozenTimer = 2000;
-                    break;
-                case 'switch':
-                    if (isMulti && enemy) {
-                        const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
-                        const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
-                    }
-                    break;
-                case 'torpedo':
-                    user.hasTorpedo = true;
-                    this.fireTorpedo(user); // Auto-fire immediately
-                    break;
-            }
-        }
-
-        fireTorpedo(user) {
-            if (!user.hasTorpedo) return;
-            user.hasTorpedo = false;
-            this.sound.play('shoot');
-            this.triggerShake(2);
-
-            // Directions to shoot (Up, Down, Left, Right)
-            const head = user.body[0];
-            const dirs = [
-                { x: 0, y: -1 }, // Up
-                { x: 0, y: 1 },  // Down
-                { x: -1, y: 0 }, // Left
-                { x: 1, y: 0 }   // Right
-            ];
-
-            dirs.forEach(d => {
-                this.projectiles.push({
-                    x: head.x + d.x,
-                    y: head.y + d.y,
-                    dx: d.x,
-                    dy: d.y,
-                    ownerId: user.id,
-                    color: user.color, // Stamped color
-                    createdAt: Date.now()
                 });
-            });
-        }
-
-        updateProjectiles(tickRate) {
-            const now = Date.now();
-            for (let i = this.projectiles.length - 1; i >= 0; i--) {
-                const p = this.projectiles[i];
-
-                // Move (Grid based movement?)
-                // To make it smooth/fast, maybe move every tick?
-                // Let's move 1 grid per tick for now.
-                p.x += p.dx;
-                p.y += p.dy;
-
-                // WRAPPING LOGIC (Through Walls)
-                const gridW = CANVAS_WIDTH / GRID_SIZE;
-                const gridH = CANVAS_HEIGHT / GRID_SIZE;
-
-                if (p.x < 0) p.x = Math.floor(gridW - 1);
-                if (p.x >= gridW) p.x = 0;
-                if (p.y < 0) p.y = Math.floor(gridH - 1);
-                if (p.y >= gridH) p.y = 0;
-
-                // Wall Collision: IGNORED (Ghost Projectiles)
-                // if (this.walls.some(w => w.x === p.x && w.y === p.y)) {
-                //    this.projectiles.splice(i, 1);
-                //    continue;
-                // }
-
-                // Timeout (5 seconds)
-                if (now - p.createdAt > 5000) {
-                    this.projectiles.splice(i, 1);
-                    continue;
-                }
+            }
+            if (projectileHit) {
+                this.projectiles.splice(pIndex, 1); // Destroy projectile
             }
         }
+    }
 
-        updateScoreUI() {
-            if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
-            if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
+    // 6. Check Deaths
+    const deadSnakes = this.snakes.filter(s => s.isDead);
+    if (deadSnakes.length > 0) {
+        // Trigger FX for all dead snakes
+        deadSnakes.forEach(s => this.triggerDeath(s));
 
-            // REMOTE NAME SYNC (v6.66 Refined)
-            const p1Label = document.getElementById('p1-name-label');
-            const p2Label = document.getElementById('p2-name-label');
+        // Determine winner based on who is dead
+        if (this.snakes.length === 1) {
+            this.gameOver(0); // Single player, player 1 died
+        } else if (this.snakes.length > 1) {
+            const p1Dead = this.snakes[0].isDead;
+            const p2Dead = this.snakes[1].isDead;
 
-            if (this.isClient) {
-                // I AM PLAYER 2 (Client)
-                // P1 is Host (Remote), P2 is Me (Local)
-                if (this.remotePlayerName && p1Label) p1Label.innerText = this.remotePlayerName;
-                if (p2Label) p2Label.innerText = this.currentUser ? this.currentUser.name : "Guest";
+            if (p1Dead && p2Dead) {
+                this.gameOver(-1); // Draw
+            } else if (p1Dead) {
+                this.gameOver(1); // Player 1 died, Player 2 wins
+            } else if (p2Dead) {
+                this.gameOver(0); // Player 2 died, Player 1 wins
+            }
+        }
+    }
+}
 
+applyPowerUp(user, type, userIdx) {
+    const enemy = this.snakes[userIdx === 0 ? 1 : 0];
+    const isMulti = this.gameMode === 'multi';
+
+    // Trigger FX for pickup
+    this.sound.play('pickup');
+
+    switch (type) {
+        case 'blind':
+            if (isMulti && enemy) {
+                // PC: 2 seconds (Invisible Snake)
+                // Mobile: 5 seconds (Black Screen) - though invisible snake works there too if logic applied
+                // User specifically asked for this change for 2P PC.
+                const duration = (this.platform === 'pc') ? 2000 : 5000;
+                enemy.blindTimer = duration;
+            }
+            break;
+        case 'ghost':
+            if (isMulti && enemy) {
+                enemy.wallTrapTimer += 10000;
+                // Feedback? Done in Draw/Legend
             } else {
-                // I AM PLAYER 1 (Host/Local)
-                // P1 is Me (Local), P2 is Client (Remote)
-                if (p1Label) p1Label.innerText = this.currentUser ? this.currentUser.name : "Guest";
-                if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
+                user.ghostTimer += 5000;
             }
-
-            // H2H STATS (v6.74)
-            if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
-                const p1Name = this.isClient ? this.remotePlayerName : (this.currentUser ? this.currentUser.name : 'PLAYER 1');
-                const p2Name = this.isClient ? (this.currentUser ? this.currentUser.name : 'PLAYER 2') : this.remotePlayerName;
-
-                if (p1Name && p2Name && p1Name !== "PLAYER 1" && p2Name !== "PLAYER 2") {
-                    this.h2hStatsFetched = true;
-                    fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_h2h_stats', p1: p1Name, p2: p2Name }) })
-                        .then(r => r.json()).then(d => {
-                            if (d.success && d.stats) {
-                                const p1Stat = document.getElementById('p1-best-score');
-                                const p2Stat = document.getElementById('p2-best-score'); // Ensure this element is visible
-
-                                if (p1Stat) {
-                                    p1Stat.parentElement.style.display = 'flex'; // Ensure container visible
-                                    p1Stat.innerText = `Wins: ${d.stats.p1_wins}`;
-                                    p1Stat.style.fontSize = '0.8rem';
-                                    p1Stat.style.color = '#fff';
-                                }
-                                // Client needs p2 element too if we want symmetrical display, but usually only p1-best exists in HTML
-                                // We might need to inject p2-best-score dynamically if it doesn't exist
-                            }
-                        }).catch(console.error);
-                }
-            }
-        }
-
-        updateDynamicLegend() {
-            if (!dynamicLegend) return;
-
-            // Force Redraw Every Frame (No Caching)
-            dynamicLegend.innerHTML = '';
-
-            let renderPowerups = this.powerups;
-            if (this.isClient && this.clientState) {
-                renderPowerups = this.clientState.powerups;
-            }
-
-            // 1. Draw Static Powerups (Available on board)
-            if (renderPowerups) {
-                renderPowerups.forEach(p => {
-                    const def = this.powerUpTypes[p.type];
-                    const div = document.createElement('div');
-                    div.className = 'legend-item';
-                    div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
-                    dynamicLegend.appendChild(div);
-                });
-            }
-
-            // 2. Draw Active Timers (Ghost Style: Individual rows)
-            const s1 = this.snakes[0];
-            const s2 = this.snakes[1];
-
-            // Helper to add a timer row
-            const addTimer = (type, seconds, labelOverride = null) => {
-                const def = this.powerUpTypes[type];
-                const label = labelOverride || def.label;
-                const div = document.createElement('div');
-                div.className = 'legend-item'; // Use standard class
-                // Add specific styling to make it pop
-                div.style.color = '#fff';
-                div.style.fontWeight = 'bold';
-                div.style.textShadow = '0 0 5px ' + def.color;
-
-                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
-                dynamicLegend.appendChild(div);
-            };
-
-            if (this.gameMode === 'single' && s1) {
-                if (s1.ghostTimer > 0) {
-                    addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
-                }
-                if (s1.shieldTimer > 0) {
-                    addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
-                }
-                if (s1.magnetTimer > 0) {
-                    addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
-                }
-                // Speed (Global)
-                if (this.speedEffectTimer > 0) {
-                    const isSlow = this.currentSpeed > this.baseSpeed;
-                    addTimer(isSlow ? 'slow' : 'speed', Math.ceil(this.speedEffectTimer / 1000), isSlow ? "MATRIX" : "SPEED");
-                }
-            } else if (this.gameMode === 'multi') {
-                // Multi Mode Legends
-
-                // Wall Trap (Ghost)
-                if (s1 && s1.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
-                if (s2 && s2.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
-
-                // Slow (Targeted)
-                if (s1 && s1.slowTimer > 0) addTimer('slow', Math.ceil(s1.slowTimer / 1000), "P1 SLOWED");
-                if (s2 && s2.slowTimer > 0) addTimer('slow', Math.ceil(s2.slowTimer / 1000), "P2 SLOWED");
-
-                // Speed (Global - applies to frame rate usually, but logic is tricky in 2P)
-                // Actually 'speed' powerup in 2P sets this.currentSpeed too!
-                if (this.speedEffectTimer > 0) {
-                    addTimer('speed', Math.ceil(this.speedEffectTimer / 1000), "SPEED UP");
-                }
-
-                // Magnet
-                if (s1 && s1.magnetTimer > 0) addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "P1 MAGNET");
-                if (s2 && s2.magnetTimer > 0) addTimer('magnet', Math.ceil(s2.magnetTimer / 1000), "P2 MAGNET");
-
-                // Shield
-                if (s1 && s1.shieldTimer > 0) addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "P1 SHIELD");
-                if (s2 && s2.shieldTimer > 0) addTimer('shield', Math.ceil(s2.shieldTimer / 1000), "P2 SHIELD");
-            }
-        }
-
-        draw() {
-
-            const ctx = this.ctx;
-            ctx.fillStyle = COLORS.bg; // Clear with BG color
-            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-            // 1. UPDATE FX
-            if (this.shakeTimer > 0) {
-                this.shakeX = (Math.random() - 0.5) * 10;
-                this.shakeY = (Math.random() - 0.5) * 10;
-                this.shakeTimer--;
+            break;
+        case 'speed':
+            this.currentSpeed = 50;
+            this.speedEffectTimer = 3000;
+            break;
+        case 'slow':
+            if (isMulti && enemy) {
+                enemy.slowTimer = 10000; // 10s Slow for Enemy
             } else {
-                this.shakeX = 0;
-                this.shakeY = 0;
+                this.currentSpeed = 200; // Global Slow Motion (1P)
+                this.speedEffectTimer = 5000;
             }
-            this.particles.update();
+            break;
+        case 'bomb':
+            this.spawnFood();
+            this.powerups = [];
+            this.walls = [];
+            this.projectiles = []; // Clear Torpedoes too!
+            break;
+        case 'shield':
+            user.hasShield = true;
+            // Fix: Initialize if 0, otherwise add
+            if (user.shieldTimer <= 0) user.shieldTimer = 10000;
+            else user.shieldTimer += 10000;
+            break;
+        case 'magnet': user.magnetTimer += 10000; break;
+        case 'wall':
+            const tail = user.body[user.body.length - 1];
+            // Multi: Add Owner ID for Safe Passage
+            // Single: No owner needed (or same logic works if ID matches)
+            this.walls.push({ x: tail.x, y: tail.y, ownerId: user.id });
+            break;
+        case 'ice':
+            if (isMulti && enemy) enemy.frozenTimer = 2000;
+            break;
+        case 'switch':
+            if (isMulti && enemy) {
+                const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
+                const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
+            }
+            break;
+        case 'torpedo':
+            user.hasTorpedo = true;
+            this.fireTorpedo(user); // Auto-fire immediately
+            break;
+    }
+}
 
-            // (Redundant ctx and clear removed)
+fireTorpedo(user) {
+    if (!user.hasTorpedo) return;
+    user.hasTorpedo = false;
+    this.sound.play('shoot');
+    this.triggerShake(2);
 
-            ctx.save();
-            ctx.translate(this.shakeX, this.shakeY);
+    // Directions to shoot (Up, Down, Left, Right)
+    const head = user.body[0];
+    const dirs = [
+        { x: 0, y: -1 }, // Up
+        { x: 0, y: 1 },  // Down
+        { x: -1, y: 0 }, // Left
+        { x: 1, y: 0 }   // Right
+    ];
 
-            // 2. MAIN WORLD RENDER (Protected)
-            try {
-                let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
-                let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
-                let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
-                let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
-                let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
+    dirs.forEach(d => {
+        this.projectiles.push({
+            x: head.x + d.x,
+            y: head.y + d.y,
+            dx: d.x,
+            dy: d.y,
+            ownerId: user.id,
+            color: user.color, // Stamped color
+            createdAt: Date.now()
+        });
+    });
+}
 
-                // Walls / Mines
-                renderWalls.forEach(w => {
-                    this.drawRect(w.x, w.y, COLORS.brown);
-                    let borderColor = '#ff0000';
-                    if (w.ownerId) {
-                        const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
-                        if (ownerSnake) borderColor = ownerSnake.color;
-                        else borderColor = '#ffff00';
+updateProjectiles(tickRate) {
+    const now = Date.now();
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+        const p = this.projectiles[i];
 
-                        // Mine Dot
-                        ctx.fillStyle = borderColor;
-                        const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
-                        const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
-                        ctx.beginPath();
-                        ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                    ctx.strokeStyle = borderColor;
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-                });
+        // Move (Grid based movement?)
+        // To make it smooth/fast, maybe move every tick?
+        // Let's move 1 grid per tick for now.
+        p.x += p.dx;
+        p.y += p.dy;
 
-                // Particles
-                this.particles.draw(ctx);
+        // WRAPPING LOGIC (Through Walls)
+        const gridW = CANVAS_WIDTH / GRID_SIZE;
+        const gridH = CANVAS_HEIGHT / GRID_SIZE;
 
-                // Powerups
-                renderPowerups.forEach(p => {
-                    const def = this.powerUpTypes[p.type];
-                    this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-                });
+        if (p.x < 0) p.x = Math.floor(gridW - 1);
+        if (p.x >= gridW) p.x = 0;
+        if (p.y < 0) p.y = Math.floor(gridH - 1);
+        if (p.y >= gridH) p.y = 0;
 
-                // Foods
-                renderFoods.forEach(f => {
-                    this.drawRect(f.x, f.y, COLORS.food, true);
-                });
+        // Wall Collision: IGNORED (Ghost Projectiles)
+        // if (this.walls.some(w => w.x === p.x && w.y === p.y)) {
+        //    this.projectiles.splice(i, 1);
+        //    continue;
+        // }
 
-                // Projectiles
-                renderProjectiles.forEach(p => {
-                    const size = GRID_SIZE / 2;
-                    const center = (GRID_SIZE - size) / 2;
-                    ctx.fillStyle = p.color || '#FFD700'; // Use owner color or gold
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = p.color || '#FFD700';
-                    ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
-                    ctx.shadowBlur = 0;
-                });
+        // Timeout (5 seconds)
+        if (now - p.createdAt > 5000) {
+            this.projectiles.splice(i, 1);
+            continue;
+        }
+    }
+}
 
-                // Snakes
-                renderSnakes.forEach(snake => {
-                    if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) return;
+updateScoreUI() {
+    if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
+    if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
 
-                    const snakeColor = snake.hasShield ? COLORS.silver :
-                        snake.ghostTimer > 0 ? COLORS.ghost :
-                            snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+    // REMOTE NAME SYNC (v6.66 Refined)
+    const p1Label = document.getElementById('p1-name-label');
+    const p2Label = document.getElementById('p2-name-label');
 
-                    // Blind visual
-                    if (this.gameMode === 'single') {
-                        const container = document.querySelector('.game-container');
-                        if (container) {
-                            if (snake.blindTimer > 0) container.classList.add('blinded');
-                            else container.classList.remove('blinded');
+    if (this.isClient) {
+        // I AM PLAYER 2 (Client)
+        // P1 is Host (Remote), P2 is Me (Local)
+        if (this.remotePlayerName && p1Label) p1Label.innerText = this.remotePlayerName;
+        if (p2Label) p2Label.innerText = this.currentUser ? this.currentUser.name : "Guest";
+
+    } else {
+        // I AM PLAYER 1 (Host/Local)
+        // P1 is Me (Local), P2 is Client (Remote)
+        if (p1Label) p1Label.innerText = this.currentUser ? this.currentUser.name : "Guest";
+        if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
+    }
+
+    // H2H STATS (v6.74)
+    if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
+        const p1Name = this.isClient ? this.remotePlayerName : (this.currentUser ? this.currentUser.name : 'PLAYER 1');
+        const p2Name = this.isClient ? (this.currentUser ? this.currentUser.name : 'PLAYER 2') : this.remotePlayerName;
+
+        if (p1Name && p2Name && p1Name !== "PLAYER 1" && p2Name !== "PLAYER 2") {
+            this.h2hStatsFetched = true;
+            fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_h2h_stats', p1: p1Name, p2: p2Name }) })
+                .then(r => r.json()).then(d => {
+                    if (d.success && d.stats) {
+                        const p1Stat = document.getElementById('p1-best-score');
+                        const p2Stat = document.getElementById('p2-best-score'); // Ensure this element is visible
+
+                        if (p1Stat) {
+                            p1Stat.parentElement.style.display = 'flex'; // Ensure container visible
+                            p1Stat.innerText = `Wins: ${d.stats.p1_wins}`;
+                            p1Stat.style.fontSize = '0.8rem';
+                            p1Stat.style.color = '#fff';
                         }
+                        // Client needs p2 element too if we want symmetrical display, but usually only p1-best exists in HTML
+                        // We might need to inject p2-best-score dynamically if it doesn't exist
                     }
+                }).catch(console.error);
+        }
+    }
+}
 
-                    snake.body.forEach((segment, index) => {
-                        if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-                        else ctx.fillStyle = snakeColor;
-                        this.drawRect(segment.x, segment.y, ctx.fillStyle, index === 0);
-                    });
-                });
+updateDynamicLegend() {
+    if (!dynamicLegend) return;
 
-                // Legend Override
-                if (this.gameMode === 'single') {
-                    this.powerUpTypes['ghost'].label = 'GHOST';
-                    this.powerUpTypes['wall'].label = 'Mine';
-                } else {
-                    this.powerUpTypes['ghost'].label = 'Wall Trap';
-                    this.powerUpTypes['wall'].label = 'Mine';
-                }
-                this.updateDynamicLegend();
+    // Force Redraw Every Frame (No Caching)
+    dynamicLegend.innerHTML = '';
 
-                // Clean UI
-                if (this.isRunning) {
-                    const uiLayer = document.getElementById('ui-layer');
-                    if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
-                    const join = document.getElementById('join-screen');
-                    if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
-                }
+    let renderPowerups = this.powerups;
+    if (this.isClient && this.clientState) {
+        renderPowerups = this.clientState.powerups;
+    }
 
-            } catch (fatalE) {
-                console.error("FATAL DRAW ERROR:", fatalE);
-            }
+    // 1. Draw Static Powerups (Available on board)
+    if (renderPowerups) {
+        renderPowerups.forEach(p => {
+            const def = this.powerUpTypes[p.type];
+            const div = document.createElement('div');
+            div.className = 'legend-item';
+            div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+            dynamicLegend.appendChild(div);
+        });
+    }
 
-            ctx.restore();
+    // 2. Draw Active Timers (Ghost Style: Individual rows)
+    const s1 = this.snakes[0];
+    const s2 = this.snakes[1];
+
+    // Helper to add a timer row
+    const addTimer = (type, seconds, labelOverride = null) => {
+        const def = this.powerUpTypes[type];
+        const label = labelOverride || def.label;
+        const div = document.createElement('div');
+        div.className = 'legend-item'; // Use standard class
+        // Add specific styling to make it pop
+        div.style.color = '#fff';
+        div.style.fontWeight = 'bold';
+        div.style.textShadow = '0 0 5px ' + def.color;
+
+        div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+        dynamicLegend.appendChild(div);
+    };
+
+    if (this.gameMode === 'single' && s1) {
+        if (s1.ghostTimer > 0) {
+            addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+        }
+        if (s1.shieldTimer > 0) {
+            addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+        }
+        if (s1.magnetTimer > 0) {
+            addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+        }
+        // Speed (Global)
+        if (this.speedEffectTimer > 0) {
+            const isSlow = this.currentSpeed > this.baseSpeed;
+            addTimer(isSlow ? 'slow' : 'speed', Math.ceil(this.speedEffectTimer / 1000), isSlow ? "MATRIX" : "SPEED");
+        }
+    } else if (this.gameMode === 'multi') {
+        // Multi Mode Legends
+
+        // Wall Trap (Ghost)
+        if (s1 && s1.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
+        if (s2 && s2.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
+
+        // Slow (Targeted)
+        if (s1 && s1.slowTimer > 0) addTimer('slow', Math.ceil(s1.slowTimer / 1000), "P1 SLOWED");
+        if (s2 && s2.slowTimer > 0) addTimer('slow', Math.ceil(s2.slowTimer / 1000), "P2 SLOWED");
+
+        // Speed (Global - applies to frame rate usually, but logic is tricky in 2P)
+        // Actually 'speed' powerup in 2P sets this.currentSpeed too!
+        if (this.speedEffectTimer > 0) {
+            addTimer('speed', Math.ceil(this.speedEffectTimer / 1000), "SPEED UP");
         }
 
-        drawRect(x, y, color, glow = false) {
-            const ctx = this.ctx;
-            ctx.fillStyle = color;
-            if (glow) {
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = color;
-            } else {
-                ctx.shadowBlur = 0;
+        // Magnet
+        if (s1 && s1.magnetTimer > 0) addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "P1 MAGNET");
+        if (s2 && s2.magnetTimer > 0) addTimer('magnet', Math.ceil(s2.magnetTimer / 1000), "P2 MAGNET");
+
+        // Shield
+        if (s1 && s1.shieldTimer > 0) addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "P1 SHIELD");
+        if (s2 && s2.shieldTimer > 0) addTimer('shield', Math.ceil(s2.shieldTimer / 1000), "P2 SHIELD");
+    }
+}
+
+draw() {
+
+    const ctx = this.ctx;
+    ctx.fillStyle = COLORS.bg; // Clear with BG color
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // 1. UPDATE FX
+    if (this.shakeTimer > 0) {
+        this.shakeX = (Math.random() - 0.5) * 10;
+        this.shakeY = (Math.random() - 0.5) * 10;
+        this.shakeTimer--;
+    } else {
+        this.shakeX = 0;
+        this.shakeY = 0;
+    }
+    this.particles.update();
+
+    // (Redundant ctx and clear removed)
+
+    ctx.save();
+    ctx.translate(this.shakeX, this.shakeY);
+
+    // 2. MAIN WORLD RENDER (Protected)
+    try {
+        let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
+        let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
+        let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
+        let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+        let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
+
+        // Walls / Mines
+        renderWalls.forEach(w => {
+            this.drawRect(w.x, w.y, COLORS.brown);
+            let borderColor = '#ff0000';
+            if (w.ownerId) {
+                const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
+                if (ownerSnake) borderColor = ownerSnake.color;
+                else borderColor = '#ffff00';
+
+                // Mine Dot
+                ctx.fillStyle = borderColor;
+                const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
+                const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
+                ctx.beginPath();
+                ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
+                ctx.fill();
             }
-            ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+        });
+
+        // Particles
+        this.particles.draw(ctx);
+
+        // Powerups
+        renderPowerups.forEach(p => {
+            const def = this.powerUpTypes[p.type];
+            this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+        });
+
+        // Foods
+        renderFoods.forEach(f => {
+            this.drawRect(f.x, f.y, COLORS.food, true);
+        });
+
+        // Projectiles
+        renderProjectiles.forEach(p => {
+            const size = GRID_SIZE / 2;
+            const center = (GRID_SIZE - size) / 2;
+            ctx.fillStyle = p.color || '#FFD700'; // Use owner color or gold
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = p.color || '#FFD700';
+            ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
             ctx.shadowBlur = 0;
+        });
+
+        // Snakes
+        renderSnakes.forEach(snake => {
+            if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) return;
+
+            const snakeColor = snake.hasShield ? COLORS.silver :
+                snake.ghostTimer > 0 ? COLORS.ghost :
+                    snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+
+            // Blind visual
+            if (this.gameMode === 'single') {
+                const container = document.querySelector('.game-container');
+                if (container) {
+                    if (snake.blindTimer > 0) container.classList.add('blinded');
+                    else container.classList.remove('blinded');
+                }
+            }
+
+            snake.body.forEach((segment, index) => {
+                if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                else ctx.fillStyle = snakeColor;
+                this.drawRect(segment.x, segment.y, ctx.fillStyle, index === 0);
+            });
+        });
+
+        // Legend Override
+        if (this.gameMode === 'single') {
+            this.powerUpTypes['ghost'].label = 'GHOST';
+            this.powerUpTypes['wall'].label = 'Mine';
+        } else {
+            this.powerUpTypes['ghost'].label = 'Wall Trap';
+            this.powerUpTypes['wall'].label = 'Mine';
+        }
+        this.updateDynamicLegend();
+
+        // Clean UI
+        if (this.isRunning) {
+            const uiLayer = document.getElementById('ui-layer');
+            if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
+            const join = document.getElementById('join-screen');
+            if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
         }
 
-        broadcastState() {
-            if (!this.isHost || !this.conn || !this.conn.open) return;
+    } catch (fatalE) {
+        console.error("FATAL DRAW ERROR:", fatalE);
+    }
 
-            const state = {
-                type: 'state',
-                snakes: this.snakes,
-                foods: this.foods,
-                powerups: this.powerups,
-                walls: this.walls,
-                projectiles: this.projectiles,
-                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
-                hostName: this.currentUser ? this.currentUser.name : 'HOST_6.64' // v6.64 Debug
-            };
+    ctx.restore();
+}
 
+drawRect(x, y, color, glow = false) {
+    const ctx = this.ctx;
+    ctx.fillStyle = color;
+    if (glow) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = color;
+    } else {
+        ctx.shadowBlur = 0;
+    }
+    ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+    ctx.shadowBlur = 0;
+}
+
+broadcastState() {
+    if (!this.isHost || !this.conn || !this.conn.open) return;
+
+    const state = {
+        type: 'state',
+        snakes: this.snakes,
+        foods: this.foods,
+        powerups: this.powerups,
+        walls: this.walls,
+        projectiles: this.projectiles,
+        dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
+        hostName: this.currentUser ? this.currentUser.name : 'HOST_6.64' // v6.64 Debug
+    };
+
+    try {
+        this.conn.send(state);
+    } catch (e) {
+        console.error("Broadcast Error:", e);
+    }
+}
+
+loop(timestamp) {
+    // 1. SCHEDULE NEXT FRAME IMMEDIATELY
+    this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+
+    // 2. LOGIC
+    if (this.isRunning && !this.isPaused) {
+        if (timestamp - this.lastTime > this.currentSpeed) {
+            this.lastTime = timestamp;
             try {
-                this.conn.send(state);
+                this.update();
             } catch (e) {
-                console.error("Broadcast Error:", e);
+                console.error("UPDATE CRASH:", e);
+                this.isRunning = false;
+            }
+            if (this.isHost) {
+                try { this.broadcastState(); } catch (e) { }
             }
         }
+    }
 
-        loop(timestamp) {
-            // 1. SCHEDULE NEXT FRAME IMMEDIATELY
-            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
+    // 3. RENDER
+    this.draw();
+}
+// --- AUTHENTICATION SYSTEM (v5.7) ---
 
-            // 2. LOGIC
-            if (this.isRunning && !this.isPaused) {
-                if (timestamp - this.lastTime > this.currentSpeed) {
-                    this.lastTime = timestamp;
-                    try {
-                        this.update();
-                    } catch (e) {
-                        console.error("UPDATE CRASH:", e);
-                        this.isRunning = false;
-                    }
-                    if (this.isHost) {
-                        try { this.broadcastState(); } catch (e) { }
-                    }
-                }
+bindAuthListeners() {
+    // LOGIN SCREEN
+    const loginScreen = document.getElementById('login-screen');
+    const btnDoLogin = document.getElementById('btn-do-login');
+    const btnGotoReg = document.getElementById('btn-goto-register');
+    const btnGotoRecover = document.getElementById('btn-goto-recover');
+    const btnLoginBack = document.getElementById('btn-login-back');
+
+    if (btnDoLogin) btnDoLogin.onclick = () => {
+        const u = document.getElementById('login-user').value;
+        const p = document.getElementById('login-pass').value;
+        this.login(u, p);
+    };
+    if (btnGotoReg) btnGotoReg.onclick = () => {
+        loginScreen.classList.add('hidden');
+        const reg = document.getElementById('register-screen');
+        reg.classList.remove('hidden');
+        reg.classList.remove('nuclear-hidden');
+        reg.style.display = 'block';
+        reg.classList.add('active');
+    };
+    if (btnGotoRecover) btnGotoRecover.onclick = () => {
+        loginScreen.classList.add('hidden');
+        const rec = document.getElementById('recovery-screen');
+        rec.classList.remove('hidden');
+        rec.classList.remove('nuclear-hidden');
+        rec.style.display = 'block';
+        rec.classList.add('active');
+    };
+    if (btnLoginBack) btnLoginBack.onclick = () => {
+        loginScreen.classList.add('hidden');
+        this.showMainMenu();
+    };
+
+    // REGISTER SCREEN
+    const regScreen = document.getElementById('register-screen');
+    const btnDoReg = document.getElementById('btn-do-register');
+    const btnRegBack = document.getElementById('btn-register-back');
+    const regSecQ = document.getElementById('reg-sec-q');
+    const regCustomQ = document.getElementById('reg-custom-q');
+
+    if (regSecQ) {
+        regSecQ.onchange = () => {
+            if (regSecQ.value === 'custom') {
+                regCustomQ.classList.remove('hidden');
+                regCustomQ.focus();
+            } else {
+                regCustomQ.classList.add('hidden');
             }
+        };
+    }
 
-            // 3. RENDER
-            this.draw();
+    if (btnDoReg) btnDoReg.onclick = () => {
+        const u = document.getElementById('reg-user').value;
+        const p = document.getElementById('reg-pass').value;
+        let sq = document.getElementById('reg-sec-q').value;
+        const sa = document.getElementById('reg-sec-a').value;
+
+        if (sq === 'custom') {
+            sq = document.getElementById('reg-custom-q').value.trim();
+            if (!sq) { alert("Please enter your custom question!"); return; }
         }
-        // --- AUTHENTICATION SYSTEM (v5.7) ---
 
-        bindAuthListeners() {
-            // LOGIN SCREEN
-            const loginScreen = document.getElementById('login-screen');
-            const btnDoLogin = document.getElementById('btn-do-login');
-            const btnGotoReg = document.getElementById('btn-goto-register');
-            const btnGotoRecover = document.getElementById('btn-goto-recover');
-            const btnLoginBack = document.getElementById('btn-login-back');
+        this.register(u, p, sq, sa);
+    };
+    if (btnRegBack) btnRegBack.onclick = () => {
+        regScreen.classList.add('hidden');
+        loginScreen.classList.remove('hidden');
+        loginScreen.classList.remove('nuclear-hidden');
+        loginScreen.style.display = 'block';
+    };
 
-            if (btnDoLogin) btnDoLogin.onclick = () => {
-                const u = document.getElementById('login-user').value;
-                const p = document.getElementById('login-pass').value;
-                this.login(u, p);
-            };
-            if (btnGotoReg) btnGotoReg.onclick = () => {
-                loginScreen.classList.add('hidden');
-                const reg = document.getElementById('register-screen');
-                reg.classList.remove('hidden');
-                reg.classList.remove('nuclear-hidden');
-                reg.style.display = 'block';
-                reg.classList.add('active');
-            };
-            if (btnGotoRecover) btnGotoRecover.onclick = () => {
-                loginScreen.classList.add('hidden');
-                const rec = document.getElementById('recovery-screen');
-                rec.classList.remove('hidden');
-                rec.classList.remove('nuclear-hidden');
-                rec.style.display = 'block';
-                rec.classList.add('active');
-            };
-            if (btnLoginBack) btnLoginBack.onclick = () => {
-                loginScreen.classList.add('hidden');
-                this.showMainMenu();
-            };
+    // NEW AUTH LISTENERS (Name Entry Screen)
+    const btnQuickLogin = document.getElementById('btn-quick-login');
+    const btnQuickRegister = document.getElementById('btn-quick-register');
 
-            // REGISTER SCREEN
-            const regScreen = document.getElementById('register-screen');
-            const btnDoReg = document.getElementById('btn-do-register');
-            const btnRegBack = document.getElementById('btn-register-back');
-            const regSecQ = document.getElementById('reg-sec-q');
-            const regCustomQ = document.getElementById('reg-custom-q');
+    if (btnQuickLogin) {
+        btnQuickLogin.onclick = (e) => {
+            // Prevent default form submission if any
+            e.preventDefault();
 
-            if (regSecQ) {
-                regSecQ.onchange = () => {
-                    if (regSecQ.value === 'custom') {
-                        regCustomQ.classList.remove('hidden');
-                        regCustomQ.focus();
-                    } else {
-                        regCustomQ.classList.add('hidden');
-                    }
-                };
+            this.hideAllScreens();
+            this.returnToNameEntry = true; // Flag to return
+            if (loginScreen) {
+                loginScreen.classList.remove('hidden'); loginScreen.classList.remove('nuclear-hidden');
+                loginScreen.classList.add('active'); loginScreen.style.display = 'block';
             }
+        };
+    }
+    if (btnQuickRegister) {
+        btnQuickRegister.onclick = (e) => {
+            e.preventDefault();
 
-            if (btnDoReg) btnDoReg.onclick = () => {
-                const u = document.getElementById('reg-user').value;
-                const p = document.getElementById('reg-pass').value;
-                let sq = document.getElementById('reg-sec-q').value;
-                const sa = document.getElementById('reg-sec-a').value;
+            this.hideAllScreens();
+            this.returnToNameEntry = true; // Flag to return
+            if (regScreen) {
+                regScreen.classList.remove('hidden'); regScreen.classList.remove('nuclear-hidden');
+                regScreen.classList.add('active'); regScreen.style.display = 'block';
+            }
+        };
+    }
 
-                if (sq === 'custom') {
-                    sq = document.getElementById('reg-custom-q').value.trim();
-                    if (!sq) { alert("Please enter your custom question!"); return; }
-                }
+    // RECOVERY SCREEN
+    const recScreen = document.getElementById('recovery-screen');
+    const btnCheckUser = document.getElementById('btn-check-user');
+    const btnResetPass = document.getElementById('btn-reset-pass');
+    const btnRecBack = document.getElementById('btn-recover-back');
 
-                this.register(u, p, sq, sa);
-            };
-            if (btnRegBack) btnRegBack.onclick = () => {
-                regScreen.classList.add('hidden');
-                loginScreen.classList.remove('hidden');
-                loginScreen.classList.remove('nuclear-hidden');
-                loginScreen.style.display = 'block';
-            };
+    if (btnCheckUser) btnCheckUser.onclick = () => this.recoverStep1();
+    if (btnResetPass) btnResetPass.onclick = () => this.recoverStep2();
+    if (btnRecBack) btnRecBack.onclick = () => {
+        recScreen.classList.add('hidden');
+        loginScreen.classList.remove('hidden');
+        loginScreen.classList.remove('nuclear-hidden');
+        loginScreen.style.display = 'block';
+    };
 
-            // NEW AUTH LISTENERS (Name Entry Screen)
-            const btnQuickLogin = document.getElementById('btn-quick-login');
-            const btnQuickRegister = document.getElementById('btn-quick-register');
+    // PROFILE SCREEN
+    const profileScreen = document.getElementById('profile-screen');
+    const btnLogout = document.getElementById('btn-logout');
+    const btnProfileBack = document.getElementById('btn-profile-back');
+    const btnAdminPanel = document.getElementById('btn-admin-panel');
 
-            if (btnQuickLogin) {
-                btnQuickLogin.onclick = (e) => {
-                    // Prevent default form submission if any
-                    e.preventDefault();
+    if (btnLogout) btnLogout.onclick = () => this.logout();
+    if (btnProfileBack) btnProfileBack.onclick = () => {
+        profileScreen.classList.add('hidden');
+        this.showMainMenu();
+    };
+    if (btnAdminPanel) btnAdminPanel.onclick = () => {
+        profileScreen.classList.add('hidden');
+        const admin = document.getElementById('admin-screen');
+        admin.classList.remove('hidden');
+        admin.classList.remove('nuclear-hidden');
+        admin.style.display = 'block';
+        admin.classList.add('active');
+        this.loadAdmin();
+    };
 
+    // ADMIN SCREEN
+    const adminScreen = document.getElementById('admin-screen');
+    const btnAdminRefresh = document.getElementById('btn-admin-refresh');
+    const btnAdminClose = document.getElementById('btn-admin-close');
+
+    const btnTabUsers = document.getElementById('btn-admin-tab-users');
+    const btnTabMatches = document.getElementById('btn-admin-tab-matches');
+    const viewUsers = document.getElementById('admin-users-view');
+    const viewMatches = document.getElementById('admin-matches-view');
+
+    if (btnTabUsers) btnTabUsers.onclick = () => {
+        viewUsers.classList.remove('hidden');
+        viewMatches.classList.add('hidden');
+        btnTabUsers.classList.add('active'); btnTabUsers.classList.remove('secondary');
+        btnTabMatches.classList.remove('active'); btnTabMatches.classList.add('secondary');
+        this.loadAdmin(); // Reload Users
+    };
+
+    if (btnTabMatches) btnTabMatches.onclick = () => {
+        viewUsers.classList.add('hidden');
+        viewMatches.classList.remove('hidden');
+        btnTabUsers.classList.remove('active'); btnTabUsers.classList.add('secondary');
+        btnTabMatches.classList.add('active'); btnTabMatches.classList.remove('secondary');
+        this.loadAdminMatches(); // Load Matches
+    };
+
+    if (btnAdminRefresh) btnAdminRefresh.onclick = () => this.loadAdmin();
+    if (btnAdminClose) btnAdminClose.onclick = () => {
+        adminScreen.classList.add('hidden');
+        // Clear list to force reload next time
+        document.getElementById('admin-user-list').innerHTML = '';
+
+        profileScreen.classList.remove('hidden');
+        profileScreen.classList.remove('nuclear-hidden');
+        profileScreen.style.display = 'block';
+    };
+
+    // MAIN MENU BUTTON
+    const btnMenuLogin = document.getElementById('btn-menu-login');
+    if (btnMenuLogin) btnMenuLogin.onclick = () => {
+        this.hideAllScreens();
+        if (this.currentUser) {
+            profileScreen.classList.remove('hidden');
+            profileScreen.classList.remove('nuclear-hidden');
+            profileScreen.classList.add('active');
+            profileScreen.style.display = 'block';
+            this.updateProfileUI();
+        } else {
+            loginScreen.classList.remove('hidden');
+            loginScreen.classList.remove('nuclear-hidden');
+            loginScreen.classList.add('active');
+            loginScreen.style.display = 'block';
+        }
+    };
+}
+
+login(username, password) {
+    if (!username || !password) { alert("Please enter username and password"); return; }
+
+    fetch('auth.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'login', username, password })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                this.currentUser = data.user;
+                localStorage.setItem('snake_user', JSON.stringify(data.user)); // Persist Session
+                // Also update "Saved Name" for auto-fill in high score (legacy)
+                localStorage.setItem('playerName', data.user.name);
+
+                alert("Welcome back, " + data.user.name + "!");
+
+                alert("Welcome back, " + data.user.name + "!");
+
+                // Redirect Logic
+                if (this.returnToNameEntry) {
+                    this.returnToNameEntry = false;
                     this.hideAllScreens();
-                    this.returnToNameEntry = true; // Flag to return
-                    if (loginScreen) {
-                        loginScreen.classList.remove('hidden'); loginScreen.classList.remove('nuclear-hidden');
-                        loginScreen.classList.add('active'); loginScreen.style.display = 'block';
+                    // Restore Score Screen
+                    const ne = document.getElementById('name-entry-screen');
+                    if (ne) {
+                        ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                        ne.classList.add('active'); ne.style.display = 'flex';
+                        // Auto Update Name
+                        const inp = document.getElementById('player-name-input');
+                        if (inp) inp.value = this.currentUser.name;
+                        // Hide Auth Options
+                        const ao = document.getElementById('auth-options-container');
+                        if (ao) ao.style.display = 'none';
                     }
-                };
-            }
-            if (btnQuickRegister) {
-                btnQuickRegister.onclick = (e) => {
-                    e.preventDefault();
-
-                    this.hideAllScreens();
-                    this.returnToNameEntry = true; // Flag to return
-                    if (regScreen) {
-                        regScreen.classList.remove('hidden'); regScreen.classList.remove('nuclear-hidden');
-                        regScreen.classList.add('active'); regScreen.style.display = 'block';
-                    }
-                };
-            }
-
-            // RECOVERY SCREEN
-            const recScreen = document.getElementById('recovery-screen');
-            const btnCheckUser = document.getElementById('btn-check-user');
-            const btnResetPass = document.getElementById('btn-reset-pass');
-            const btnRecBack = document.getElementById('btn-recover-back');
-
-            if (btnCheckUser) btnCheckUser.onclick = () => this.recoverStep1();
-            if (btnResetPass) btnResetPass.onclick = () => this.recoverStep2();
-            if (btnRecBack) btnRecBack.onclick = () => {
-                recScreen.classList.add('hidden');
-                loginScreen.classList.remove('hidden');
-                loginScreen.classList.remove('nuclear-hidden');
-                loginScreen.style.display = 'block';
-            };
-
-            // PROFILE SCREEN
-            const profileScreen = document.getElementById('profile-screen');
-            const btnLogout = document.getElementById('btn-logout');
-            const btnProfileBack = document.getElementById('btn-profile-back');
-            const btnAdminPanel = document.getElementById('btn-admin-panel');
-
-            if (btnLogout) btnLogout.onclick = () => this.logout();
-            if (btnProfileBack) btnProfileBack.onclick = () => {
-                profileScreen.classList.add('hidden');
-                this.showMainMenu();
-            };
-            if (btnAdminPanel) btnAdminPanel.onclick = () => {
-                profileScreen.classList.add('hidden');
-                const admin = document.getElementById('admin-screen');
-                admin.classList.remove('hidden');
-                admin.classList.remove('nuclear-hidden');
-                admin.style.display = 'block';
-                admin.classList.add('active');
-                this.loadAdmin();
-            };
-
-            // ADMIN SCREEN
-            const adminScreen = document.getElementById('admin-screen');
-            const btnAdminRefresh = document.getElementById('btn-admin-refresh');
-            const btnAdminClose = document.getElementById('btn-admin-close');
-
-            const btnTabUsers = document.getElementById('btn-admin-tab-users');
-            const btnTabMatches = document.getElementById('btn-admin-tab-matches');
-            const viewUsers = document.getElementById('admin-users-view');
-            const viewMatches = document.getElementById('admin-matches-view');
-
-            if (btnTabUsers) btnTabUsers.onclick = () => {
-                viewUsers.classList.remove('hidden');
-                viewMatches.classList.add('hidden');
-                btnTabUsers.classList.add('active'); btnTabUsers.classList.remove('secondary');
-                btnTabMatches.classList.remove('active'); btnTabMatches.classList.add('secondary');
-                this.loadAdmin(); // Reload Users
-            };
-
-            if (btnTabMatches) btnTabMatches.onclick = () => {
-                viewUsers.classList.add('hidden');
-                viewMatches.classList.remove('hidden');
-                btnTabUsers.classList.remove('active'); btnTabUsers.classList.add('secondary');
-                btnTabMatches.classList.add('active'); btnTabMatches.classList.remove('secondary');
-                this.loadAdminMatches(); // Load Matches
-            };
-
-            if (btnAdminRefresh) btnAdminRefresh.onclick = () => this.loadAdmin();
-            if (btnAdminClose) btnAdminClose.onclick = () => {
-                adminScreen.classList.add('hidden');
-                // Clear list to force reload next time
-                document.getElementById('admin-user-list').innerHTML = '';
-
-                profileScreen.classList.remove('hidden');
-                profileScreen.classList.remove('nuclear-hidden');
-                profileScreen.style.display = 'block';
-            };
-
-            // MAIN MENU BUTTON
-            const btnMenuLogin = document.getElementById('btn-menu-login');
-            if (btnMenuLogin) btnMenuLogin.onclick = () => {
-                this.hideAllScreens();
-                if (this.currentUser) {
-                    profileScreen.classList.remove('hidden');
-                    profileScreen.classList.remove('nuclear-hidden');
-                    profileScreen.classList.add('active');
-                    profileScreen.style.display = 'block';
-                    this.updateProfileUI();
                 } else {
-                    loginScreen.classList.remove('hidden');
-                    loginScreen.classList.remove('nuclear-hidden');
-                    loginScreen.classList.add('active');
-                    loginScreen.style.display = 'block';
+                    // Redirect to Profile
+                    this.hideAllScreens();
+                    const pScreen = document.getElementById('profile-screen');
+                    pScreen.classList.remove('hidden');
+                    pScreen.classList.remove('nuclear-hidden');
+                    pScreen.classList.add('active');
+                    pScreen.style.display = 'block';
+                    this.updateProfileUI(); // Load stats
                 }
-            };
-        }
-
-        login(username, password) {
-            if (!username || !password) { alert("Please enter username and password"); return; }
-
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'login', username, password })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        this.currentUser = data.user;
-                        localStorage.setItem('snake_user', JSON.stringify(data.user)); // Persist Session
-                        // Also update "Saved Name" for auto-fill in high score (legacy)
-                        localStorage.setItem('playerName', data.user.name);
-
-                        alert("Welcome back, " + data.user.name + "!");
-
-                        alert("Welcome back, " + data.user.name + "!");
-
-                        // Redirect Logic
-                        if (this.returnToNameEntry) {
-                            this.returnToNameEntry = false;
-                            this.hideAllScreens();
-                            // Restore Score Screen
-                            const ne = document.getElementById('name-entry-screen');
-                            if (ne) {
-                                ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
-                                ne.classList.add('active'); ne.style.display = 'flex';
-                                // Auto Update Name
-                                const inp = document.getElementById('player-name-input');
-                                if (inp) inp.value = this.currentUser.name;
-                                // Hide Auth Options
-                                const ao = document.getElementById('auth-options-container');
-                                if (ao) ao.style.display = 'none';
-                            }
-                        } else {
-                            // Redirect to Profile
-                            this.hideAllScreens();
-                            const pScreen = document.getElementById('profile-screen');
-                            pScreen.classList.remove('hidden');
-                            pScreen.classList.remove('nuclear-hidden');
-                            pScreen.classList.add('active');
-                            pScreen.style.display = 'block';
-                            this.updateProfileUI(); // Load stats
-                        }
-                        this.updateProfileUI(); // Load stats
-                    } else {
-                        alert("Login Failed: " + data.error);
-                    }
-                })
-                .catch(e => alert("Login Error: " + e));
-        }
-
-        register(username, password, secQ, secA) {
-            if (!username || !password) { alert("Please enter username and password"); return; }
-            if (!secQ || !secA) { alert("Please set a security question and answer for recovery."); return; }
-
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'register', username, password, security_question: secQ, security_answer: secA })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Account Created! Logging you in...");
-                        this.currentUser = data.user;
-                        localStorage.setItem('snake_user', JSON.stringify(data.user));
-                        localStorage.setItem('playerName', data.user.name);
-
-                        localStorage.setItem('playerName', data.user.name);
-
-                        // Redirect Logic
-                        if (this.returnToNameEntry) {
-                            this.returnToNameEntry = false;
-                            this.hideAllScreens();
-                            const ne = document.getElementById('name-entry-screen');
-                            if (ne) {
-                                ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
-                                ne.classList.add('active'); ne.style.display = 'flex';
-                                const inp = document.getElementById('player-name-input');
-                                if (inp) inp.value = this.currentUser.name;
-                                const ao = document.getElementById('auth-options-container');
-                                if (ao) ao.style.display = 'none';
-                            }
-                        } else {
-                            // Redirect to Profile
-                            this.hideAllScreens();
-                            const pScreen = document.getElementById('profile-screen');
-                            pScreen.classList.remove('hidden');
-                            pScreen.classList.remove('nuclear-hidden');
-                            pScreen.classList.add('active');
-                            pScreen.style.display = 'block';
-                            this.updateProfileUI();
-                        }
-                        this.updateProfileUI();
-                    } else {
-                        alert("Registration Failed: " + data.error);
-                    }
-                })
-                .catch(e => alert("Register Error: " + e));
-        }
-
-        logout() {
-            if (confirm("Log out?")) {
-                this.currentUser = null;
-                localStorage.removeItem('snake_user');
-                alert("Logged out.");
-                this.showMainMenu();
+                this.updateProfileUI(); // Load stats
+            } else {
+                alert("Login Failed: " + data.error);
             }
-        }
+        })
+        .catch(e => alert("Login Error: " + e));
+}
+
+register(username, password, secQ, secA) {
+    if (!username || !password) { alert("Please enter username and password"); return; }
+    if (!secQ || !secA) { alert("Please set a security question and answer for recovery."); return; }
+
+    fetch('auth.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'register', username, password, security_question: secQ, security_answer: secA })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert("Account Created! Logging you in...");
+                this.currentUser = data.user;
+                localStorage.setItem('snake_user', JSON.stringify(data.user));
+                localStorage.setItem('playerName', data.user.name);
+
+                localStorage.setItem('playerName', data.user.name);
+
+                // Redirect Logic
+                if (this.returnToNameEntry) {
+                    this.returnToNameEntry = false;
+                    this.hideAllScreens();
+                    const ne = document.getElementById('name-entry-screen');
+                    if (ne) {
+                        ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                        ne.classList.add('active'); ne.style.display = 'flex';
+                        const inp = document.getElementById('player-name-input');
+                        if (inp) inp.value = this.currentUser.name;
+                        const ao = document.getElementById('auth-options-container');
+                        if (ao) ao.style.display = 'none';
+                    }
+                } else {
+                    // Redirect to Profile
+                    this.hideAllScreens();
+                    const pScreen = document.getElementById('profile-screen');
+                    pScreen.classList.remove('hidden');
+                    pScreen.classList.remove('nuclear-hidden');
+                    pScreen.classList.add('active');
+                    pScreen.style.display = 'block';
+                    this.updateProfileUI();
+                }
+                this.updateProfileUI();
+            } else {
+                alert("Registration Failed: " + data.error);
+            }
+        })
+        .catch(e => alert("Register Error: " + e));
+}
+
+logout() {
+    if (confirm("Log out?")) {
+        this.currentUser = null;
+        localStorage.removeItem('snake_user');
+        alert("Logged out.");
+        this.showMainMenu();
+    }
+}
 
         async updateProfileUI() {
-            if (!this.currentUser) return;
-            const adminText = (this.currentUser.is_admin == 1) ? ' <span style="color:gold; font-size:0.8rem;">(ADMIN)</span>' : '';
-            document.getElementById('profile-name').innerHTML = this.currentUser.name + adminText;
+    if (!this.currentUser) return;
+    const adminText = (this.currentUser.is_admin == 1) ? ' <span style="color:gold; font-size:0.8rem;">(ADMIN)</span>' : '';
+    document.getElementById('profile-name').innerHTML = this.currentUser.name + adminText;
 
-            // Show/Hide Admin Button
-            const btnAdmin = document.getElementById('btn-admin-panel');
-            if (this.currentUser.is_admin == 1 && btnAdmin) {
-                btnAdmin.classList.remove('hidden');
-                btnAdmin.style.display = 'block';
-            } else if (btnAdmin) {
-                btnAdmin.classList.add('hidden');
-                btnAdmin.style.display = 'none';
-            }
+    // Show/Hide Admin Button
+    const btnAdmin = document.getElementById('btn-admin-panel');
+    if (this.currentUser.is_admin == 1 && btnAdmin) {
+        btnAdmin.classList.remove('hidden');
+        btnAdmin.style.display = 'block';
+    } else if (btnAdmin) {
+        btnAdmin.classList.add('hidden');
+        btnAdmin.style.display = 'none';
+    }
 
-            // Fetch Real Stats
-            try {
-                const response = await fetch('auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
-                });
+    // Fetch Real Stats
+    try {
+        const response = await fetch('auth.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+        });
 
-                const text = await response.text();
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch (e) {
-                    console.error("STATS JSON ERROR:", text);
-                    // Only alert if it's a real error (not just empty)
-                    if (text.trim().length > 0) alert("STATS ERROR:\n" + text.substring(0, 500));
-                    return;
-                }
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("STATS JSON ERROR:", text);
+            // Only alert if it's a real error (not just empty)
+            if (text.trim().length > 0) alert("STATS ERROR:\n" + text.substring(0, 500));
+            return;
+        }
 
-                if (data.success && data.stats) {
-                    document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
-                    document.getElementById('profile-games').innerText = data.stats.games_played || 0;
-                    document.getElementById('profile-best-mobile').innerText = data.stats.best_mobile || 0;
-                    document.getElementById('profile-best-pc').innerText = data.stats.best_pc || 0;
-                    document.getElementById('profile-joined').innerText = data.stats.created_at || '-';
-                } else {
-                    console.error("Stats API Error:", data.error);
-                }
-            } catch (err) {
-                console.error("Stats Network Error:", err);
-            }
+        if (data.success && data.stats) {
+            document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
+            document.getElementById('profile-games').innerText = data.stats.games_played || 0;
+            document.getElementById('profile-best-mobile').innerText = data.stats.best_mobile || 0;
+            document.getElementById('profile-best-pc').innerText = data.stats.best_pc || 0;
+            document.getElementById('profile-joined').innerText = data.stats.created_at || '-';
+        } else {
+            console.error("Stats API Error:", data.error);
+        }
+    } catch (err) {
+        console.error("Stats Network Error:", err);
+    }
 
-            // FETCH MATCH HISTORY (v6.72)
-            try {
-                const mhRes = await fetch('auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_match_history', username: this.currentUser.name })
-                });
-                const mhData = await mhRes.json();
-                const mhList = document.getElementById('profile-matches-list');
+    // FETCH MATCH HISTORY (v6.72)
+    try {
+        const mhRes = await fetch('auth.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get_match_history', username: this.currentUser.name })
+        });
+        const mhData = await mhRes.json();
+        const mhList = document.getElementById('profile-matches-list');
 
-                if (mhList) {
-                    mhList.innerHTML = ''; // Clear previous
-                    if (mhData.success && mhData.matches && mhData.matches.length > 0) {
-                        mhData.matches.forEach(m => {
-                            const li = document.createElement('li');
-                            li.style.cssText = "display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #333; color:#ccc; font-size:0.85rem;";
+        if (mhList) {
+            mhList.innerHTML = ''; // Clear previous
+            if (mhData.success && mhData.matches && mhData.matches.length > 0) {
+                mhData.matches.forEach(m => {
+                    const li = document.createElement('li');
+                    li.style.cssText = "display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #333; color:#ccc; font-size:0.85rem;";
 
-                            // Determine Result
-                            const wName = (m.winner_name || "").toUpperCase();
-                            const myName = this.currentUser.name.toUpperCase();
-                            let result = "DRAW";
-                            let color = "#888";
+                    // Determine Result
+                    const wName = (m.winner_name || "").toUpperCase();
+                    const myName = this.currentUser.name.toUpperCase();
+                    let result = "DRAW";
+                    let color = "#888";
 
-                            if (wName === myName) { result = "WIN"; color = "#00ff00"; }
-                            else if (wName && wName !== "DRAW") { result = "LOSS"; color = "#ff0000"; }
+                    if (wName === myName) { result = "WIN"; color = "#00ff00"; }
+                    else if (wName && wName !== "DRAW") { result = "LOSS"; color = "#ff0000"; }
 
-                            const vsName = (m.p1_name.toUpperCase() === myName) ? m.p2_name : m.p1_name;
-                            const date = new Date(m.played_at).toLocaleDateString();
+                    const vsName = (m.p1_name.toUpperCase() === myName) ? m.p2_name : m.p1_name;
+                    const date = new Date(m.played_at).toLocaleDateString();
 
-                            li.innerHTML = `
+                    li.innerHTML = `
                                 <span><span style="color:${color}; font-weight:bold;">${result}</span> vs ${vsName}</span>
                                 <span style="font-size:0.75rem; color:#666;">${date}</span>
                             `;
-                            mhList.appendChild(li);
-                        });
-                    } else {
-                        mhList.innerHTML = '<li style="text-align:center; color:#666; padding:10px;">No matches played yet.</li>';
-                    }
-                }
-            } catch (e) { console.error("Match History Error", e); }
-
-            // Fetch Match History (v6.57)
-            this.fetchProfileMatchHistory(this.currentUser.name);
+                    mhList.appendChild(li);
+                });
+            } else {
+                mhList.innerHTML = '<li style="text-align:center; color:#666; padding:10px;">No matches played yet.</li>';
+            }
         }
+    } catch (e) { console.error("Match History Error", e); }
+
+    // Fetch Match History (v6.57)
+    this.fetchProfileMatchHistory(this.currentUser.name);
+}
 
         async fetchProfileMatchHistory(username) {
-            const container = document.getElementById('profile-match-history');
-            if (!container) return;
+    const container = document.getElementById('profile-match-history');
+    if (!container) return;
 
-            container.innerHTML = "Loading matches...";
+    container.innerHTML = "Loading matches...";
 
-            try {
-                const res = await fetch(`api_matches.php?action=history&player=${encodeURIComponent(username)}`);
-                const data = await res.json();
+    try {
+        const res = await fetch(`api_matches.php?action=history&player=${encodeURIComponent(username)}`);
+        const data = await res.json();
 
-                if (data.history && data.history.length > 0) {
-                    let html = '<ul style="list-style:none; padding:0; margin:0;">';
-                    data.history.forEach(m => {
-                        const isP1 = (m.p1_name === username);
-                        const opponent = isP1 ? m.p2_name : m.p1_name;
-                        const won = (m.winner_name === username);
-                        const draw = (m.winner_name === 'DRAW' || !m.winner_name);
+        if (data.history && data.history.length > 0) {
+            let html = '<ul style="list-style:none; padding:0; margin:0;">';
+            data.history.forEach(m => {
+                const isP1 = (m.p1_name === username);
+                const opponent = isP1 ? m.p2_name : m.p1_name;
+                const won = (m.winner_name === username);
+                const draw = (m.winner_name === 'DRAW' || !m.winner_name);
 
-                        let resultColor = won ? '#00ff88' : '#ff5555';
-                        let resultText = "WON";
-                        if (draw) { resultColor = '#aaa'; resultText = "DRAW"; }
-                        else if (!won) { resultText = "LOST"; }
+                let resultColor = won ? '#00ff88' : '#ff5555';
+                let resultText = "WON";
+                if (draw) { resultColor = '#aaa'; resultText = "DRAW"; }
+                else if (!won) { resultText = "LOST"; }
 
-                        // Format Date (Simple)
-                        const date = new Date(m.played_at).toLocaleDateString();
+                // Format Date (Simple)
+                const date = new Date(m.played_at).toLocaleDateString();
 
-                        html += `
+                html += `
                             <li style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #444;">
                                 <span>vs <span style="color:#00ffff">${opponent}</span></span>
                                 <div>
@@ -3439,186 +3481,186 @@ window.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </li>
                         `;
-                    });
-                    html += '</ul>';
-                    container.innerHTML = html;
-                } else {
-                    container.innerHTML = "No matches played yet.";
-                }
-            } catch (e) {
-                console.error("Profile History Error", e);
-                container.innerHTML = "Failed to load history.";
-            }
+            });
+            html += '</ul>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = "No matches played yet.";
         }
+    } catch (e) {
+        console.error("Profile History Error", e);
+        container.innerHTML = "Failed to load history.";
+    }
+}
 
         async updatePersonalBestDisplay() {
-            const targetEl = document.getElementById('p1-best-score');
-            if (!targetEl) return;
+    const targetEl = document.getElementById('p1-best-score');
+    if (!targetEl) return;
 
-            if (this.currentUser) {
-                try {
-                    const response = await fetch('auth.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
-                    });
-                    const data = await response.json();
-                    if (data.success && data.stats) {
-                        const mobileBest = data.stats.best_mobile || 0;
-                        const pcBest = data.stats.best_pc || 0;
-                        targetEl.innerHTML = `BEST: M:${mobileBest} | PC:${pcBest}`;
-                    }
-                } catch (e) {
-                    console.log("Failed to load Personal Best");
-                }
-            } else {
-                // FALLBACK: Load Global High Score for Guest
-                // Check Cache first for instant load
-                const type = this.platform || 'mobile';
-                try {
-                    const raw = localStorage.getItem('snake_highscores_cache_' + type);
-                    if (raw) {
-                        const scores = JSON.parse(raw);
-                        if (scores && scores.length > 0) {
-                            targetEl.innerHTML = `BEST: ${scores[0].score} (${scores[0].name})`;
-                            return; // Done
-                        }
-                    }
-                } catch (e) { }
-
-                targetEl.innerHTML = "BEST: ---";
-            }
-        }
-
-        // --- PROPER RECOVERY ---
-        recoverStep1() {
-            const u = document.getElementById('rec-user').value;
-            if (!u) { alert("Enter username first"); return; }
-            fetch('auth.php', {
-                method: 'POST', body: JSON.stringify({ action: 'get_question', username: u })
-            })
-                .then(r => r.json()).then(d => {
-                    if (d.success) {
-                        document.getElementById('rec-step-2').classList.remove('hidden');
-                        document.getElementById('rec-question-display').innerText = d.question;
-                    } else { alert(d.error); }
-                });
-        }
-
-        recoverStep2() {
-            const u = document.getElementById('rec-user').value;
-            const ans = document.getElementById('rec-answer').value;
-            const newP = document.getElementById('rec-new-pass').value;
-            if (!ans || !newP) { alert("Fill all fields"); return; }
-
-            fetch('auth.php', {
+    if (this.currentUser) {
+        try {
+            const response = await fetch('auth.php', {
                 method: 'POST',
-                body: JSON.stringify({ action: 'reset_password', username: u, security_answer: ans, new_password: newP })
-            })
-                .then(r => r.json()).then(d => {
-                    if (d.success) {
-                        alert("Password Reset Successful! Please Login.");
-                        document.getElementById('recovery-screen').classList.add('hidden');
-                        const log = document.getElementById('login-screen');
-                        log.classList.remove('hidden');
-                        log.classList.remove('nuclear-hidden');
-                        log.style.display = 'block';
-                    } else { alert(d.error); }
-                });
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+            });
+            const data = await response.json();
+            if (data.success && data.stats) {
+                const mobileBest = data.stats.best_mobile || 0;
+                const pcBest = data.stats.best_pc || 0;
+                targetEl.innerHTML = `BEST: M:${mobileBest} | PC:${pcBest}`;
+            }
+        } catch (e) {
+            console.log("Failed to load Personal Best");
         }
+    } else {
+        // FALLBACK: Load Global High Score for Guest
+        // Check Cache first for instant load
+        const type = this.platform || 'mobile';
+        try {
+            const raw = localStorage.getItem('snake_highscores_cache_' + type);
+            if (raw) {
+                const scores = JSON.parse(raw);
+                if (scores && scores.length > 0) {
+                    targetEl.innerHTML = `BEST: ${scores[0].score} (${scores[0].name})`;
+                    return; // Done
+                }
+            }
+        } catch (e) { }
+
+        targetEl.innerHTML = "BEST: ---";
+    }
+}
+
+// --- PROPER RECOVERY ---
+recoverStep1() {
+    const u = document.getElementById('rec-user').value;
+    if (!u) { alert("Enter username first"); return; }
+    fetch('auth.php', {
+        method: 'POST', body: JSON.stringify({ action: 'get_question', username: u })
+    })
+        .then(r => r.json()).then(d => {
+            if (d.success) {
+                document.getElementById('rec-step-2').classList.remove('hidden');
+                document.getElementById('rec-question-display').innerText = d.question;
+            } else { alert(d.error); }
+        });
+}
+
+recoverStep2() {
+    const u = document.getElementById('rec-user').value;
+    const ans = document.getElementById('rec-answer').value;
+    const newP = document.getElementById('rec-new-pass').value;
+    if (!ans || !newP) { alert("Fill all fields"); return; }
+
+    fetch('auth.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'reset_password', username: u, security_answer: ans, new_password: newP })
+    })
+        .then(r => r.json()).then(d => {
+            if (d.success) {
+                alert("Password Reset Successful! Please Login.");
+                document.getElementById('recovery-screen').classList.add('hidden');
+                const log = document.getElementById('login-screen');
+                log.classList.remove('hidden');
+                log.classList.remove('nuclear-hidden');
+                log.style.display = 'block';
+            } else { alert(d.error); }
+        });
+}
 
         // --- ADMIN ---
         async loadAdmin() {
-            if (!this.currentUser || this.currentUser.is_admin != 1) return;
-            const tbody = document.getElementById('admin-user-list');
-            tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    if (!this.currentUser || this.currentUser.is_admin != 1) return;
+    const tbody = document.getElementById('admin-user-list');
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
 
-            console.log("Loading Admin List for:", this.currentUser.name);
+    console.log("Loading Admin List for:", this.currentUser.name);
 
-            try {
-                const response = await fetch('auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
-                });
+    try {
+        const response = await fetch('auth.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
+        });
 
-                const text = await response.text();
-                let d;
-                try {
-                    d = JSON.parse(text);
-                } catch (e) {
-                    console.error("JSON PARSE ERROR:", text);
-                    alert("SERVER ERROR:\n" + text.substring(0, 500));
-                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Server Error (Check Alert)</td></tr>';
-                    return;
-                }
-
-                console.log("Admin Data:", d);
-                if (d.success) {
-                    // Update Global Stats
-                    if (document.getElementById('stat-total-players'))
-                        document.getElementById('stat-total-players').innerText = d.total_players || 0;
-                    if (document.getElementById('stat-total-games'))
-                        document.getElementById('stat-total-games').innerText = d.total_games || 0;
-
-                    if (d.users.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
-                    } else {
-                        // Cache for sorting
-                        this.adminUsersCache = d.users;
-                        this.adminSortDir = -1;
-                        this.renderAdminList(this.adminUsersCache);
-                    }
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
-                }
-            } catch (err) {
-                console.error("Network Error:", err);
-                tbody.innerHTML = '<tr><td colspan="5" style="color:red">Network Error</td></tr>';
-            }
+        const text = await response.text();
+        let d;
+        try {
+            d = JSON.parse(text);
+        } catch (e) {
+            console.error("JSON PARSE ERROR:", text);
+            alert("SERVER ERROR:\n" + text.substring(0, 500));
+            tbody.innerHTML = '<tr><td colspan="5" style="color:red">Server Error (Check Alert)</td></tr>';
+            return;
         }
 
-        sortAdminList(key) {
-            if (!this.adminUsersCache) return;
+        console.log("Admin Data:", d);
+        if (d.success) {
+            // Update Global Stats
+            if (document.getElementById('stat-total-players'))
+                document.getElementById('stat-total-players').innerText = d.total_players || 0;
+            if (document.getElementById('stat-total-games'))
+                document.getElementById('stat-total-games').innerText = d.total_games || 0;
 
-            // Toggle direction
-            if (this.adminSortKey === key) {
-                this.adminSortDir *= -1;
+            if (d.users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
             } else {
-                this.adminSortKey = key;
-                this.adminSortDir = (key === 'username') ? 1 : -1; // Name ASC, nums DESC
+                // Cache for sorting
+                this.adminUsersCache = d.users;
+                this.adminSortDir = -1;
+                this.renderAdminList(this.adminUsersCache);
             }
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
+        }
+    } catch (err) {
+        console.error("Network Error:", err);
+        tbody.innerHTML = '<tr><td colspan="5" style="color:red">Network Error</td></tr>';
+    }
+}
 
-            this.adminUsersCache.sort((a, b) => {
-                let valA = a[key];
-                let valB = b[key];
+sortAdminList(key) {
+    if (!this.adminUsersCache) return;
 
-                // Numeric Check
-                if (key === 'id' || key === 'total_xp' || key === 'games_played') {
-                    valA = parseInt(valA) || 0;
-                    valB = parseInt(valB) || 0;
-                } else {
-                    valA = (valA || "").toString().toLowerCase();
-                    valB = (valB || "").toString().toLowerCase();
-                }
+    // Toggle direction
+    if (this.adminSortKey === key) {
+        this.adminSortDir *= -1;
+    } else {
+        this.adminSortKey = key;
+        this.adminSortDir = (key === 'username') ? 1 : -1; // Name ASC, nums DESC
+    }
 
-                if (valA < valB) return -1 * this.adminSortDir;
-                if (valA > valB) return 1 * this.adminSortDir;
-                return 0;
-            });
+    this.adminUsersCache.sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
 
-            this.renderAdminList(this.adminUsersCache);
+        // Numeric Check
+        if (key === 'id' || key === 'total_xp' || key === 'games_played') {
+            valA = parseInt(valA) || 0;
+            valB = parseInt(valB) || 0;
+        } else {
+            valA = (valA || "").toString().toLowerCase();
+            valB = (valB || "").toString().toLowerCase();
         }
 
-        renderAdminList(users) {
-            const tbody = document.getElementById('admin-user-list');
-            tbody.innerHTML = '';
+        if (valA < valB) return -1 * this.adminSortDir;
+        if (valA > valB) return 1 * this.adminSortDir;
+        return 0;
+    });
 
-            const data = users || this.adminUsersCache || [];
+    this.renderAdminList(this.adminUsersCache);
+}
 
-            data.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
+renderAdminList(users) {
+    const tbody = document.getElementById('admin-user-list');
+    tbody.innerHTML = '';
+
+    const data = users || this.adminUsersCache || [];
+
+    data.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
                     <td>${u.id}</td>
                     <td>${u.username} ${u.is_admin == 1 ? '<span style="color:gold">(A)</span>' : ''}</td>
                     <td>${u.total_xp || 0}</td>
@@ -3628,116 +3670,116 @@ window.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-small" onclick="window.gameInstance.deleteUser(${u.id}, '${u.username}')" style="color:red">Delete</button>
                     </td>
                 `;
-                tbody.appendChild(tr);
-            });
-        }
+        tbody.appendChild(tr);
+    });
+}
 
         async loadAdminMatches() {
-            try {
-                const res = await fetch('auth.php', {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'admin_list_matches', admin_user: this.currentUser.name })
-                });
-                const d = await res.json();
-                if (d.success) {
-                    this.renderMatchList(d.matches);
-                } else {
-                    document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
-                }
-            } catch (e) {
-                console.error(e);
-                document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
-            }
+    try {
+        const res = await fetch('auth.php', {
+            method: 'POST',
+            body: JSON.stringify({ action: 'admin_list_matches', admin_user: this.currentUser.name })
+        });
+        const d = await res.json();
+        if (d.success) {
+            this.renderMatchList(d.matches);
+        } else {
+            document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
         }
+    } catch (e) {
+        console.error(e);
+        document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
+    }
+}
 
-        renderMatchList(matches) {
-            const tbody = document.getElementById('admin-match-list');
-            tbody.innerHTML = '';
-            if (!matches || matches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">No matches logged yet.</td></tr>';
-                return;
-            }
+renderMatchList(matches) {
+    const tbody = document.getElementById('admin-match-list');
+    tbody.innerHTML = '';
+    if (!matches || matches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">No matches logged yet.</td></tr>';
+        return;
+    }
 
-            matches.forEach(m => {
-                const tr = document.createElement('tr');
-                // Format Date
-                let dateStr = m.played_at;
-                try { dateStr = new Date(m.played_at).toLocaleString(); } catch (e) { }
+    matches.forEach(m => {
+        const tr = document.createElement('tr');
+        // Format Date
+        let dateStr = m.played_at;
+        try { dateStr = new Date(m.played_at).toLocaleString(); } catch (e) { }
 
-                // Format Duration
-                const mins = Math.floor(m.duration / 60);
-                const secs = m.duration % 60;
-                const durStr = (mins > 0 ? mins + "m " : "") + secs + "s";
+        // Format Duration
+        const mins = Math.floor(m.duration / 60);
+        const secs = m.duration % 60;
+        const durStr = (mins > 0 ? mins + "m " : "") + secs + "s";
 
-                const p1Win = (m.winner_name === m.p1_name);
-                const p2Win = (m.winner_name === m.p2_name);
-                const winColor = p1Win ? COLORS.p1 : (p2Win ? COLORS.p2 : '#fff');
+        const p1Win = (m.winner_name === m.p1_name);
+        const p2Win = (m.winner_name === m.p2_name);
+        const winColor = p1Win ? COLORS.p1 : (p2Win ? COLORS.p2 : '#fff');
 
-                tr.innerHTML = `
+        tr.innerHTML = `
                     <td style="font-size:0.7rem; color:#aaa;">${dateStr}</td>
                     <td style="color:${COLORS.p1}">${m.p1_name}</td>
                     <td style="color:${COLORS.p2}">${m.p2_name}</td>
                     <td style="font-weight:bold; color:${winColor}">${m.winner_name || 'Draw'}</td>
                     <td>${durStr}</td>
                 `;
-                tbody.appendChild(tr);
-            });
-        }
+        tbody.appendChild(tr);
+    });
+}
 
-        deleteUser(id, name) {
-            if (!confirm("DELETE User '" + name + "'?\\nThis cannot be undone!")) return;
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'admin_delete_user', admin_user: this.currentUser.name, target_id: id })
-            }).then(r => r.json()).then(d => {
-                if (d.success) { alert("Deleted."); this.loadAdmin(); }
-                else alert(d.error);
-            });
-        }
+deleteUser(id, name) {
+    if (!confirm("DELETE User '" + name + "'?\\nThis cannot be undone!")) return;
+    fetch('auth.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'admin_delete_user', admin_user: this.currentUser.name, target_id: id })
+    }).then(r => r.json()).then(d => {
+        if (d.success) { alert("Deleted."); this.loadAdmin(); }
+        else alert(d.error);
+    });
+}
 
-        resetUser(id, name) {
-            if (!confirm("Reset Password for '" + name + "' to 'changeme'?")) return;
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'admin_reset_user', admin_user: this.currentUser.name, target_id: id })
-            }).then(r => r.json()).then(d => {
-                if (d.success) { alert("Reset to 'changeme'."); }
-                else alert(d.error);
-            });
-        }
+resetUser(id, name) {
+    if (!confirm("Reset Password for '" + name + "' to 'changeme'?")) return;
+    fetch('auth.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'admin_reset_user', admin_user: this.currentUser.name, target_id: id })
+    }).then(r => r.json()).then(d => {
+        if (d.success) { alert("Reset to 'changeme'."); }
+        else alert(d.error);
+    });
+}
 
         async recordMatchStats(p1, p2, winnerName) {
-            try {
-                await fetch('api_matches.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ p1, p2, winner: winnerName })
-                });
-            } catch (e) { console.error("Stats Upload Error", e); }
-        }
+    try {
+        await fetch('api_matches.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ p1, p2, winner: winnerName })
+        });
+    } catch (e) { console.error("Stats Upload Error", e); }
+}
 
         async displayH2HStats(p1, p2) {
-            const container = document.getElementById('h2h-stats-container');
-            if (!container) return;
+    const container = document.getElementById('h2h-stats-container');
+    if (!container) return;
 
-            container.innerHTML = "LOADING STATS...";
-            container.style.display = "block";
+    container.innerHTML = "LOADING STATS...";
+    container.style.display = "block";
 
-            try {
-                // Wait small delay to ensure DB write (stats are fresh)
-                await new Promise(r => setTimeout(r, 500));
+    try {
+        // Wait small delay to ensure DB write (stats are fresh)
+        await new Promise(r => setTimeout(r, 500));
 
-                const res = await fetch(`api_matches.php?action=h2h&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}`);
-                const data = await res.json();
+        const res = await fetch(`api_matches.php?action=h2h&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}`);
+        const data = await res.json();
 
-                if (data.total) {
-                    const w1 = data.wins1;
-                    const w2 = data.wins2;
-                    const d = data.draws;
+        if (data.total) {
+            const w1 = data.wins1;
+            const w2 = data.wins2;
+            const d = data.draws;
 
-                    // Format: "P1 vs P2"
-                    // "P1: X wins | P2: Y wins | Draws: Z"
-                    container.innerHTML = `
+            // Format: "P1 vs P2"
+            // "P1: X wins | P2: Y wins | Draws: Z"
+            container.innerHTML = `
                         <div style="margin-top:10px; padding:10px; border:1px solid #333; background:rgba(0,0,0,0.5); border-radius:5px;">
                             <div style="font-size:0.8rem; color:#888; margin-bottom:5px;">MATCH HISTORY</div>
                             <div style="font-size:0.9rem; color:#00ff88;">${p1}: <span style="color:#fff">${w1}</span></div>
@@ -3745,25 +3787,25 @@ window.addEventListener('DOMContentLoaded', () => {
                             <div style="font-size:0.8rem; color:#888; margin-top:3px;">DRAWS: ${d}</div>
                         </div>
                     `;
-                } else {
-                    container.innerHTML = "FIRST MATCH RECORDED!";
-                }
-
-            } catch (e) {
-                container.innerHTML = "";
-            }
+        } else {
+            container.innerHTML = "FIRST MATCH RECORDED!";
         }
+
+    } catch (e) {
+        container.innerHTML = "";
+    }
+}
     }
 
 
-    // Initialize Game
-    window.gameInstance = new Game();
-    window.gameInstance.loop(0);
+// Initialize Game
+window.gameInstance = new Game();
+window.gameInstance.loop(0);
 
-    // Hard Reload if version mismatch (Simple check)
-    if (location.search.indexOf('v=5.6') === -1) {
-        // console.log("Updating URL version...");
-        // history.replaceState({}, '', location.pathname + '?v=5.6');
-    }
+// Hard Reload if version mismatch (Simple check)
+if (location.search.indexOf('v=5.6') === -1) {
+    // console.log("Updating URL version...");
+    // history.replaceState({}, '', location.pathname + '?v=5.6');
+}
 
 }); // MAIN WRAPPER END
