@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.88";
+    if (vCheck) vCheck.innerText = "v6.90";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1984,6 +1984,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 // DEBUG: Start Logic
                 console.log("GAME OVER TRIGGERED. Winner:", winnerIndex);
 
+                // VISIBLE DEBUG (v6.90)
+                const dToast = document.createElement('div');
+                dToast.innerText = "DEBUG: GAME OVER START";
+                dToast.style.cssText = "position:fixed; top:10px; left:10px; background:#ff00ff; color:white; padding:5px; z-index:9999;";
+                document.body.appendChild(dToast);
+                setTimeout(() => dToast.remove(), 5000);
+
                 if (this.gameMode === 'multi') {
                     if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
                     else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
@@ -2071,6 +2078,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
         recordMatchStats(p1, p2, winner, duration) {
             console.log("LOGGING MATCH:", p1, p2, winner, duration);
+
+            // VISIBLE DEBUG (v6.90)
+            const dToast = document.createElement('div');
+            dToast.innerText = `DEBUG: SAVING... ${p1} vs ${p2}`;
+            dToast.style.cssText = "position:fixed; top:50px; left:10px; background:#ffff00; color:black; padding:5px; z-index:9999;";
+            document.body.appendChild(dToast);
+            setTimeout(() => dToast.remove(), 5000);
             fetch('auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
