@@ -246,17 +246,34 @@ canvas {
     /* Allow scrolling if content is too tall */
     max-height: 95vh;
     /* Limit height to viewport */
+    /* Limit height to viewport */
     /* Force text center */
+}
 
-    /* FORCE CENTER OVERRIDE */
-    /* Flexbox handled by parent */
-    position: relative;
-    margin: 0 auto;
-    /* margin: 0; removed to allow centering */
+/* HIGH SCORE LIST SCROLL FIX (v6.68) */
+#high-score-list {
     width: 100%;
-    /* Ensure width allows centering */
-    max-width: 900px;
-    /* Restore constraint */
+    overflow-y: auto;
+    /* Use minimal height but allow growth */
+    flex-grow: 1;
+    /* Important for touch scrolling */
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+/* FORCE CENTER OVERRIDE */
+/* Flexbox handled by parent */
+position: relative;
+margin: 0 auto;
+/* margin: 0; removed to allow centering */
+width: 100%;
+/* Ensure width allows centering */
+max-width: 900px;
+/* Restore constraint */
 
 }
 
