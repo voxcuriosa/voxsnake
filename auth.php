@@ -183,16 +183,17 @@ if ($method === 'POST') {
 
     // --- GET H2H STATS (v6.74) ---
     else if ($action === 'get_h2h_stats') {
-        $p1 = isset($input['p1']) ? $input['p1'] : '';
-        $p2 = isset($input['p2']) ? $input['p2'] : '';
+        $p1 = trim(isset($input['p1']) ? $input['p1'] : '');
+        $p2 = trim(isset($input['p2']) ? $input['p2'] : '');
 
-        // Count Wins for P1 vs P2
+        // Count Wins for P1 vs P2 (Case Insensitive v7.03)
         $sql = "SELECT 
-                    SUM(CASE WHEN winner_name = ? THEN 1 ELSE 0 END) as p1_wins,
-                    SUM(CASE WHEN winner_name = ? THEN 1 ELSE 0 END) as p2_wins,
-                    SUM(CASE WHEN winner_name = 'DRAW' THEN 1 ELSE 0 END) as draws
+                    SUM(CASE WHEN LOWER(winner_name) = LOWER(?) THEN 1 ELSE 0 END) as p1_wins,
+                    SUM(CASE WHEN LOWER(winner_name) = LOWER(?) THEN 1 ELSE 0 END) as p2_wins,
+                    SUM(CASE WHEN LOWER(winner_name) = 'draw' THEN 1 ELSE 0 END) as draws
                 FROM matches 
-                WHERE (p1_name = ? AND p2_name = ?) OR (p1_name = ? AND p2_name = ?)";
+                WHERE (LOWER(p1_name) = LOWER(?) AND LOWER(p2_name) = LOWER(?)) 
+                   OR (LOWER(p1_name) = LOWER(?) AND LOWER(p2_name) = LOWER(?))";
 
         $stmt = $conn->prepare($sql);
         // Bind: winner1, winner2, p1-p2, p1-p2 (reversed)
@@ -208,7 +209,8 @@ if ($method === 'POST') {
 
     // --- GET MATCH HISTORY (Profile) ---
     else if ($action === 'get_match_history') {
-        $stmt = $conn->prepare("SELECT * FROM matches WHERE p1_name = ? OR p2_name = ? ORDER BY played_at DESC LIMIT 10");
+        $username = trim($username);
+        $stmt = $conn->prepare("SELECT * FROM matches WHERE LOWER(p1_name) = LOWER(?) OR LOWER(p2_name) = LOWER(?) ORDER BY played_at DESC LIMIT 50");
         $stmt->bind_param("ss", $username, $username);
         $stmt->execute();
         $res = $stmt->get_result();

@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v7.02";
+    if (vCheck) vCheck.innerText = "v7.03";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2728,8 +2728,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // H2H STATS (v6.95 Fix - Symmetrical)
             if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
-                const p1Name = p1Label ? p1Label.innerText : 'PLAYER 1';
-                const p2Name = p2Label ? p2Label.innerText : 'PLAYER 2';
+                const p1Name = p1Label ? p1Label.innerText.trim() : 'PLAYER 1';
+                const p2Name = p2Label ? p2Label.innerText.trim() : 'PLAYER 2';
 
                 this.h2hStatsFetched = true;
                 fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_h2h_stats', p1: p1Name, p2: p2Name }) })
