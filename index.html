@@ -223,8 +223,16 @@
                             <span style="color:#666; font-size:0.8rem;">WAITING FOR STATS...</span>
                         </div>
 
-                        <button id="go-login-btn" class="neon-btn"
-                            style="color:#FFD700; border-color:#FFD700; display:none;">SAVE STATS (LOGIN)</button>
+                        <!-- NEW GAME OVER AUTH (v3.17) -->
+                        <div id="game-over-auth-options"
+                            style="display:none; flex-direction:column; gap:10px; align-items:center; width:100%; margin-top:10px; border-top:1px solid #333; padding-top:10px;">
+                            <span style="color:#FFD700; font-size:0.8rem;">SAVE STATS TO ACCOUNT:</span>
+                            <div style="display:flex; gap:10px;">
+                                <button id="btn-go-login" class="neon-btn small"
+                                    style="color:#FFD700; border-color:#FFD700;">LOGIN</button>
+                                <button id="btn-go-register" class="neon-btn small secondary">CREATE USER</button>
+                            </div>
+                        </div>
                         <button id="menu-btn" class="neon-btn secondary">MENU</button>
                     </div>
                 </div>
@@ -374,11 +382,11 @@
                         <button id="btn-profile-back" class="neon-btn secondary"
                             style="width:100%; margin:0 auto;">BACK</button>
                     </div>
-                    <!-- BOTTOM SPACER v7.25 -->
+                    <!-- BOTTOM SPACER v7.26 -->
                     <div style="height:80px;"></div>
                 </div>
 
-                <!-- ADMIN H2H VIEW MODAL (v7.25) -->
+                <!-- ADMIN H2H VIEW MODAL (v7.26) -->
                 <div id="admin-user-stats-modal" class="menu-screen hidden"
                     style="z-index:100; background:rgba(0,0,0,0.95); border:2px solid #00ffff; width:90%; max-width:400px; padding:20px;">
                     <h2 id="admin-modal-title" class="neon-title" style="font-size:1.2rem;">USER STATS</h2>
@@ -565,7 +573,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=3.16"></script>
+        <script src="game_v9.js?v=3.17"></script>
 </body>
 
 </html>

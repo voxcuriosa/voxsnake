@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.16";
+    if (vCheck) vCheck.innerText = "v3.17";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -867,17 +867,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (submitScoreBtn) bindButton(submitScoreBtn, () => this.submitHighScore());
 
-            if (goLoginBtn) {
-                bindButton(goLoginBtn, () => {
-                    // Go to Register Screen
+            // v3.17: Separate Login/Register Buttons on Game Over
+            const btnGoLogin = document.getElementById('btn-go-login');
+            const btnGoRegister = document.getElementById('btn-go-register');
+
+            if (btnGoLogin) {
+                bindButton(btnGoLogin, () => {
                     this.hideAllScreens();
-                    const reg = document.getElementById('register-screen');
-                    if (reg) {
-                        reg.classList.remove('hidden');
-                        reg.classList.remove('nuclear-hidden');
-                        reg.style.display = 'block';
-                        reg.classList.add('active');
-                    }
+                    this.showLoginScreen();
+                });
+            }
+            if (btnGoRegister) {
+                bindButton(btnGoRegister, () => {
+                    this.hideAllScreens();
+                    this.showRegisterScreen();
                 });
             }
 
@@ -2029,8 +2032,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 } catch (e) { console.error("Broadcast Error", e); }
 
                 // SHOW LOGIN PROMPT IF GUEST (ON GAME OVER)
-                if (goLoginBtn) {
-                    goLoginBtn.style.display = (!this.currentUser) ? 'inline-block' : 'none';
+                const goAuth = document.getElementById('game-over-auth-options');
+                if (goAuth) {
+                    goAuth.style.display = (!this.currentUser) ? 'flex' : 'none';
                 }
 
                 if (this.gameMode === 'multi') {
