@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v7.04";
+    if (vCheck) vCheck.innerText = "v7.05";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2726,52 +2726,55 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
             }
 
-            // H2H STATS (v6.95 Fix - Symmetrical)
+            // H2H STATS (v7.05 - Synchronized with Profile Logic)
             if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
-                const p1Name = p1Label ? p1Label.innerText.trim() : 'PLAYER 1';
-                const p2Name = p2Label ? p2Label.innerText.trim() : 'PLAYER 2';
+                const myName = (this.currentUser ? this.currentUser.name : "Guest").toUpperCase();
+                const oppName = this.remotePlayerName.toUpperCase();
 
-                console.log(`H2H LOOKUP: [${p1Name}] vs [${p2Name}]`);
                 this.h2hStatsFetched = true;
-                fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_h2h_stats', p1: p1Name, p2: p2Name }) })
+                fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
                     .then(r => r.json()).then(d => {
-                        console.log("HUD H2H Result:", d);
                         const p1Stat = document.getElementById('p1-best-score');
                         const p2Stat = document.getElementById('p2-best-score');
 
-                        if (d.success && d.stats) {
-                            const w1 = parseInt(d.stats.p1_wins) || 0;
-                            const w2 = parseInt(d.stats.p2_wins) || 0;
-                            const dr = parseInt(d.stats.draws) || 0;
-                            console.log(`HUD H2H Final: W:${w1} L:${w2} D:${dr}`);
+                        if (d.success && d.matches) {
+                            let w = 0, l = 0, dr = 0;
 
-                            if (p1Stat) {
-                                p1Stat.parentElement.style.display = 'flex';
-                                p1Stat.innerText = `W:${w1} L:${w2} D:${dr}`;
-                                p1Stat.style.color = '#00ff88';
+                            d.matches.forEach(m => {
+                                const p1 = (m.p1_name || "").toUpperCase();
+                                const p2 = (m.p2_name || "").toUpperCase();
+                                const winN = (m.winner_name || "").toUpperCase();
+
+                                // Only count matches against the current opponent
+                                if ((p1 === myName && p2 === oppName) || (p2 === myName && p1 === oppName)) {
+                                    if (winN === myName) w++;
+                                    else if (winN === "DRAW" || !winN || winN === "") dr++;
+                                    else l++;
+                                }
+                            });
+
+                            // Determine which HUD slot is Mine and which is Theirs
+                            // Host: P1=Me, P2=Them | Client: P1=Them, P2=Me
+                            const mySlot = this.isClient ? p2Stat : p1Stat;
+                            const theirSlot = this.isClient ? p1Stat : p2Stat;
+
+                            if (mySlot) {
+                                mySlot.parentElement.style.display = 'flex';
+                                mySlot.innerText = `W:${w} L:${l} D:${dr}`;
+                                mySlot.style.color = this.isClient ? '#00ffff' : '#00ff88';
                             }
-                            if (p2Stat) {
-                                p2Stat.parentElement.style.display = 'flex';
-                                p2Stat.innerText = `W:${w2} L:${w1} D:${dr}`;
-                                p2Stat.style.color = '#00ffff';
+                            if (theirSlot) {
+                                theirSlot.parentElement.style.display = 'flex';
+                                theirSlot.innerText = `W:${l} L:${w} D:${dr}`;
+                                theirSlot.style.color = this.isClient ? '#00ff88' : '#00ffff';
                             }
                         } else {
-                            // Fallback if fetch failed but we are in multi
-                            if (p1Stat) {
-                                p1Stat.innerText = "W:0 L:0 D:0";
-                                p1Stat.parentElement.style.display = 'flex';
-                            }
-                            if (p2Stat) {
-                                p2Stat.innerText = "W:0 L:0 D:0";
-                                p2Stat.parentElement.style.display = 'flex';
-                            }
+                            // Fallback
+                            if (p1Stat) { p1Stat.innerText = "W:0 L:0 D:0"; p1Stat.parentElement.style.display = 'flex'; }
+                            if (p2Stat) { p2Stat.innerText = "W:0 L:0 D:0"; p2Stat.parentElement.style.display = 'flex'; }
                         }
                     }).catch(err => {
-                        console.error("H2H Fetch Error:", err);
-                        const p1Stat = document.getElementById('p1-best-score');
-                        const p2Stat = document.getElementById('p2-best-score');
-                        if (p1Stat) { p1Stat.innerText = "W:0 L:0 D:0"; p1Stat.parentElement.style.display = 'flex'; }
-                        if (p2Stat) { p2Stat.innerText = "W:0 L:0 D:0"; p2Stat.parentElement.style.display = 'flex'; }
+                        console.error("H2H HUD Error:", err);
                     });
             }
         }
