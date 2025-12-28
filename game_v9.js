@@ -111,8 +111,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-    // HIDE BY DEFAULT (Reset from diagnostic)
-    if (btnInstall) btnInstall.style.display = 'none';
+    // HIDE BY DEFAULT REMOVED (v6.71) - Let it be visible so user can click for feedback
+    // if (btnInstall) btnInstall.style.display = 'none';
 
     if (!isStandalone) {
         // 1. Android / Chrome Logic
