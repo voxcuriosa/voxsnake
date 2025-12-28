@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.04";
+    if (vCheck) vCheck.innerText = "v3.05";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2049,62 +2049,64 @@ window.addEventListener('DOMContentLoaded', () => {
                             this.recordMatchStats(p1Name.toUpperCase(), p2Name.toUpperCase(), wName.toUpperCase());
                         } catch (e) { console.error("Record Match Error:", e); }
                     }
-                    // GAME OVER H2H STATS (v3.03 Logic)
+                    // GAME OVER H2H STATS (v3.05 Logic - Robust)
                     const h2hContainer = document.getElementById('h2h-game-over-stats');
                     if (h2hContainer) {
-                        h2hContainer.innerHTML = '';
+                        try {
+                            // 1. UPDATE SESSION STATS (Local or Offline Tracking)
+                            if (!this.sessionStats) this.sessionStats = { p1: 0, p2: 0, draws: 0 };
+                            if (winnerIndex === 0) this.sessionStats.p1++;
+                            else if (winnerIndex === 1) this.sessionStats.p2++;
+                            else this.sessionStats.draws++;
 
-                        // 1. UPDATE SESSION STATS (Local or Offline Tracking)
-                        if (!this.sessionStats) this.sessionStats = { p1: 0, p2: 0, draws: 0 };
-                        if (winnerIndex === 0) this.sessionStats.p1++;
-                        else if (winnerIndex === 1) this.sessionStats.p2++;
-                        else this.sessionStats.draws++;
+                            // 2. RENDER SESSION STATS IMMEDIATELY (Fallback)
+                            const sP1 = p1Name.toUpperCase();
+                            const sP2 = p2Name.toUpperCase();
 
-                        // 2. RENDER SESSION STATS IMMEDIATELY (Fallback)
-                        // This ensures "Something" is always shown, even if DB fetch fails or isn't needed.
-                        const sP1 = p1Name.toUpperCase();
-                        const sP2 = p2Name.toUpperCase();
+                            // Safe Colors (Fallback if global COLORS missing)
+                            const cP1 = (typeof COLORS !== 'undefined') ? COLORS.p1 : '#00ff88';
+                            const cP2 = (typeof COLORS !== 'undefined') ? COLORS.p2 : '#00ccff';
 
-                        const renderStats = (w, l, d, name1, name2) => {
-                            return `
-                                <span style="color:${COLORS.p1}">${name1}: ${w}W</span>
-                                <span style="color:#aaa; font-size:1rem;">${d}D</span>
-                                <span style="color:${COLORS.p2}">${name2}: ${l}W</span>
-                            `;
-                        };
+                            const renderStats = (w, l, d, name1, name2) => {
+                                return `
+                                    <span style="color:${cP1}">${name1}: ${w}W</span>
+                                    <span style="color:#aaa; font-size:1rem;">${d}D</span>
+                                    <span style="color:${cP2}">${name2}: ${l}W</span>
+                                `;
+                            };
 
-                        // Initial Render (Session Stats)
-                        h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
+                            // Initial Render (Session Stats) - Replaces content safely
+                            h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
 
-                        // 3. TRY FETCHING DB STATS (If Online / Logged In)
-                        if (this.gameMode === 'multi') {
-                            const myName = sP1;
-                            const oppName = sP2;
+                            // 3. TRY FETCHING DB STATS (If Online / Logged In)
+                            if (this.gameMode === 'multi') {
+                                const myName = sP1;
+                                const oppName = sP2;
 
-                            // Only fetch if meaningful names (ignore default Player 1 vs Player 2 unless we want to persist them?)
-                            // Actually, let's only fetch if names are NOT "PLAYER 1" etc, OR if we are explicitly online.
-                            // But for now, safe to try if names differ.
-                            if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
-                                // We don't verify 'h2hContainer.innerHTML = Loading' anymore, we just let the Session Stats sit there until DB overrides.
-                                fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
-                                    .then(r => r.json()).then(d => {
-                                        if (d.success && d.matches) {
-                                            let w = 0, l = 0, dr = 0;
-                                            d.matches.forEach(m => {
-                                                const u1 = (m.p1_name || "").toUpperCase();
-                                                const u2 = (m.p2_name || "").toUpperCase();
-                                                const winN = (m.winner_name || "").toUpperCase();
-                                                if ((u1 === myName && u2 === oppName) || (u2 === myName && u1 === oppName)) {
-                                                    if (winN === myName) w++;
-                                                    else if (winN === "DRAW" || !winN || winN === "") dr++;
-                                                    else l++;
-                                                }
-                                            });
-                                            // Overwrite with Global Stats if successful
-                                            h2hContainer.innerHTML = renderStats(w, l, dr, myName, oppName);
-                                        }
-                                    }).catch(e => { /* Ignore failure, keep Session Stats */ });
+                                if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
+                                    fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
+                                        .then(r => r.json()).then(d => {
+                                            if (d.success && d.matches) {
+                                                let w = 0, l = 0, dr = 0;
+                                                d.matches.forEach(m => {
+                                                    const u1 = (m.p1_name || "").toUpperCase();
+                                                    const u2 = (m.p2_name || "").toUpperCase();
+                                                    const winN = (m.winner_name || "").toUpperCase();
+                                                    if ((u1 === myName && u2 === oppName) || (u2 === myName && u1 === oppName)) {
+                                                        if (winN === myName) w++;
+                                                        else if (winN === "DRAW" || !winN || winN === "") dr++;
+                                                        else l++;
+                                                    }
+                                                });
+                                                // Overwrite with Global Stats if successful
+                                                h2hContainer.innerHTML = renderStats(w, l, dr, myName, oppName);
+                                            }
+                                        }).catch(e => { /* Ignore failure, keep Session Stats */ });
+                                }
                             }
+                        } catch (e) {
+                            console.error("H2H Render Error:", e);
+                            h2hContainer.innerText = "STATS ERROR";
                         }
                     }
 
