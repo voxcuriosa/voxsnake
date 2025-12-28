@@ -342,11 +342,17 @@
                         </div>
                     </div>
 
-                    <!-- MATCH HISTORY (v6.59) -->
-                    <div id="profile-match-history"
-                        style="max-height: 200px; overflow-y: auto; font-size: 0.8rem; margin-top: 20px; border-top: 1px solid #333; padding-top:10px; color:#aaa;">
-                        Loading recent matches...
+                    <!-- H2H OPPONENT BREAKDOWN (v6.98) -->
+                    <div id="profile-h2h-opponents"
+                        style="margin-top:15px; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; font-size:0.75rem; color:#ccc; display:none;">
+                        <div
+                            style="font-weight:bold; color:#00ffff; margin-bottom:5px; border-bottom:1px solid #333; padding-bottom:3px;">
+                            RECORD vs OPPONENTS</div>
+                        <div id="opponents-list"></div>
                     </div>
+
+                    <!-- MATCH HISTORY LIST REMOVED v7.0 (H2H Breakdown is now primary) -->
+                    <div id="profile-match-history" style="display:none;"></div>
 
                     <!-- ADMIN BUTTON (Hidden by default) -->
                     <button id="btn-admin-panel" class="neon-btn hidden"

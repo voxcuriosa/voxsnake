@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.97";
+    if (vCheck) vCheck.innerText = "v6.99";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1437,8 +1437,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (p1Best) {
-                        // Only show best score if Single Player or Host for now
-                        if (!this.isClient) {
+                        // Only show best score if Single Player
+                        if (this.gameMode === 'single') {
                             p1Best.innerText = "LOADING...";
                             this.updatePersonalBestDisplay();
                         } else {
@@ -1515,6 +1515,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if (this.multiplayerTargetWidth) {
                 if (typeof log !== 'undefined') log(`FORCE SYNC: Using Target ${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight}`);
+
+                // If this is the FIRST time we sync (or it changed), wipe old food
+                if (logicalW !== Math.min(availableW, this.multiplayerTargetWidth)) {
+                    this.foods = []; // Bound sync wipe
+                }
+
                 logicalW = Math.min(availableW, this.multiplayerTargetWidth);
                 logicalH = Math.min(availableH, this.multiplayerTargetHeight);
             }
@@ -1546,6 +1552,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
             this.maxX = this.cols - 1;
             this.maxY = this.rows - 1;
+
+            // FOOD BOUNDARY SAFETY (v6.98)
+            // If the board shrunk, some food might be outside.
+            if (this.foods && this.foods.length > 0) {
+                const before = this.foods.length;
+                this.foods = this.foods.filter(f => f.x <= this.maxX && f.y <= this.maxY);
+                // Respawn if we lost food due to shrink
+                while (this.foods.length < before && this.foods.length < 3) {
+                    this.spawnFood();
+                }
+            }
 
             // 3. UI Updates based on device
             const btn1P = document.getElementById('btn-1p');
@@ -1579,8 +1596,8 @@ window.addEventListener('DOMContentLoaded', () => {
             while (!valid && attempts < 100) {
                 attempts++;
                 newFood = {
-                    x: Math.floor(Math.random() * Math.max(1, maxX)),
-                    y: Math.floor(Math.random() * Math.max(1, maxY)),
+                    x: Math.floor(Math.random() * (this.maxX + 1)),
+                    y: Math.floor(Math.random() * (this.maxY + 1)),
                     createdAt: Date.now() // Add timestamp for respawn logic
                 };
                 valid = !this.isOccupied(newFood);
@@ -1589,8 +1606,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!valid) {
                 // Force Random if stuck
                 newFood = {
-                    x: Math.floor(Math.random() * Math.max(1, maxX)),
-                    y: Math.floor(Math.random() * Math.max(1, maxY))
+                    x: Math.floor(Math.random() * (this.maxX + 1)),
+                    y: Math.floor(Math.random() * (this.maxY + 1))
                 };
             }
 
@@ -2076,11 +2093,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         showMatchSavedToast() {
-            const toast = document.createElement('div');
-            toast.innerText = "MATCH SAVED! 💾";
-            toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00ff00; color:black; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999;";
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            // Toast removed per user request v6.98
         }
 
         broadcastMatchSaved() {
@@ -3383,7 +3396,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
 
                 if (data.success && data.matches && data.matches.length > 0) {
-                    let html = '<ul style="list-style:none; padding:0; margin:0;">';
+                    let opponents = {};
                     let wCount = 0;
                     let lCount = 0;
                     let dCount = 0;
@@ -3392,29 +3405,43 @@ window.addEventListener('DOMContentLoaded', () => {
                         const myName = username.toUpperCase();
                         const wName = (m.winner_name || "").toUpperCase();
                         const isP1 = (m.p1_name.toUpperCase() === myName);
-                        const opponent = isP1 ? m.p2_name : m.p1_name;
+                        const opponent = (isP1 ? m.p2_name : m.p1_name).toUpperCase();
 
-                        let resultText = "DRAW";
-                        let resultColor = '#aaa';
+                        if (!opponents[opponent]) opponents[opponent] = { w: 0, l: 0, d: 0 };
 
-                        if (wName === myName) { resultText = "WON"; resultColor = "#00ff88"; wCount++; }
-                        else if (wName === "DRAW" || !wName) { resultText = "DRAW"; resultColor = "#aaa"; dCount++; }
-                        else { resultText = "LOST"; resultColor = "#ff5555"; lCount++; }
-
-                        const date = new Date(m.played_at).toLocaleDateString();
-
-                        html += `
-                            <li style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333;">
-                                <span>vs <span style="color:#00ffff">${opponent.toUpperCase()}</span></span>
-                                <div>
-                                    <span style="color:${resultColor}; font-weight:bold; margin-right:10px;">${resultText}</span>
-                                    <span style="color:#666; font-size:0.75rem;">${date}</span>
-                                </div>
-                            </li>
-                        `;
+                        if (wName === myName) {
+                            wCount++; opponents[opponent].w++;
+                        } else if (wName === "DRAW" || !wName) {
+                            dCount++; opponents[opponent].d++;
+                        } else {
+                            lCount++; opponents[opponent].l++;
+                        }
                     });
-                    html += '</ul>';
-                    container.innerHTML = html;
+
+                    // Update Opponent Breakdown (v6.99 - List removed)
+                    const oppContainer = document.getElementById('profile-h2h-opponents');
+                    const oppList = document.getElementById('opponents-list');
+                    if (oppContainer && oppList) {
+                        oppContainer.style.display = 'block';
+                        let oppHtml = '';
+                        Object.keys(opponents).sort().forEach(name => {
+                            const s = opponents[name];
+                            oppHtml += `
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:monospace; padding:5px 0; border-bottom:1px solid #333;">
+                                    <span style="color:#00ffff">${name}</span>
+                                    <span>
+                                        <span style="color:#00ff88">${s.w}W</span> 
+                                        <span style="color:#ff5555">${s.l}L</span> 
+                                        <span style="color:#aaa">${s.d}D</span>
+                                    </span>
+                                </div>
+                            `;
+                        });
+                        oppList.innerHTML = oppHtml;
+                    }
+
+                    // Reset Match History List (Emptying as requested)
+                    if (container) container.innerHTML = "";
 
                     // Update Summary
                     const winEl = document.getElementById('h2h-wins');
@@ -3441,6 +3468,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         async updatePersonalBestDisplay() {
+            // FIX: Prevent HUD overwrite in Multiplayer
+            if (this.gameMode === 'multi') return;
+
             const targetEl = document.getElementById('p1-best-score');
             if (!targetEl) return;
 
