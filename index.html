@@ -70,8 +70,14 @@
             </div>
 
             <div class="score-box p2" id="p2-score-box">
-                <span id="p2-name-label">PLAYER 2</span>
-                <span id="score-p2" class="score-digit">0</span>
+                <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span id="score-p2" class="score-digit">0</span>
+                        <span id="p2-name-label">PLAYER 2</span>
+                    </div>
+                    <span id="p2-best-score"
+                        style="font-size:0.6rem; color:#888; letter-spacing:1px; margin-top:-2px;"></span>
+                </div>
             </div>
         </div>
 
@@ -506,7 +512,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=6.95" defer></script>
+        <script src="game_v9.js?v=6.96" defer></script>
 </body>
 
 </html>

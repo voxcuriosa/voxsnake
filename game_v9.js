@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.94";
+    if (vCheck) vCheck.innerText = "v6.95";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1119,6 +1119,10 @@ window.addEventListener('DOMContentLoaded', () => {
                             console.log("CLIENT RX GAMEOVER:", data.winner); // Debug
                             this.gameOver(data.winner);
                         }
+                        // 3. MATCH SAVED (v6.95 Sync)
+                        else if (data.type === 'match_saved') {
+                            this.showMatchSavedToast();
+                        }
                     });
 
                     this.conn.on('error', (err) => {
@@ -1981,52 +1985,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     color = "#00ffff";
                 }
 
-                // DEBUG: Start Logic
-                console.log("GAME OVER TRIGGERED. Winner:", winnerIndex);
-
-                // VISIBLE DEBUG (v6.90)
-                const dToast = document.createElement('div');
-                dToast.innerText = "DEBUG: GAME OVER START";
-                dToast.style.cssText = "position:fixed; top:10px; left:10px; background:#ff00ff; color:white; padding:5px; z-index:9999;";
-                document.body.appendChild(dToast);
-                setTimeout(() => dToast.remove(), 5000);
-
-                if (this.gameMode === 'multi') {
-                    if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
-                    else if (winnerIndex === 0) { msg = "PLAYER 1 WINS!"; color = COLORS.p1; }
-                    else { msg = "PLAYER 2 WINS!"; color = COLORS.p2; }
-                }
-
-                if (winnerText) {
-                    winnerText.innerText = msg;
-                    winnerText.style.color = color;
-                }
-
-                gameOverScreen.classList.remove('hidden');
-                gameOverScreen.classList.remove('nuclear-hidden'); // UN-NUKE
-                gameOverScreen.classList.add('active');
-                gameOverScreen.style.display = 'flex';
-                // FORCE VISIBILITY
-                gameOverScreen.style.opacity = '1';
-                gameOverScreen.style.visibility = 'visible';
-                gameOverScreen.style.pointerEvents = 'auto';
-
-                if (btnResume) btnResume.classList.add('hidden');
-                if (dynamicLegend) dynamicLegend.innerHTML = '';
-
                 // SYNC GAME OVER
                 try {
                     if (this.isHost) {
                         this.broadcastGameOver(winnerIndex);
                     }
                 } catch (e) { console.error("Broadcast Error", e); }
-
-                // BLUE TOAST: BROADCAST PASSED
-                const bToast = document.createElement('div');
-                bToast.innerText = "DEBUG: BROADCAST PASSED";
-                bToast.style.cssText = "position:fixed; top:90px; left:10px; background:#0000ff; color:white; padding:5px; z-index:9999;";
-                document.body.appendChild(bToast);
-                setTimeout(() => bToast.remove(), 5000);
 
                 // SHOW LOGIN PROMPT IF GUEST
                 if (goLoginBtn) {
@@ -2041,13 +2005,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 // LOG MULTIPLAYER MATCH (Host OR Local 2P)
                 // REPLACED WITH NEW STATS LOGIC (v6.54)
                 if (this.gameMode === 'multi') {
-
-                    // CYAN TOAST: MULTI MODE DETECTED
-                    const cToast = document.createElement('div');
-                    cToast.innerText = "DEBUG: MULTI MODE OK";
-                    cToast.style.cssText = "position:fixed; top:130px; left:10px; background:#00ffff; color:black; padding:5px; z-index:9999;";
-                    document.body.appendChild(cToast);
-                    setTimeout(() => cToast.remove(), 5000);
 
                     let p1Name = "PLAYER 1";
                     let p2Name = "PLAYER 2";
@@ -2072,26 +2029,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // MATCH STATS
-                    // MATCH STATS
                     if (!this.isClient) {
-
-                        // ORANGE TOAST: HOST CHECK PASSED
-                        const oToast = document.createElement('div');
-                        oToast.innerText = "DEBUG: HOST CHECK OK";
-                        oToast.style.cssText = "position:fixed; top:170px; left:10px; background:#ff8800; color:black; padding:5px; z-index:9999;";
-                        document.body.appendChild(oToast);
-                        setTimeout(() => oToast.remove(), 5000);
-
-                        // Only Host records.
                         try {
                             this.recordMatchStats(p1Name, p2Name, winnerName);
                         } catch (e) {
                             console.error("Record Error: " + e.message);
-                            const rToast = document.createElement('div');
-                            rToast.innerText = "DEBUG: CALL ERROR " + e.message;
-                            rToast.style.cssText = "position:fixed; top:210px; left:10px; background:#ff0000; color:white; padding:5px; z-index:9999;";
-                            document.body.appendChild(rToast);
-                            setTimeout(() => rToast.remove(), 10000);
                         }
                     }
                     this.displayH2HStats(p1Name, p2Name);
@@ -2111,14 +2053,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         recordMatchStats(p1, p2, winner, duration) {
-            console.log("LOGGING MATCH:", p1, p2, winner, duration);
-
-            // VISIBLE DEBUG (v6.90)
-            const dToast = document.createElement('div');
-            dToast.innerText = `DEBUG: SAVING... ${p1} vs ${p2}`;
-            dToast.style.cssText = "position:fixed; top:50px; left:10px; background:#ffff00; color:black; padding:5px; z-index:9999;";
-            document.body.appendChild(dToast);
-            setTimeout(() => dToast.remove(), 5000);
             fetch('auth.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2132,11 +2066,8 @@ window.addEventListener('DOMContentLoaded', () => {
             }).then(res => res.json())
                 .then(data => {
                     if (data && data.success) {
-                        const toast = document.createElement('div');
-                        toast.innerText = "MATCH SAVED! 💾";
-                        toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00ff00; color:black; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999;";
-                        document.body.appendChild(toast);
-                        setTimeout(() => toast.remove(), 3000);
+                        this.showMatchSavedToast();
+                        if (this.isHost) this.broadcastMatchSaved();
                     } else {
                         console.error("Match Log Failed:", data);
                         alert("Match Save Failed: " + (data.error || "Unknown Error") + "\n\nPLEASE REPORT THIS!");
@@ -2146,6 +2077,21 @@ window.addEventListener('DOMContentLoaded', () => {
                     console.error("Log Match Error:", e);
                     alert("Network Error Saving Match: " + e.message);
                 });
+        }
+
+        showMatchSavedToast() {
+            const toast = document.createElement('div');
+            toast.innerText = "MATCH SAVED! 💾";
+            toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00ff00; color:black; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999;";
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        broadcastMatchSaved() {
+            if (!this.isHost || !this.conn || !this.conn.open) return;
+            try {
+                this.conn.send({ type: 'match_saved' });
+            } catch (e) { }
         }
 
         displayH2HStats(p1, p2) {
@@ -2770,7 +2716,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
             }
 
-            // H2H STATS (v6.85 Fix)
+            // H2H STATS (v6.95 Fix - Symmetrical)
             if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
                 const p1Name = p1Label ? p1Label.innerText : 'PLAYER 1';
                 const p2Name = p2Label ? p2Label.innerText : 'PLAYER 2';
@@ -2780,16 +2726,18 @@ window.addEventListener('DOMContentLoaded', () => {
                     .then(r => r.json()).then(d => {
                         if (d.success && d.stats) {
                             const p1Stat = document.getElementById('p1-best-score');
-                            const p2Stat = document.getElementById('p2-best-score'); // Ensure this element is visible
+                            const p2Stat = document.getElementById('p2-best-score');
 
                             if (p1Stat) {
-                                p1Stat.parentElement.style.display = 'flex'; // Ensure container visible
                                 p1Stat.innerText = `Wins: ${d.stats.p1_wins}`;
-                                p1Stat.style.fontSize = '0.8rem';
-                                p1Stat.style.color = '#fff';
+                                p1Stat.style.fontSize = '0.7rem';
+                                p1Stat.style.color = '#00ff88';
                             }
-                            // Client needs p2 element too if we want symmetrical display, but usually only p1-best exists in HTML
-                            // We might need to inject p2-best-score dynamically if it doesn't exist
+                            if (p2Stat) {
+                                p2Stat.innerText = `Wins: ${d.stats.p2_wins}`;
+                                p2Stat.style.fontSize = '0.7rem';
+                                p2Stat.style.color = '#00ffff';
+                            }
                         }
                     }).catch(console.error);
             }
