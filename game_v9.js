@@ -2059,6 +2059,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         recordMatchStats(p1, p2, winner, duration) {
+            // DEBUG: Confirm function entry (User reported "No popup")
+            // alert("DEBUG: Recording Match..."); 
             console.log("LOGGING MATCH:", p1, p2, winner, duration);
             fetch('auth.php', { // Using auth.php as we added the action there
                 method: 'POST',
@@ -2668,6 +2670,32 @@ window.addEventListener('DOMContentLoaded', () => {
                 // P1 is Me (Local), P2 is Client (Remote)
                 if (p1Label) p1Label.innerText = this.currentUser ? this.currentUser.name : "Guest";
                 if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
+            }
+
+            // H2H STATS (v6.74)
+            if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
+                const p1Name = this.isClient ? this.remotePlayerName : (this.currentUser ? this.currentUser.name : 'PLAYER 1');
+                const p2Name = this.isClient ? (this.currentUser ? this.currentUser.name : 'PLAYER 2') : this.remotePlayerName;
+
+                if (p1Name && p2Name && p1Name !== "PLAYER 1" && p2Name !== "PLAYER 2") {
+                    this.h2hStatsFetched = true;
+                    fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_h2h_stats', p1: p1Name, p2: p2Name }) })
+                        .then(r => r.json()).then(d => {
+                            if (d.success && d.stats) {
+                                const p1Stat = document.getElementById('p1-best-score');
+                                const p2Stat = document.getElementById('p2-best-score'); // Ensure this element is visible
+
+                                if (p1Stat) {
+                                    p1Stat.parentElement.style.display = 'flex'; // Ensure container visible
+                                    p1Stat.innerText = `Wins: ${d.stats.p1_wins}`;
+                                    p1Stat.style.fontSize = '0.8rem';
+                                    p1Stat.style.color = '#fff';
+                                }
+                                // Client needs p2 element too if we want symmetrical display, but usually only p1-best exists in HTML
+                                // We might need to inject p2-best-score dynamically if it doesn't exist
+                            }
+                        }).catch(console.error);
+                }
             }
         }
 

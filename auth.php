@@ -181,6 +181,31 @@ if ($method === 'POST') {
         }
     }
 
+    // --- GET H2H STATS (v6.74) ---
+    else if ($action === 'get_h2h_stats') {
+        $p1 = isset($input['p1']) ? $input['p1'] : '';
+        $p2 = isset($input['p2']) ? $input['p2'] : '';
+
+        // Count Wins for P1 vs P2
+        $sql = "SELECT 
+                    SUM(CASE WHEN winner_name = ? THEN 1 ELSE 0 END) as p1_wins,
+                    SUM(CASE WHEN winner_name = ? THEN 1 ELSE 0 END) as p2_wins,
+                    SUM(CASE WHEN winner_name = 'DRAW' THEN 1 ELSE 0 END) as draws
+                FROM matches 
+                WHERE (p1_name = ? AND p2_name = ?) OR (p1_name = ? AND p2_name = ?)";
+
+        $stmt = $conn->prepare($sql);
+        // Bind: winner1, winner2, p1-p2, p1-p2 (reversed)
+        // Wait, OR condition implies name ordering doesn't matter for fetching, but wins do.
+        // Winner name is absolute.
+        $stmt->bind_param("ssssss", $p1, $p2, $p1, $p2, $p2, $p1); // Check both orderings
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $stats = $res->fetch_assoc();
+
+        echo json_encode(["success" => true, "stats" => $stats]);
+    }
+
     // --- GET MATCH HISTORY (Profile) ---
     else if ($action === 'get_match_history') {
         $stmt = $conn->prepare("SELECT * FROM matches WHERE p1_name = ? OR p2_name = ? ORDER BY played_at DESC LIMIT 10");
