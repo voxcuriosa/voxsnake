@@ -42,9 +42,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // DIAGNOSTIC ALERT (v6.64)
     // alert("UPDATED: v6.64 LOADED!"); // Commented out to avoid annoying loop, using Version Text instead.
 
-    // Better: Update the Version text immediately to debug
+    // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.64 (DEBUG)";
+    if (vCheck) vCheck.innerText = "v6.81";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2095,33 +2095,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     alert("Network Error Saving Match: " + e.message);
                 });
         }
-    }).then(res => res.json())
-    .then(data => {
-        if (data && data.success) {
-            const toast = document.createElement('div');
-            toast.innerText = "MATCH SAVED! 💾";
-            toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00ff00; color:black; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999;";
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        } else {
-            console.error("Match Log Failed:", data);
-            alert("Match Save Failed: " + (data.error || "Unknown Error"));
-        }
+
+        p2: p2,
+        winner: winner,
+        duration: duration
     })
-    .catch(e => {
-        console.error("Log Match Error:", e);
-        alert("Network Error Saving Match: " + e.message);
-    });
-        }
-method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-    action: 'log_match',
-    p1: p1,
-    p2: p2,
-    winner: winner,
-    duration: duration
-})
             }).then(res => res.json())
     .then(data => {
         if (data && data.success) {
