@@ -311,11 +311,16 @@ if ($method === 'POST') {
         } else if ($action === 'admin_delete_user') {
             $targetId = isset($input['target_id']) ? intval($input['target_id']) : 0;
             if ($targetId > 0) {
-                // Delete User
+                $uQuery = $conn->query("SELECT username FROM users WHERE id = $targetId");
+                if ($uRow = $uQuery->fetch_assoc()) {
+                    $uname = $uRow['username'];
+                    $stmt = $conn->prepare("DELETE FROM matches WHERE LOWER(p1_name) = LOWER(?) OR LOWER(p2_name) = LOWER(?)");
+                    $stmt->bind_param("ss", $uname, $uname);
+                    $stmt->execute();
+                }
                 $conn->query("DELETE FROM users WHERE id = $targetId");
-                // Delete Scores
                 $conn->query("DELETE FROM scores WHERE user_id = $targetId");
-                echo json_encode(["success" => true, "message" => "User Deleted"]);
+                echo json_encode(["success" => true, "message" => "User and matches deleted"]);
             }
         } else if ($action === 'admin_reset_user') {
             $targetId = isset($input['target_id']) ? intval($input['target_id']) : 0;

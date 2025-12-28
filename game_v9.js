@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v6.99";
+    if (vCheck) vCheck.innerText = "v7.01";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -1505,24 +1505,23 @@ window.addEventListener('DOMContentLoaded', () => {
             const SAFETY_BUFFER = 40;
             availableH -= SAFETY_BUFFER;
 
-            // 6. Limits
-            if (availableW < 300) availableW = 300;
-            if (availableH < 300) availableH = 300;
-
             // 7. Multiplayer Sync Override
             let logicalW = availableW;
             let logicalH = availableH;
 
             if (this.multiplayerTargetWidth) {
-                if (typeof log !== 'undefined') log(`FORCE SYNC: Using Target ${this.multiplayerTargetWidth}x${this.multiplayerTargetHeight}`);
+                const targetW = Math.min(availableW, this.multiplayerTargetWidth);
+                const targetH = Math.min(availableH, this.multiplayerTargetHeight);
 
-                // If this is the FIRST time we sync (or it changed), wipe old food
-                if (logicalW !== Math.min(availableW, this.multiplayerTargetWidth)) {
-                    this.foods = []; // Bound sync wipe
+                // Only wipe if the sync state actually CHANGED (v7.01 Fix)
+                if (this._lastSyncW !== targetW || this._lastSyncH !== targetH) {
+                    this.foods = [];
+                    this._lastSyncW = targetW;
+                    this._lastSyncH = targetH;
                 }
 
-                logicalW = Math.min(availableW, this.multiplayerTargetWidth);
-                logicalH = Math.min(availableH, this.multiplayerTargetHeight);
+                logicalW = targetW;
+                logicalH = targetH;
             }
 
             // 8. Box Snap (Grid Alignment)
@@ -2220,7 +2219,6 @@ window.addEventListener('DOMContentLoaded', () => {
             // Standard loop: requestAnimationFrame runs freely?
             // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
             // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
-            // Decrementing timers by 16ms (60hz assumed) every 100ms means timers go 6x slower!
             // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
             const tickRate = this.currentSpeed;
 
@@ -2736,24 +2734,33 @@ window.addEventListener('DOMContentLoaded', () => {
                 this.h2hStatsFetched = true;
                 fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_h2h_stats', p1: p1Name, p2: p2Name }) })
                     .then(r => r.json()).then(d => {
-                        if (d.success && d.stats) {
-                            const p1Stat = document.getElementById('p1-best-score');
-                            const p2Stat = document.getElementById('p2-best-score');
+                        console.log("H2H Stats Loaded:", d);
+                        const p1Stat = document.getElementById('p1-best-score');
+                        const p2Stat = document.getElementById('p2-best-score');
 
+                        if (d.success && d.stats) {
                             if (p1Stat) {
                                 p1Stat.parentElement.style.display = 'flex';
                                 p1Stat.innerText = `Wins: ${d.stats.p1_wins}`;
-                                p1Stat.style.fontSize = '0.7rem';
                                 p1Stat.style.color = '#00ff88';
                             }
                             if (p2Stat) {
                                 p2Stat.parentElement.style.display = 'flex';
                                 p2Stat.innerText = `Wins: ${d.stats.p2_wins}`;
-                                p2Stat.style.fontSize = '0.7rem';
                                 p2Stat.style.color = '#00ffff';
                             }
+                        } else {
+                            // Fallback if fetch failed but we are in multi
+                            if (p1Stat) { p1Stat.innerText = "Wins: 0"; p1Stat.parentElement.style.display = 'flex'; }
+                            if (p2Stat) { p2Stat.innerText = "Wins: 0"; p2Stat.parentElement.style.display = 'flex'; }
                         }
-                    }).catch(console.error);
+                    }).catch(err => {
+                        console.error("H2H Fetch Error:", err);
+                        const p1Stat = document.getElementById('p1-best-score');
+                        const p2Stat = document.getElementById('p2-best-score');
+                        if (p1Stat) { p1Stat.innerText = "Wins: 0"; p1Stat.parentElement.style.display = 'flex'; }
+                        if (p2Stat) { p2Stat.innerText = "Wins: 0"; p2Stat.parentElement.style.display = 'flex'; }
+                    });
             }
         }
 
@@ -3643,12 +3650,69 @@ window.addEventListener('DOMContentLoaded', () => {
                     <td>${u.total_xp || 0}</td>
                     <td>${u.games_played}</td>
                     <td>
+                        <button class="btn-small" onclick="window.gameInstance.viewUserH2H('${u.username}')" style="color:#00ffff">Stats</button>
                         <button class="btn-small" onclick="window.gameInstance.resetUser(${u.id}, '${u.username}')" style="color:orange">Reset</button>
                         <button class="btn-small" onclick="window.gameInstance.deleteUser(${u.id}, '${u.username}')" style="color:red">Delete</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        async viewUserH2H(username) {
+            const modal = document.getElementById('admin-user-stats-modal');
+            const title = document.getElementById('admin-modal-title');
+            const content = document.getElementById('admin-modal-content');
+            if (!modal || !title || !content) return;
+
+            modal.classList.remove('hidden');
+            title.innerText = `H2H: ${username.toUpperCase()}`;
+            content.innerHTML = "Fetching match history...";
+
+            try {
+                const res = await fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_match_history', username: username })
+                });
+                const data = await res.json();
+
+                if (data.success && data.matches) {
+                    let w = 0, l = 0, d = 0;
+                    let opps = {};
+
+                    data.matches.forEach(m => {
+                        const myN = username.toUpperCase();
+                        const winN = (m.winner_name || "").toUpperCase();
+                        const opp = (m.p1_name.toUpperCase() === myN ? m.p2_name : m.p1_name).toUpperCase();
+
+                        if (!opps[opp]) opps[opp] = { w: 0, l: 0, d: 0 };
+                        if (winN === myN) { w++; opps[opp].w++; }
+                        else if (winN === "DRAW" || !winN) { d++; opps[opp].d++; }
+                        else { l++; opps[opp].l++; }
+                    });
+
+                    let html = `<div style="background:rgba(0,0,0,0.5); padding:10px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-around;">
+                        <span style="color:#00ff88">${w}W</span>
+                        <span style="color:#ff5555">${l}L</span>
+                        <span style="color:#aaa">${d}D</span>
+                    </div>`;
+
+                    html += `<div style="font-size:0.75rem;">`;
+                    Object.keys(opps).sort().forEach(o => {
+                        const s = opps[o];
+                        html += `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #333;">
+                            <span style="color:#fff">${o}</span>
+                            <span><span style="color:#00ff88">${s.w}W</span> <span style="color:#ff5555">${s.l}L</span> <span style="color:#aaa">${s.d}D</span></span>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = "No matches found.";
+                }
+            } catch (err) {
+                content.innerHTML = "Error fetching stats.";
+            }
         }
 
         async loadAdminMatches() {

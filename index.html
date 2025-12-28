@@ -359,9 +359,20 @@
                         style="border-color:#ff00ff; color:#ff00ff; margin:0 auto 10px auto; display:block;">ADMIN PANEL
                         👑</button>
 
-                    <button id="btn-logout" class="neon-btn" style="border-color:#ff5555; color:#ff5555;">LOG
-                        OUT</button>
-                    <button id="btn-profile-back" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                    <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+                        <button id="btn-logout" class="neon-btn"
+                            style="border-color:#ff5555; color:#ff5555; width:100%;">LOG OUT</button>
+                        <button id="btn-profile-back" class="neon-btn secondary" style="width:100%;">BACK</button>
+                    </div>
+                </div>
+
+                <!-- ADMIN H2H VIEW MODAL (v7.02) -->
+                <div id="admin-user-stats-modal" class="menu-screen hidden"
+                    style="z-index:100; background:rgba(0,0,0,0.95); border:2px solid #00ffff; width:90%; max-width:400px; padding:20px;">
+                    <h2 id="admin-modal-title" class="neon-title" style="font-size:1.2rem;">USER STATS</h2>
+                    <div id="admin-modal-content" style="margin:15px 0; max-height:300px; overflow-y:auto;"></div>
+                    <button onclick="document.getElementById('admin-user-stats-modal').classList.add('hidden')"
+                        class="neon-btn secondary">CLOSE</button>
                 </div>
 
                 <!-- ADMIN PANEL -->
