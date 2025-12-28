@@ -2058,7 +2058,7 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        logMatchToBackend(p1, p2, winner, duration) {
+        recordMatchStats(p1, p2, winner, duration) {
             console.log("LOGGING MATCH:", p1, p2, winner, duration);
             fetch('auth.php', { // Using auth.php as we added the action there
                 method: 'POST',
@@ -2070,7 +2070,19 @@ window.addEventListener('DOMContentLoaded', () => {
                     winner: winner,
                     duration: duration
                 })
-            }).catch(e => console.error("Log Match Error:", e));
+            }).then(res => res.json())
+                .then(data => {
+                    if (data && data.success) {
+                        const toast = document.createElement('div');
+                        toast.innerText = "MATCH SAVED! 💾";
+                        toast.style.cssText = "position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#00ff00; color:black; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999;";
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 3000);
+                    } else {
+                        console.error("Match Log Failed:", data);
+                    }
+                })
+                .catch(e => console.error("Log Match Error:", e));
         }
 
         saveScoreToBackend(name, score, type) {
