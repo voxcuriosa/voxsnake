@@ -44,7 +44,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v7.01";
+    if (vCheck) vCheck.innerText = "v7.02";
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -2739,27 +2739,37 @@ window.addEventListener('DOMContentLoaded', () => {
                         const p2Stat = document.getElementById('p2-best-score');
 
                         if (d.success && d.stats) {
+                            const w1 = d.stats.p1_wins || 0;
+                            const w2 = d.stats.p2_wins || 0;
+                            const dr = d.stats.draws || 0;
+
                             if (p1Stat) {
                                 p1Stat.parentElement.style.display = 'flex';
-                                p1Stat.innerText = `Wins: ${d.stats.p1_wins}`;
+                                p1Stat.innerText = `W:${w1} L:${w2} D:${dr}`;
                                 p1Stat.style.color = '#00ff88';
                             }
                             if (p2Stat) {
                                 p2Stat.parentElement.style.display = 'flex';
-                                p2Stat.innerText = `Wins: ${d.stats.p2_wins}`;
+                                p2Stat.innerText = `W:${w2} L:${w1} D:${dr}`;
                                 p2Stat.style.color = '#00ffff';
                             }
                         } else {
                             // Fallback if fetch failed but we are in multi
-                            if (p1Stat) { p1Stat.innerText = "Wins: 0"; p1Stat.parentElement.style.display = 'flex'; }
-                            if (p2Stat) { p2Stat.innerText = "Wins: 0"; p2Stat.parentElement.style.display = 'flex'; }
+                            if (p1Stat) {
+                                p1Stat.innerText = "W:0 L:0 D:0";
+                                p1Stat.parentElement.style.display = 'flex';
+                            }
+                            if (p2Stat) {
+                                p2Stat.innerText = "W:0 L:0 D:0";
+                                p2Stat.parentElement.style.display = 'flex';
+                            }
                         }
                     }).catch(err => {
                         console.error("H2H Fetch Error:", err);
                         const p1Stat = document.getElementById('p1-best-score');
                         const p2Stat = document.getElementById('p2-best-score');
-                        if (p1Stat) { p1Stat.innerText = "Wins: 0"; p1Stat.parentElement.style.display = 'flex'; }
-                        if (p2Stat) { p2Stat.innerText = "Wins: 0"; p2Stat.parentElement.style.display = 'flex'; }
+                        if (p1Stat) { p1Stat.innerText = "W:0 L:0 D:0"; p1Stat.parentElement.style.display = 'flex'; }
+                        if (p2Stat) { p2Stat.innerText = "W:0 L:0 D:0"; p2Stat.parentElement.style.display = 'flex'; }
                     });
             }
         }
