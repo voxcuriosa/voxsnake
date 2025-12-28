@@ -1526,6 +1526,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
             container.style.width = (CANVAS_WIDTH + 4) + 'px';
             container.style.height = (CANVAS_HEIGHT + 4) + 'px';
+
+            // BORDER COLOR LOGIC (v6.66)
+            // Use Blue for Client (P2), Green for Host/Single (P1)
+            const borderColor = this.isClient ? '#00ccff' : '#00ff88';
+            container.style.border = `2px solid ${borderColor}`;
+
             container.style.flex = 'none'; // Lock it down again
 
             this.maxX = this.cols - 1;
@@ -2631,17 +2637,21 @@ window.addEventListener('DOMContentLoaded', () => {
             if (scoreP1El && this.snakes[0]) scoreP1El.innerText = this.snakes[0].score;
             if (scoreP2El && this.snakes[1]) scoreP2El.innerText = this.snakes[1].score;
 
-            // REMOTE NAME SYNC (v6.48)
-            if (this.remotePlayerName) {
-                if (this.isClient) {
-                    // If I am Client, Remote Name is the HOST (P1)
-                    const p1Label = document.getElementById('p1-name-label');
-                    if (p1Label) p1Label.innerText = this.remotePlayerName;
-                } else {
-                    // If I am Host, Remote Name is the CLIENT (P2)
-                    const p2Label = document.getElementById('p2-name-label');
-                    if (p2Label) p2Label.innerText = this.remotePlayerName;
-                }
+            // REMOTE NAME SYNC (v6.66 Refined)
+            const p1Label = document.getElementById('p1-name-label');
+            const p2Label = document.getElementById('p2-name-label');
+
+            if (this.isClient) {
+                // I AM PLAYER 2 (Client)
+                // P1 is Host (Remote), P2 is Me (Local)
+                if (this.remotePlayerName && p1Label) p1Label.innerText = this.remotePlayerName;
+                if (this.currentUser && p2Label) p2Label.innerText = this.currentUser.name;
+
+            } else {
+                // I AM PLAYER 1 (Host/Local)
+                // P1 is Me (Local), P2 is Client (Remote)
+                if (this.currentUser && p1Label) p1Label.innerText = this.currentUser.name;
+                if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
             }
         }
 
