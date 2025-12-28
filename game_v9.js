@@ -1893,6 +1893,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         gameOver(winnerIndex, skipNameEntry = false) {
             try {
+                alert(`DIAGNOSTIC (v6.77):\nMode: ${this.gameMode}\nHost: ${this.isHost}\nClient: ${this.isClient}`);
                 this.isRunning = false;
                 this.isPaused = false;
 
