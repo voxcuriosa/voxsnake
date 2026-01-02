@@ -50,7 +50,7 @@
     <meta http-equiv="Expires" content="0">
 </head>
 
-<body data-version="3.38">
+<body data-version="3.39">
     <main class="main-wrapper">
         <h1 class="neon-title">NEON SNAKE</h1>
 
@@ -157,7 +157,7 @@
                         <button id="btn-1p" class="neon-btn">START 1 PLAYER</button>
                         <button id="btn-pre-2p" class="neon-btn">START 2 PLAYER</button>
                     </div>
-                    <script src="game_v9.js?v=3.38"></script>
+                    <script src="game_v9.js?v=3.39"></script>
                     <!-- 2 PLAYER SUB MENU -->
                     <div id="menu-2p-wrapper" class="hidden"
                         style="width:100%; display:flex; flex-direction:column; align-items:center;">
@@ -199,6 +199,37 @@
                     <div style="font-size: 0.7rem; color: #888; margin-top: 5px;">PLAY ON 2 DEVICES (REQ. INTERNET)
                     </div>
                 </div> <!-- END MAIN MENU -->
+
+                <!-- LOBBY SCREEN (Restored) -->
+                <div id="lobby-screen" class="menu-screen hidden" style="flex-direction:column; align-items:center;">
+                    <h2 class="neon-title" style="margin-bottom:10px;">HOST LOBBY</h2>
+                    <div id="qrcode" style="background:white; padding:10px; margin-bottom:20px; border-radius:10px;">
+                    </div>
+
+                    <div style="font-size:0.8rem; color:#aaa; margin-bottom:5px;">JOIN CODE:</div>
+                    <div id="host-id-display"
+                        style="font-size:2.5rem; color:#00ffff; font-family:monospace; letter-spacing:5px; margin-bottom:20px; text-shadow:0 0 10px #00ffff; font-weight:bold;">
+                        ...
+                    </div>
+
+                    <p id="host-status" style="color:#ffff00; font-size:0.8rem; margin-bottom:20px; text-align:center;">
+                        CONNECTING...
+                    </p>
+
+                    <button id="lobby-share-btn" class="neon-btn">SHARE LINK 🔗</button>
+                    <button id="lobby-back-btn" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                </div>
+
+                <!-- JOIN SCREEN (Restored) -->
+                <div id="join-screen" class="menu-screen hidden" style="flex-direction:column; align-items:center;">
+                    <h2 class="neon-title">JOIN GAME</h2>
+                    <div style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">ENTER HOST CODE:</div>
+                    <input type="text" id="join-id-input" placeholder="CODE (Ex: ABCD)" maxlength="10"
+                        style="font-size:1.5rem; text-align:center; letter-spacing:3px; text-transform:uppercase; margin-bottom:20px;">
+
+                    <button id="connect-btn" class="neon-btn" style="margin-top:10px;">CONNECT</button>
+                    <button id="join-back-btn" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
+                </div>
 
                 <!-- High Score Screen (NEW) -->
                 <div id="high-score-screen" class="menu-screen hidden">
@@ -602,7 +633,7 @@
 
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=3.38"></script>
+        <script src="game_v9.js?v=3.39"></script>
 </body>
 
 </html>

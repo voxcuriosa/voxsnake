@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.38";
+    const CURRENT_VER = "v3.39";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.38") {
+    if (bodyVer !== "3.39") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -355,7 +355,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.38";
+            const CURRENT_VER = "v3.39";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 
@@ -770,1557 +770,1555 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         startHost() {
-            alert("DEBUG: startHost() called"); // TRACE 1
-            this.stopGame(); // KILL ANY RUNNING GAME
+            startHost() {
+                this.stopGame(); // KILL ANY RUNNING GAME
 
-            // 1. Reset UI State completely
-            this.hideAllScreens();
-            // DOUBLE TAP MAIN MENU
-            const mm = document.getElementById('main-menu');
-            if (mm) {
-                mm.classList.add('hidden');
-                mm.classList.add('nuclear-hidden');
-                mm.classList.remove('active');
-                mm.style.display = 'none';
-            }
-
-            // 2. Show Lobby
-            if (lobby) {
-                lobby.classList.remove('hidden');
-                lobby.classList.remove('nuclear-hidden'); // UN-NUKE
-                lobby.classList.add('active');
-                lobby.style.display = 'flex'; // Force Flex
-
-                // BACK SUPPORT
-                history.pushState({ screen: 'host' }, 'Host Game', '#host');
-            }
-
-            // Reset Status
-            document.getElementById('host-id-display').innerText = "...";
-            document.getElementById('host-status').innerText = "CONNECTING TO SERVER...";
-            document.getElementById('host-status').style.color = "#ffff00";
-
-            // Generate Random ID (4 letters)
-            // Generate Random ID (4 letters)
-            const shortId = Math.random().toString(36).substring(2, 6).toUpperCase();
-            // v3.36: Namespace checks (Prefix to avoid collision)
-            const hostId = "vs_" + shortId;
-
-            try {
-                alert("DEBUG: Creating new Peer with ID: " + hostId); // TRACE 2
-                // Init Peer (DEBUG MODE)
-                this.peer = new Peer(hostId, {
-                    debug: 2 // Print warnings to console
-                });
-
-                // TIMEOUT CHECK
-                const connTimeout = setTimeout(() => {
-                    if (this.peer && !this.peer.open) {
-                        alert("ERROR: Connection to PeerServer Timed Out (5s).\nCheck you internet connection or firewall.");
-                        document.getElementById('host-status').innerText = "CONNECTION FAILED (TIMEOUT)";
-                        document.getElementById('host-status').style.color = "red";
-                    }
-                }, 5000);
-
-                this.peer.on('open', (id) => {
-                    alert("DEBUG: Peer Open Success!"); // TRACE 3
-                    clearTimeout(connTimeout); // Success!
-                    console.log('My peer ID is: ' + id);
-
-                    // Display SHORT ID to user
-                    document.getElementById('host-id-display').innerText = shortId;
-                    document.getElementById('host-status').innerText = "WAITING FOR PLAYER 2...";
-                    document.getElementById('host-status').style.color = "#aaa";
-
-                    // Gen QR (Must include full ID)
-                    // URL Param ?join=vs_ABCD
-                    const url = location.protocol + '//' + location.host + location.pathname + '?join=' + id;
-                    document.getElementById('qrcode').innerHTML = "";
-                    new QRCode(document.getElementById("qrcode"), { text: url, width: 128, height: 128 });
-
-                    // Share Button Handler
-                    const shareBtn = document.getElementById('lobby-share-btn');
-                    if (shareBtn) {
-                        shareBtn.onclick = async () => {
-                            if (navigator.share) {
-                                try {
-                                    await navigator.share({
-                                        title: 'Neon Snake Game',
-                                        text: 'Join my Neon Snake game!',
-                                        url: url
-                                    });
-                                    console.log('Shared successfully');
-                                } catch (err) {
-                                    console.error('Share failed:', err);
-                                }
-                            } else {
-                                // Fallback: Copy to Clipboard
-                                try {
-                                    await navigator.clipboard.writeText(url);
-                                    alert("Link copied to clipboard!");
-                                } catch (err) {
-                                    prompt("Copy this link:", url);
-                                }
-                            }
-                        };
-                    }
-                });
-
-                this.peer.on('error', (err) => {
-                    clearTimeout(connTimeout);
-                    console.error("PeerJS Error:", err);
-                    alert("HOST ERROR: " + (err.type || err) + "\n\nTry refreshing or checking internet.");
-                    document.getElementById('host-status').innerText = "ERROR: " + (err.type || "UNKNOWN");
-                    document.getElementById('host-status').style.color = "red";
-                });
-
-                this.peer.on('connection', (conn) => {
-                    console.log("Client connected!");
-                    this.conn = conn;
-                    this.isHost = true;
-
-                    document.getElementById('host-status').innerText = "PLAYER 2 CONNECTED! STARTING...";
-                    document.getElementById('host-status').style.color = "#00ff00";
-
-                    // Setup Data Listener (Robus Re-implementation)
-                    // If conn was already open, 'data' might fire immediately
-                    // If not, we wait.
-
-                    // Clear previous to avoid duplicates? (PeerJS usually handles this per conn instance)
-
-                    conn.on('data', (data) => {
-                        console.log("RX:", data); // Global Data Debug
-                        if (data.type === 'input') {
-                            this.handleRemoteInput(data.key);
-                        } else if (data.type === 'hello') {
-                            // RESOLUTION SYNC
-                            // alert("HOST RX HELLO: " + data.width + "x" + data.height); // DEBUG
-                            console.log("Client Resolution:", data.width, data.height);
-
-                            // NAME SYNC (v6.65 Fix)
-                            if (data.username) {
-                                this.remotePlayerName = data.username;
-                                console.log("Remote Player Name Synced:", this.remotePlayerName);
-                                this.updateScoreUI();
-                            }
-
-                            // Lock it in
-                            this.multiplayerTargetWidth = data.width;
-                            this.multiplayerTargetHeight = data.height;
-
-                            try {
-                                this.resize();
-                            } catch (e) { console.error("Resize Error:", e); }
-
-                            // Visual Confirmation of Sync
-                            const status = document.getElementById('host-status');
-                            if (status) {
-                                status.innerText = `SYNCED WITH CLIENT (${data.width}x${data.height})`;
-                                status.style.color = "#00ff88";
-                                status.style.textShadow = "0 0 10px #00ff88";
-                            }
-                        } else if (data.type === 'restart') {
-                            this.startGame('multi');
-                        } else if (data.type === 'gameover') {
-                            this.gameOver(data.winner);
-                        }
-                    });
-
-                    const handleOpen = () => {
-                        // Start Game after delay
-                        setTimeout(() => {
-                            this.hideAllScreens();
-                            this.startGame('multi');
-                        }, 500);
-                    };
-
-                    if (conn.open) {
-                        handleOpen();
-                    } else {
-                        conn.on('open', handleOpen);
-                    }
-                });
-            } catch (e) {
-                alert("PeerJS Init Failed: " + e);
-            }
-        }
-
-        initListeners() {
-            document.addEventListener('keydown', (e) => this.handleInput(e));
-            // Restore Session
-            const savedUser = localStorage.getItem('snake_user');
-            if (savedUser) {
-                try {
-                    this.currentUser = JSON.parse(savedUser);
-                    console.log("Restored Session:", this.currentUser.name);
-                } catch (e) { console.error("Session Corrupt"); }
-            }
-
-            // Bind Auth UI
-            this.bindAuthListeners();
-
-            // Helper for reliable button clicks (Touch + Mouse)
-            const bindButton = (btn, callback) => {
-                if (!btn) return;
-                btn.onclick = (e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    // Haptic Unlock (Try to vibrate on user interaction)
-                    if (window.navigator && window.navigator.vibrate) {
-                        try { window.navigator.vibrate(50); } catch (e) { }
-                    }
-                    callback(e);
-                };
-                btn.ontouchend = (e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    // Haptic Unlock
-                    if (window.navigator && window.navigator.vibrate) {
-                        try { window.navigator.vibrate(50); } catch (e) { }
-                    }
-                    callback(e);
-                };
-            };
-
-            bindButton(btn1P, () => { log("START: Single"); this.startGame('single'); });
-
-            // NEW MENU NAVIGATION (Explicit Dispay Logic)
-            bindButton(btnStart2P, () => {
-                if (menuMainWrapper) menuMainWrapper.style.display = 'none';
-                if (menu2PWrapper) {
-                    menu2PWrapper.classList.remove('hidden');
-                    menu2PWrapper.style.display = 'flex';
-                    menu2PWrapper.style.flexDirection = 'column';
-                    menu2PWrapper.style.alignItems = 'center';
-                    // BACK SUPPORT
-                    history.pushState({ screen: '2p-menu' }, '2 Player Mode', '#2p');
-                }
-            });
-
-            bindButton(btnBackMain, () => {
-                if (history.state && history.state.screen === '2p-menu') {
-                    history.back(); // Native back triggers popstate -> main menu
-                } else {
-                    // Manual fallback
-                    if (menu2PWrapper) menu2PWrapper.style.display = 'none';
-                    if (menuMainWrapper) {
-                        menuMainWrapper.classList.remove('hidden');
-                        menuMainWrapper.style.display = 'flex';
-                        menuMainWrapper.style.flexDirection = 'column';
-                        menuMainWrapper.style.alignItems = 'center';
-                    }
-                }
-            });
-
-            bindButton(btn2P, () => { log("START: Multi"); this.startGame('multi'); });
-
-            bindButton(restartBtn, () => {
-                log("RESTART CLICK");
-                if (this.isClient && this.conn && this.conn.open) {
-                    this.conn.send({ type: 'restart' });
-                } else {
-                    this.startGame(this.gameMode);
-                }
-            });
-
-            bindButton(menuBtn, () => {
-                this.stopGame(); // Clean up (peers, loops)
-                this.showMainMenu();
-            });
-            bindButton(btnResume, () => this.togglePause());
-
-            // Host/Join Buttons too (defined in initMultiplayer, but we can grab them here or leave them default?)
-            // Let's rely on initMultiplayer for those, or re-bind them if we can access them.
-            // Better to just fix them in initMultiplayer if they are broken.
-            // Actually, initMultiplayer does `btnHost.onclick`. We should upgrade that too.
-
-            if (submitScoreBtn) bindButton(submitScoreBtn, () => this.submitHighScore());
-
-            // v3.17: Separate Login/Register Buttons on Game Over
-            const btnGoLogin = document.getElementById('btn-go-login');
-            const btnGoRegister = document.getElementById('btn-go-register');
-
-            if (btnGoLogin) {
-                bindButton(btnGoLogin, () => {
-                    this.hideAllScreens();
-                    this.showLoginScreen();
-                });
-            }
-            if (btnGoRegister) {
-                bindButton(btnGoRegister, () => {
-                    this.hideAllScreens();
-                    this.showRegisterScreen();
-                });
-            }
-
-            // Global Touch Listeners (Window) for maximum reliability
-            window.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
-            window.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-            window.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-
-            // Enter key for name entry
-            if (playerNameInput) {
-                playerNameInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') this.submitHighScore();
-                });
-            }
-
-            // High Score Navigation
-            const btnHighScores = document.getElementById('btn-highscores');
-            const btnBackHighScores = document.getElementById('btn-back-highscores');
-            const highScoreScreen = document.getElementById('high-score-screen');
-
-            // TABS
-            const tabMobile = document.getElementById('tab-mobile');
-            const tabPC = document.getElementById('tab-pc');
-            const sortBest = document.getElementById('sort-best');
-            const sortTotal = document.getElementById('sort-total');
-
-            if (tabMobile) bindButton(tabMobile, () => this.updateTabs('mobile') || this.loadHighScores('mobile'));
-            if (tabPC) bindButton(tabPC, () => this.updateTabs('pc') || this.loadHighScores('pc'));
-
-            if (sortBest) bindButton(sortBest, () => this.updateTabs(null, 'best') || this.loadHighScores(null, 'best'));
-            if (sortTotal) bindButton(sortTotal, () => this.updateTabs(null, 'total') || this.loadHighScores(null, 'total'));
-
-            if (btnHighScores) {
-                bindButton(btnHighScores, () => {
-                    if (mainMenu) mainMenu.classList.add('hidden');
-                    this.showHighScoreScreen(); // Use new helper
-
-                    // SPACE SAVING: Move Title to Main Header
-                    const title = document.querySelector('h1.neon-title');
-                    if (title) title.innerText = "HIGH SCORES";
-
-                    // Force Default View: Mobile
-                    this.updateTabs('mobile');
-                    this.loadHighScores('mobile');
-                });
-            } else {
-                console.error("High Score Button NOT FOUND");
-            }
-
-            bindButton(btnBackHighScores, () => {
-                if (highScoreScreen) {
-                    highScoreScreen.classList.add('hidden');
-                    highScoreScreen.classList.remove('active');
-                }
-                this.showMainMenu(); // Return to Main Menu
-            });
-
-            // ABOUT BUTTON & LOGIC
-            const btnAbout = document.getElementById('btn-about');
-            const aboutScreen = document.getElementById('about-screen');
-            const aboutBackBtn = document.getElementById('about-back-btn');
-            const contactEmail = document.getElementById('contact-email');
-
-            if (btnAbout) {
-                bindButton(btnAbout, () => {
-                    this.hideAllScreens();
-                    if (aboutScreen) {
-                        aboutScreen.classList.remove('hidden');
-                        aboutScreen.classList.remove('nuclear-hidden'); // CRITICAL FIX
-                        aboutScreen.classList.add('active');
-                        aboutScreen.style.display = 'block';
-                        // BACK SUPPORT
-                        history.pushState({ screen: 'about' }, 'About', '#about');
-                    }
-                });
-            }
-
-            if (aboutBackBtn) {
-                bindButton(aboutBackBtn, () => {
-                    if (history.state && history.state.screen === 'about') history.back();
-                    else this.showMainMenu();
-                });
-            }
-
-            if (contactEmail) {
-                contactEmail.onclick = () => {
-                    const u = 'borchgrevink';
-                    const d = 'gmail.com';
-                    contactEmail.innerText = u + '@' + d;
-                    contactEmail.style.color = '#fff';
-                    contactEmail.style.cursor = 'text';
-                    contactEmail.title = '';
-                    contactEmail.onclick = null;
-                };
-            }
-
-            // DELETE ACCOUNT BUTTON (v3.20)
-            const btnProfileDelete = document.getElementById('btn-profile-delete');
-
-            // --- MISSING BINDINGS RE-BIND (Fix for Back Gesture & Missing logic) ---
-            const btnAdmin = document.getElementById('btn-admin-panel');
-            const btnAdminClose = document.getElementById('btn-admin-close');
-            const btnProfileBack = document.getElementById('btn-profile-back');
-
-            if (btnAdmin) {
-                bindButton(btnAdmin, () => {
-                    this.hideAllScreens();
-                    const adminScreen = document.getElementById('admin-screen');
-                    if (adminScreen) {
-                        adminScreen.classList.remove('hidden');
-                        adminScreen.classList.remove('nuclear-hidden');
-                        adminScreen.classList.add('active');
-                        adminScreen.style.display = 'block';
-                        this.loadAdmin();
-                        // BACK SUPPORT
-                        history.pushState({ screen: 'admin' }, 'Admin', '#admin');
-                    }
-                });
-            }
-
-            if (btnAdminClose) {
-                bindButton(btnAdminClose, () => {
-                    if (history.state && history.state.screen === 'admin') history.back();
-                    else this.showMainMenu();
-                });
-            }
-
-            if (btnProfileBack) {
-                bindButton(btnProfileBack, () => {
-                    if (history.state && history.state.screen === 'profile') history.back();
-                    else this.showMainMenu();
-                });
-            }
-            // -----------------------------------------------------------------------
-
-            if (btnProfileDelete) {
-                bindButton(btnProfileDelete, () => {
-                    if (confirm("Are you sure you want to PERMANENTLY delete your account? Stats and High Scores will be lost.")) {
-                        const pwd = prompt("Please enter your password to confirm deletion:");
-                        if (pwd) {
-                            this.deleteMyAccount(pwd);
-                        }
-                    }
-                });
-            }
-        }
-
-        showMainMenu() {
-            this.isRunning = false;
-            // RESET MENU STATE (v9.0)
-            const mm = document.getElementById('menu-main-wrapper');
-            const m2 = document.getElementById('menu-2p-wrapper');
-
-            // Defaut: Show Main, Hide 2P
-            if (mm) {
-                mm.classList.remove('hidden');
-                mm.style.display = 'flex';
-                mm.style.flexDirection = 'column';
-                mm.style.alignItems = 'center';
-            }
-            if (m2) {
-                m2.classList.add('hidden');
-                m2.style.display = 'none';
-            }
-            this.isPaused = false;
-            this.gameMode = null;
-
-            // Restore Title
-            const title = document.querySelector('h1.neon-title');
-            if (title) title.innerText = "NEON SNAKE";
-
-            this.hideAllScreens();
-
-            // Update Login Button Text
-            const btnMenuLogin = document.getElementById('btn-menu-login');
-            if (btnMenuLogin) {
-                if (this.currentUser) {
-                    btnMenuLogin.innerText = "PROFILE: " + this.currentUser.name;
-                    btnMenuLogin.style.color = "#00ffff"; // Cyan for user
-                } else {
-                    btnMenuLogin.innerText = "LOGIN / PROFILE";
-                    btnMenuLogin.style.color = "#FFD700"; // Gold for action
-                }
-            }
-
-            this.hideAllScreens();
-
-            const mainMenu = document.getElementById('main-menu'); // FIX: Define it!
-            if (mainMenu) {
-                mainMenu.classList.remove('hidden');
-                mainMenu.classList.remove('nuclear-hidden');
-                mainMenu.classList.add('active');
-                mainMenu.style.display = 'flex'; // Reset to flex
-            }
-            this.touchStartX = 0;
-            this.touchStartY = 0;
-            if (gameOverScreen) {
-                gameOverScreen.classList.remove('active');
-                gameOverScreen.classList.add('hidden');
-            }
-            if (nameEntryScreen) nameEntryScreen.classList.add('hidden');
-            if (scoreBoard) scoreBoard.classList.add('hidden');
-            if (dynamicLegend) dynamicLegend.innerHTML = '';
-            if (btnResume) btnResume.classList.add('hidden');
-
-            // Ensure High Score screen is hidden
-            const highScoreScreen = document.getElementById('high-score-screen');
-            if (highScoreScreen) {
-                highScoreScreen.classList.add('hidden');
-                highScoreScreen.classList.remove('active');
-                highScoreScreen.classList.add('nuclear-hidden');
-            }
-
-            this.touchStartY = 0;
-
-            // FX Systems
-            this.sound = new SoundManager();
-            this.particles = new ParticleSystem();
-            this.shakeX = 0;
-            this.shakeY = 0;
-            this.shakeTimer = 0;
-
-            this.loadHighScores();
-            this.draw();
-        }
-
-        triggerShake(amount = 5) {
-            this.shakeTimer = amount;
-        }
-
-        init() {
-            // This init function seems to be missing from the provided context,
-            // but the instruction implies it should exist.
-            // Adding a placeholder if it's not defined elsewhere.
-        }
-
-        joinGame(hostId) {
-            console.log("Joining Host:", hostId);
-            this.stopGame(); // KILL ANY RUNNING GAME
-
-            // UI Feedback
-            this.hideAllScreens();
-            const mm = document.getElementById('main-menu');
-            if (mm) {
-                mm.style.display = 'none';
-                mm.classList.add('nuclear-hidden');
-            }
-
-            document.getElementById('main-menu').classList.remove('active');
-            document.getElementById('main-menu').classList.add('hidden');
-            document.getElementById('join-screen').classList.add('hidden');
-
-            const lobby = document.getElementById('lobby-screen');
-            lobby.classList.remove('hidden');
-            lobby.classList.add('active');
-            document.getElementById('qrcode').innerHTML = "";
-            document.querySelector('#lobby-screen p').style.display = 'none';
-
-            document.getElementById('host-id-display').innerText = hostId;
-            const statusEl = document.getElementById('host-status');
-            statusEl.innerText = "INITIALIZING CLIENT...";
-            statusEl.style.color = "#ffff00";
-
-            try {
-                this.peer = new Peer();
-
-                this.peer.on('open', (id) => {
-                    statusEl.innerText = "FINDING HOST " + hostId + "...";
-
-                    this.conn = this.peer.connect(hostId);
-
-                    this.conn.on('open', () => {
-                        statusEl.innerText = "CONNECTED! SYNCING...";
-                        statusEl.style.color = "#00ff00";
-                        this.isClient = true;
-
-                        // Start Hello Loop (Keep Alive & Sync Enforcer)
-                        this.helloInterval = setInterval(() => {
-                            if (this.conn && this.conn.open) {
-                                this.conn.send({
-                                    type: 'hello',
-                                    width: window.innerWidth,
-                                    height: window.innerHeight,
-                                    username: this.currentUser ? this.currentUser.name : 'Guest'
-                                });
-                            }
-                        }, 1000);
-                    });
-
-                    this.conn.on('data', (data) => {
-                        // 1. STATE UPATE
-                        if (data.type === 'state') {
-                            this.clientState = data;
-
-                            // SYNC DIMENSIONS (New v3.8 Fix)
-                            if (data.dims) {
-                                if (CANVAS_WIDTH !== data.dims.w || CANVAS_HEIGHT !== data.dims.h) {
-                                    console.log("SYNC DIMS:", data.dims);
-                                    // PERSIST TARGETS so resize() uses them!
-                                    this.multiplayerTargetWidth = data.dims.w;
-                                    this.multiplayerTargetHeight = data.dims.h;
-
-                                    // Apply immediately
-                                    CANVAS_WIDTH = data.dims.w;
-                                    CANVAS_HEIGHT = data.dims.h;
-                                    canvas.width = CANVAS_WIDTH;
-                                    canvas.height = CANVAS_HEIGHT;
-                                    canvas.style.width = CANVAS_WIDTH + 'px';
-                                    canvas.style.height = CANVAS_HEIGHT + 'px';
-                                }
-                            }
-
-                            // SYNC HOST NAME (v6.52 Fix)
-                            if (data.hostName) {
-                                this.remotePlayerName = data.hostName.toUpperCase();
-                                this.updateScoreUI(); // TRIGGER STATS FETCH IMMEDIATELY
-                            }
-
-                            if (!this.isRunning) {
-                                lobby.classList.add('hidden');
-                                lobby.classList.remove('active');
-                                this.startGame('multi');
-                            }
-                        }
-                        // 2. GAME OVER
-                        else if (data.type === 'gameover') {
-                            console.log("CLIENT RX GAMEOVER:", data.winner); // Debug
-                            this.gameOver(data.winner);
-                        }
-                        // 3. MATCH SAVED (v6.95 Sync)
-                        else if (data.type === 'match_saved') {
-                            this.showMatchSavedToast();
-                        }
-                    });
-
-                    this.conn.on('error', (err) => {
-                        alert("CLIENT Connection Error: " + err);
-                        location.reload();
-                    });
-
-                    setTimeout(() => {
-                        if (!this.conn.open) {
-                            alert("TIMEOUT: Could not connect to Host " + hostId + ".\nCheck firewalls?");
-                            location.reload();
-                        }
-                    }, 8000);
-                });
-
-                this.peer.on('error', err => {
-                    alert("CLIENT Peer Error: " + err.type);
-                    location.reload();
-                });
-
-            } catch (e) {
-                alert("CLIENT EXCEPTION: " + e);
-                location.reload();
-            }
-        }
-
-        // --- HIGH SCORE SYSTEM (v4.94) ---
-
-        checkHighScore(score) {
-            try {
-                // Check against cache for current platform or default
-                const type = this.platform || 'mobile';
-                const raw = localStorage.getItem('snake_highscores_cache_' + type);
-                const scores = JSON.parse(raw || '[]');
-                if (!Array.isArray(scores)) return true;
-                if (scores.length < 50) return true;
-                return score > scores[scores.length - 1].score;
-            } catch (e) {
-                console.error("HighScore Check Error", e);
-                return true;
-            }
-        }
-
-        submitHighScore() {
-            // If Logged In, use that name. If not, use Input or "Anonymous"
-            let name = "Anonymous";
-            if (this.currentUser) {
-                name = this.currentUser.name;
-            } else if (playerNameInput) {
-                const val = playerNameInput.value.trim();
-                if (val) {
-                    name = val.toUpperCase();
-                    localStorage.setItem('playerName', name); // Remember manually entered name
-                }
-            }
-
-            const score = this.currentPendingScore;
-            // HARDENED CHECK (v6.67): Force PC if screen is wide, ignoring touch capabilities
-            const type = (window.innerWidth > 768) ? 'pc' : 'mobile';
-
-            // PENDING SCORE LOGIC (v3.13)
-            // Always store this, in case they decide to Login/Register right after seeing this screen.
-            this.pendingScore = { score: score, type: type, timestamp: Date.now() };
-
-            if (submitScoreBtn) {
-                submitScoreBtn.disabled = true;
-                submitScoreBtn.innerText = "SAVING...";
-            }
-
-            // Hide entry screen first
-            nameEntryScreen.classList.add('hidden');
-            nameEntryScreen.classList.remove('active');
-
-            this.saveScoreToBackend(name, score, type)
-                .then(data => {
-                    this.updateTabs(type);
-                    this.loadHighScores(type);
-                    this.showHighScoreScreen();
-
-                    if (submitScoreBtn) {
-                        submitScoreBtn.disabled = false;
-                        submitScoreBtn.innerText = "SUBMIT";
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert("Failed to save score. Offline?");
-                    this.showMainMenu();
-                    if (submitScoreBtn) {
-                        submitScoreBtn.disabled = false;
-                        submitScoreBtn.innerText = "RETRY";
-                    }
-                });
-        }
-
-        showHighScoreScreen() {
-            this.hideAllScreens();
-
-            const highScoreScreen = document.getElementById('high-score-screen');
-            if (highScoreScreen) {
-                highScoreScreen.classList.remove('hidden');
-                highScoreScreen.classList.remove('nuclear-hidden');
-                highScoreScreen.classList.add('active');
-                highScoreScreen.style.display = 'flex';
-
-                // BACK SUPPORT
-                history.pushState({ screen: 'high-scores' }, 'High Scores', '#high-scores');
-
-                // Set active tab logic
-                this.updateTabs(this.viewingPlatform || this.platform);
-                this.loadHighScores(this.viewingPlatform || this.platform);
-            }
-        }
-
-        updateTabs(activeType, activeSort) {
-            if (activeType) this.viewingPlatform = activeType;
-            if (activeSort) this.viewingSort = activeSort;
-
-            if (!this.viewingSort) this.viewingSort = 'best'; // Default
-
-            const tM = document.getElementById('tab-mobile');
-            const tP = document.getElementById('tab-pc');
-            const sB = document.getElementById('sort-best');
-            const sT = document.getElementById('sort-total');
-
-            // Platform Tabs
-            if (tM && tP) {
-                if (this.viewingPlatform === 'mobile') {
-                    tM.classList.remove('secondary'); tM.classList.add('active');
-                    tP.classList.add('secondary'); tP.classList.remove('active');
-                    tP.style.opacity = '0.5'; tM.style.opacity = '1';
-                } else {
-                    tP.classList.remove('secondary'); tP.classList.add('active');
-                    tM.classList.add('secondary'); tM.classList.remove('active');
-                    tM.style.opacity = '0.5'; tP.style.opacity = '1';
-                }
-            }
-
-            // Sort Tabs
-            if (sB && sT) {
-                if (this.viewingSort === 'best') {
-                    sB.classList.remove('secondary'); sB.classList.add('active');
-                    sT.classList.add('secondary'); sT.classList.remove('active');
-                    sT.style.opacity = '0.5'; sB.style.opacity = '1';
-                } else {
-                    sT.classList.remove('secondary'); sT.classList.add('active');
-                    sB.classList.add('secondary'); sB.classList.remove('active');
-                    sB.style.opacity = '0.5'; sT.style.opacity = '1';
-                }
-            }
-        }
-
-        loadHighScores(type, sort) {
-            type = type || this.viewingPlatform || 'mobile';
-            sort = sort || this.viewingSort || 'best';
-
-            const list = document.getElementById('high-score-list');
-            if (!list) return;
-
-            list.innerHTML = '<li style="text-align:center;">LOADING...</li>';
-
-            // Cache key per platform AND sort
-            const cacheKey = 'snake_highscores_cache_' + type + '_' + sort;
-
-            // Try Cache First
-            try {
-                const raw = localStorage.getItem(cacheKey);
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    this.renderHighScores(data);
-                }
-            } catch (e) { }
-
-            // Fetch Live
-            return fetch(`api.php?type=${type}&sort=${sort}&t=${Date.now()}`)
-                .then(res => res.json())
-                .then(data => {
-                    localStorage.setItem(cacheKey, JSON.stringify(data));
-                    this.renderHighScores(data);
-                    return data; // Pass data to next chain
-                })
-                .catch(err => {
-                    console.error("Score Load Error", err);
-                    // Fallback to cache without clearing
-                    return [];
-                });
-        }
-
-        renderHighScores(data) {
-            const list = document.getElementById('high-score-list');
-            if (!list) return;
-            list.innerHTML = '';
-
-            if (!data || data.length === 0) {
-                list.innerHTML = '<li style="text-align:center; color:#888;">NO SCORES YET</li>';
-                return;
-            }
-
-            const isTotal = (this.viewingSort === 'total');
-            const suffix = ''; // User requested removal of " XP" suffix
-
-            data.forEach((entry, index) => {
-                const li = document.createElement('li');
-                // Format large numbers
-                const val = parseInt(entry.score).toLocaleString();
-                li.innerHTML = `<span>${index + 1}. ${entry.name}</span> <span>${val}${suffix}</span>`;
-                list.appendChild(li);
-            });
-        }
-
-        startGame(mode) {
-            // alert("STARTING GAME: " + mode);
-            console.log("STARTING GAME MODE:", mode);
-
-            try {
-                this.gameMode = mode;
-                this.resize();
-                this.snakes = [];
-                this.powerups = [];
-                this.walls = [];
-                this.projectiles = [];
-                this.baseSpeed = 100;
-                this.currentSpeed = this.baseSpeed;
-                this.totalFoodEaten = 0;
-                this.isPaused = false;
-                this.lastTime = performance.now();
-                this.gameStartTime = Date.now(); // TRACK DURATION
-
-                console.log("Initializing Snakes...");
-                if (mode === 'single') {
-                    const s1 = new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
-                        { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
-
-                    // SPAWN PROTECTION (Fix Immediate Crash)
-                    s1.invulnerable = true;
-                    setTimeout(() => s1.invulnerable = false, 2000);
-
-                    this.snakes.push(s1);
-                } else {
-                    const s1 = new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
-                        { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
-
-                    // Ensure valid start pos for P2 (Relative to Grid Size)
-                    const gridW = Math.floor(CANVAS_WIDTH / GRID_SIZE);
-                    const gridH = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
-
-                    let p2x = gridW - 5;
-                    let p2y = gridH - 5;
-
-                    // Safety Bounds (ensure at least inside map)
-                    if (p2x < 2) p2x = gridW - 2;
-                    if (p2y < 2) p2y = gridH - 2;
-                    if (p2x >= gridW) p2x = gridW - 1; // Strict Clamp
-
-                    const s2 = new Snake(2, COLORS.p2, { x: p2x, y: p2y }, { x: -1, y: 0 },
-                        { up: 'w', down: 's', left: 'a', right: 'd' });
-
-                    // SPAWN PROTECTION
-                    s2.invulnerable = true;
-                    setTimeout(() => s2.invulnerable = false, 2000);
-
-                    this.snakes = [s1, s2];
-                }
-                console.log("Snakes initialized:", this.snakes.length);
-
-                // Force a resize check BEFORE spawning to avoid 0x0 canvas -> Center Spawn Fallback
-                this.resize();
-
-                // Validate Canvas Size
-                if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) {
-                    console.error("CRITICAL: Canvas size 0. Forcing defaults.");
-                    CANVAS_WIDTH = 800; CANVAS_HEIGHT = 600;
-                    canvas.width = 800; canvas.height = 600;
-                }
-
-                // Safety delay for spawn if canvas is somehow still weird, otherwise immediate
-                this.spawnFood();
-                this.spawnFood();
-                this.spawnFood();
-
-                this.isRunning = true;
-
+                // 1. Reset UI State completely
                 this.hideAllScreens();
-                scoreBoard.classList.remove('hidden');
+                // DOUBLE TAP MAIN MENU
+                const mm = document.getElementById('main-menu');
+                if (mm) {
+                    mm.classList.add('hidden');
+                    mm.classList.add('nuclear-hidden');
+                    mm.classList.remove('active');
+                    mm.style.display = 'none';
+                }
 
-                if (p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
+                // 2. Show Lobby
+                const lobby = document.getElementById('lobby-screen'); // FIXED: Explicit Definition
+                if (lobby) {
+                    lobby.classList.remove('hidden');
+                    lobby.classList.remove('nuclear-hidden'); // UN-NUKE
+                    lobby.classList.add('active');
+                    lobby.style.display = 'flex'; // Force Flex
 
-                // UPDATE HUD NAMES (v6.48 Logic)
-                const p1Label = document.getElementById('p1-name-label');
-                const p2Label = document.getElementById('p2-name-label');
-                const p1Best = document.getElementById('p1-best-score');
+                    // BACK SUPPORT
+                    history.pushState({ screen: 'host' }, 'Host Game', '#host');
+                }
 
-                if (p1Label) {
-                    if (this.isClient) {
-                        // I AM CLIENT (P2)
-                        // P1 is Host (Default "HOST", updated via sync)
-                        // P2 is ME
-                        p1Label.innerText = "HOST";
-                        p1Label.style.color = "#00ff88";
+                // Reset Status
+                document.getElementById('host-id-display').innerText = "...";
+                document.getElementById('host-status').innerText = "CONNECTING TO SERVER...";
+                document.getElementById('host-status').style.color = "#ffff00";
 
-                        if (p2Label && this.currentUser) {
-                            p2Label.innerText = this.currentUser.name.toUpperCase();
+                // Generate Random ID (4 letters)
+                const shortId = Math.random().toString(36).substring(2, 6).toUpperCase();
+                // v3.36: Namespace checks (Prefix to avoid collision)
+                const hostId = "vs_" + shortId;
+
+                try {
+                    // Init Peer (DEBUG MODE)
+                    this.peer = new Peer(hostId, {
+                        debug: 2 // Print warnings to console
+                    });
+
+                    // TIMEOUT CHECK
+                    const connTimeout = setTimeout(() => {
+                        if (this.peer && !this.peer.open) {
+                            alert("ERROR: Connection to PeerServer Timed Out (5s).\nCheck you internet connection or firewall.");
+                            document.getElementById('host-status').innerText = "CONNECTION FAILED (TIMEOUT)";
+                            document.getElementById('host-status').style.color = "red";
                         }
-                    } else {
-                        // I AM HOST (P1) or SINGLE PLAYER
-                        // P1 is ME
-                        if (this.currentUser) {
-                            p1Label.innerText = this.currentUser.name.toUpperCase();
-                            p1Label.style.color = "#00ff88";
-                        } else {
-                            p1Label.innerText = "PLAYER 1";
-                            p1Label.style.color = "";
-                        }
-
-                        // P2 is "PLAYER 2" or "JOINING..." (updated via sync)
-                        if (p2Label) p2Label.innerText = "PLAYER 2";
-                    }
-
-                    if (p1Best) {
-                        // Only show best score if Single Player
-                        if (this.gameMode === 'single') {
-                            p1Best.innerText = "LOADING...";
-                            this.updatePersonalBestDisplay();
-                        } else {
-                            p1Best.innerText = "";
-                        }
-                    }
-                }
-
-                this.h2hStatsFetched = false; // Reset for new match statistics fetch
-                this.updateScoreUI();
-
-                // WAKE LOCK (Mobile/iPhone Fix)
-                if ('wakeLock' in navigator) {
-                    try { navigator.wakeLock.request('screen'); } catch (e) { }
-                }
-
-                if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-
-                // FORCE FIRST BROADCAST to ensure Client starts immediately
-                this.broadcastState();
-
-                this.loop(this.lastTime);
-
-                console.log("Game Start Sequence Complete.");
-
-            } catch (e) {
-                console.error("START GAME ERROR:", e);
-                alert("START ERROR: " + e.message);
-            }
-        }
-
-        resize() {
-            const container = canvas.parentElement;
-
-            // LAYOUT FIX v8.0 (DEFENSIVE HYBRID)
-            // Goal: Guarantee visibility by taking the conservative minimum of available space.
-            if (!container) return;
-
-            // 1. Reset Container to allow measurement
-            container.style.width = '100%';
-            container.style.height = '';
-            container.style.flex = '1';
-            canvas.style.height = '0px';
-            canvas.style.width = '0px';
-
-            // 2. Measure Method A: Flexbox (Trusted, but sometimes includes hidden parts)
-            const flexH = container.clientHeight;
-
-            // 3. Measure Method B: Window Math (Raw, but ignores margins sometimes)
-            // We calculate exactly how much space is left from the container's top to the window bottom
-            const rect = container.getBoundingClientRect();
-            const top = rect.top > 0 ? rect.top : 100; // Fallback if 0
-            const mathH = window.innerHeight - top;
-
-            // 4. THE SAFE CHOICE
-            // Use the SMALLER of the two. This ensures we don't overflow if Flexbox thinks it has more space than the Window actually has.
-            let availableH = Math.min(flexH, mathH);
-            let availableW = container.clientWidth - 4; // Border safety
-
-            // 5. THE SAFETY BUFFER (The "Finger Width" Guarantee)
-            // We subtract a strict 40px. 
-            // - On Mobile: This clears the address bar / home swipe bar.
-            // - On PC: This clears typical taskbars or window borders.
-            const SAFETY_BUFFER = 40;
-            availableH -= SAFETY_BUFFER;
-
-            // 7. Multiplayer Sync Override
-            let logicalW = availableW;
-            let logicalH = availableH;
-
-            if (this.multiplayerTargetWidth) {
-                const targetW = Math.min(availableW, this.multiplayerTargetWidth);
-                const targetH = Math.min(availableH, this.multiplayerTargetHeight);
-
-                // Only wipe if the sync state actually CHANGED (v7.01 Fix)
-                if (this._lastSyncW !== targetW || this._lastSyncH !== targetH) {
-                    this.foods = [];
-                    this._lastSyncW = targetW;
-                    this._lastSyncH = targetH;
-                }
-
-                logicalW = targetW;
-                logicalH = targetH;
-            }
-
-            // 8. Box Snap (Grid Alignment)
-            this.cols = Math.floor(logicalW / GRID_SIZE);
-            this.rows = Math.floor(logicalH / GRID_SIZE);
-
-            // 9. Set Physical Dimensions
-            CANVAS_WIDTH = this.cols * GRID_SIZE;
-            CANVAS_HEIGHT = this.rows * GRID_SIZE;
-
-            canvas.width = CANVAS_WIDTH;
-            canvas.height = CANVAS_HEIGHT;
-
-            // 10. Lock Container (Shrink-Wrap)
-            canvas.style.width = CANVAS_WIDTH + "px";
-            canvas.style.height = CANVAS_HEIGHT + "px";
-
-            container.style.width = (CANVAS_WIDTH + 4) + 'px';
-            container.style.height = (CANVAS_HEIGHT + 4) + 'px';
-
-            // BORDER COLOR LOGIC (v6.66)
-            // Use Blue for Client (P2), Green for Host/Single (P1)
-            const borderColor = this.isClient ? '#00ccff' : '#00ff88';
-            container.style.border = `2px solid ${borderColor}`;
-
-            container.style.flex = 'none'; // Lock it down again
-
-            this.maxX = this.cols - 1;
-            this.maxY = this.rows - 1;
-
-            // FOOD BOUNDARY SAFETY (v6.98)
-            // If the board shrunk, some food might be outside.
-            if (this.foods && this.foods.length > 0) {
-                const before = this.foods.length;
-                this.foods = this.foods.filter(f => f.x <= this.maxX && f.y <= this.maxY);
-                // Respawn if we lost food due to shrink
-                while (this.foods.length < before && this.foods.length < 3) {
-                    this.spawnFood();
-                }
-            }
-
-            // 3. UI Updates based on device
-            const btn1P = document.getElementById('btn-1p');
-            if (btn1P) {
-                if (window.innerWidth < 768) btn1P.innerText = "START 1 PLAYER";
-                else btn1P.innerText = "START 1 PLAYER";
-            }
-
-            this.draw();
-        }
-
-        spawnFood() {
-            // Limit max foods just in case, but aim for 3-5
-            if (this.foods.length >= 5) return;
-
-            let valid = false;
-            let attempts = 0;
-
-            if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) this.resize();
-
-            let maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
-            let maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
-
-            if (maxX <= 1 || maxY <= 1) {
-                maxX = 40;
-                maxY = 30;
-            }
-
-            let newFood = {};
-
-            while (!valid && attempts < 100) {
-                attempts++;
-                newFood = {
-                    x: Math.floor(Math.random() * (this.maxX + 1)),
-                    y: Math.floor(Math.random() * (this.maxY + 1)),
-                    createdAt: Date.now() // Add timestamp for respawn logic
-                };
-                valid = !this.isOccupied(newFood);
-            }
-
-            if (!valid) {
-                // Force Random if stuck
-                newFood = {
-                    x: Math.floor(Math.random() * (this.maxX + 1)),
-                    y: Math.floor(Math.random() * (this.maxY + 1))
-                };
-            }
-
-            this.foods.push(newFood);
-        }
-
-        // ... spawnPowerUp omitted ...
-
-        updateDynamicLegend() {
-            if (!dynamicLegend) return;
-
-            // Force Redraw Every Frame (No Caching)
-            dynamicLegend.innerHTML = '';
-
-            let renderPowerups = this.powerups || []; // Default to empty array
-
-            // 1. Draw Static Powerups (Available on board)
-            renderPowerups.forEach(p => {
-                const def = this.powerUpTypes[p.type];
-                const div = document.createElement('div');
-                div.className = 'legend-item';
-                div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
-                dynamicLegend.appendChild(div);
-            });
-
-            // 2. Draw Active Timers (Ghost Style: Individual rows)
-            const s1 = this.snakes[0];
-            if (s1) {
-
-                // Helper to add a timer row
-                const addTimer = (type, seconds, labelOverride = null) => {
-                    const def = this.powerUpTypes[type];
-                    const label = labelOverride || def.label;
-                    const div = document.createElement('div');
-                    div.className = 'legend-item'; // Use standard class
-                    // Add specific styling to make it pop
-                    div.style.color = '#fff';
-                    div.style.fontWeight = 'bold';
-                    div.style.textShadow = '0 0 5px ' + def.color;
-
-                    div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
-                    dynamicLegend.appendChild(div);
-                };
-
-                if (s1.ghostTimer > 0) {
-                    addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
-                }
-                if (s1.shieldTimer > 0) {
-                    addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
-                }
-                if (s1.magnetTimer > 0) {
-                    addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
-                }
-            }
-        }
-
-        spawnPowerUp() {
-            if (this.powerups.length >= 5) return;
-
-            let type = '';
-
-            // TEST MODE OVERRIDE
-            if (this.testMode && this.powerUpTypes[this.testMode]) {
-                type = this.testMode;
-            } else {
-                let availableTypes = Object.keys(this.powerUpTypes);
-
-                if (this.gameMode === 'single') {
-                    // Exclude multiplayer-only powerups in single player
-                    availableTypes = availableTypes.filter(t => !['eraser', 'blind', 'ice', 'switch', 'torpedo'].includes(t));
-                }
-
-                if (this.totalFoodEaten < 10) {
-                    availableTypes = availableTypes.filter(t => t !== 'slow');
-                }
-
-                // Logic: Bomb is useless if nothing to destroy
-                const hasTargets = (this.walls.length > 0 || this.powerups.length > 0);
-                if (!hasTargets) {
-                    availableTypes = availableTypes.filter(t => t !== 'bomb');
-                }
-
-                // Logic: Boost 'Wall' frequency
-                if (availableTypes.includes('wall')) {
-                    availableTypes.push('wall');
-                    availableTypes.push('wall');
-                    availableTypes.push('wall');
-                }
-
-                if (availableTypes.length === 0) return;
-                type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-            }
-
-            let valid = false;
-            let pos = {};
-            let attempts = 0;
-            // Increased attempts for long snakes
-            while (!valid && attempts < 100) {
-                attempts++;
-                pos = {
-                    x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
-                    y: Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE)),
-                    type: type,
-                    createdAt: Date.now()
-                };
-                valid = !this.isOccupied(pos);
-            }
-            if (valid) this.powerups.push(pos);
-        }
-
-        isOccupied(pos) {
-            // Safety: Round input position to ensure integer comparison
-            const px = Math.round(pos.x);
-            const py = Math.round(pos.y);
-
-            if (this.foods) {
-                for (let f of this.foods) {
-                    if (Math.round(f.x) === px && Math.round(f.y) === py) return true;
-                }
-            }
-            if (this.snakes) {
-                for (let snake of this.snakes) {
-                    if (!snake || !snake.body) continue;
-                    for (let segment of snake.body) {
-                        // Float-safe integer comparison
-                        if (Math.round(segment.x) === px && Math.round(segment.y) === py) return true;
-                    }
-                }
-            }
-            if (this.walls) {
-                for (let w of this.walls) {
-                    if (Math.round(w.x) === px && Math.round(w.y) === py) return true;
-                }
-            }
-            if (this.powerups) {
-                for (let p of this.powerups) {
-                    if (Math.round(p.x) === px && Math.round(p.y) === py) return true;
-                }
-            }
-            // Projectiles usually move fast, but safe to check
-            if (this.projectiles) {
-                for (let proj of this.projectiles) {
-                    if (Math.round(proj.x) === px && Math.round(proj.y) === py) return true;
-                }
-            }
-            return false;
-        }
-
-        handleTouchStart(e) {
-            // FAILSAFE RESTART (Tap Screen if Game Over)
-            if (!this.isRunning && this.restartZone) {
-                location.reload(); // Simple restart
-                return;
-            }
-
-            // Allow clicks on buttons/inputs/menu to pass through
-            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.menu-screen')) {
-                // Do not prevent default
-            } else {
-                e.preventDefault();
-            }
-
-            const touch = e.changedTouches[0];
-            this.touchStartX = touch.clientX;
-            this.touchStartY = touch.clientY;
-            if (typeof log !== 'undefined') log(`Start: ${Math.floor(this.touchStartX)},${Math.floor(this.touchStartY)}`);
-        }
-
-        handleTouchMove(e) {
-            // Prevent scrolling if NOT inside menu OR if checking high scores
-            // FIX: Allow default behavior (scrolling) if target is within a scrollable area
-            if (e.target.closest('.scrollable') || e.target.closest('#high-score-list')) {
-                e.stopPropagation(); // Stop game logic from seeing this
-                return; // LET DEFAULT SCROLL HAPPEN
-            } else if (!e.target.closest('.menu-screen')) {
-                e.preventDefault();
-            }
-
-            if (!this.isRunning || this.isPaused) return;
-
-            const touch = e.changedTouches[0];
-            const deltaX = touch.clientX - this.touchStartX;
-            const deltaY = touch.clientY - this.touchStartY;
-
-            // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
-            // REDUCED TO 15px for ultra-responsive continuous control
-            if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
-                let key = '';
-                if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
-                } else {
-                    key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
-                }
-
-                if (typeof log !== 'undefined') log(`CONT SWIPE: ${key}`);
-                this.handleInput({ key: key, preventDefault: () => { } });
-
-                // RESET Start Position to current finger position
-                // This is the key for "Continuous" swiping (Up -> Right without lifting)
-                this.touchStartX = touch.clientX;
-                this.touchStartY = touch.clientY;
-            }
-        }
-
-        handleTouchEnd(e) {
-            // Always allow button clicks to finish
-            if (e.target.closest('button') || e.target.closest('input')) {
-                return;
-            }
-
-            if (!e.target.closest('.menu-screen')) {
-                e.preventDefault();
-            }
-
-            const touch = e.changedTouches[0];
-            const deltaX = touch.clientX - this.touchStartX;
-            const deltaY = touch.clientY - this.touchStartY;
-
-            if (typeof log !== 'undefined') log(`End dX:${Math.floor(deltaX)} dY:${Math.floor(deltaY)} Run:${this.isRunning} Paused:${this.isPaused}`);
-
-            if (!this.isRunning || this.isPaused) return;
-
-            // Threshold for swipe vs tap (Reduced to 10px for responsiveness)
-            if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
-                // if (typeof log !== 'undefined') log("Tap ignored (<10px)");
-                return;
-            }
-
-            // Determine Direction
-            let key = '';
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // Horizontal
-                key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
-            } else {
-                // Vertical
-                key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
-            }
-
-            if (typeof log !== 'undefined') log(`SWIPE END: ${key}`);
-            this.handleInput({ key: key, preventDefault: () => { } });
-        }
-
-        handleRemoteInput(key) {
-            if (typeof log !== 'undefined') log("HOST RX: " + key);
-
-            if (this.snakes.length > 1 && this.snakes[1]) {
-                const p2 = this.snakes[1];
-
-                // MAP Arrows (from Client Touch) to WASD (Player 2 Local)
-                let mappedKey = key;
-                if (key === 'ArrowUp') mappedKey = 'w';
-                if (key === 'ArrowDown') mappedKey = 's';
-                if (key === 'ArrowLeft') mappedKey = 'a';
-                if (key === 'ArrowRight') mappedKey = 'd';
-
-                p2.handleInput(mappedKey);
-            }
-        }
-
-
-        handleInput(e) {
-            if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
-                this.togglePause();
-                return;
-            }
-
-            // FIRE TORPEDO INPUT (Removed - Now Auto-Fire on Pickup)
-
-
-            // Network Client Input
-            if (this.isClient) {
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Shift', ' '].includes(e.key)) {
-                    e.preventDefault();
-                    if (this.conn && this.conn.open) {
-                        this.conn.send({ type: 'input', key: e.key });
-                    }
-                }
-                return; // Client ONLY sends input, does not move locally
-            }
-
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
-            this.snakes.forEach(s => s.handleInput(e.key));
-        }
-
-        togglePause() {
-            this.isPaused = !this.isPaused;
-
-            const uiLayer = document.getElementById('ui-layer');
-            if (uiLayer) uiLayer.style.display = 'block';
-
-            if (this.isPaused) {
-                mainMenu.classList.remove('hidden');
-                mainMenu.classList.remove('nuclear-hidden'); // UN-NUKE
-                mainMenu.classList.add('active');
-                mainMenu.style.display = 'flex';
-                if (btnResume) btnResume.classList.remove('hidden');
-            } else {
-                mainMenu.classList.add('hidden');
-                mainMenu.classList.remove('active');
-                if (btnResume) btnResume.classList.add('hidden');
-
-                this.lastTime = performance.now();
-                this.loop(this.lastTime);
-            }
-        }
-
-        gameOver(winnerIndex, skipNameEntry = false) {
-            try {
-                this.isRunning = false;
-                this.isPaused = false;
-
-                if (uiLayer) {
-                    uiLayer.style.display = 'block';
-                    // Force reflow
-                    uiLayer.offsetHeight;
-                }
-
-                // DEFINE UI ELEMENTS (v6.78 Fix)
-                const winnerText = document.getElementById('winner-text');
-                const btnResume = document.getElementById('btn-resume');
-                const dynamicLegend = document.getElementById('dynamic-legend');
-                const goLoginBtn = document.getElementById('go-login-btn');
-                const playerNameInput = document.getElementById('player-name-input'); // Re-define safely
-                const h2hBox = document.getElementById('h2h-game-over-stats');
-                if (h2hBox) h2hBox.style.display = 'none'; // Hide by default (Show only in Multi)
-
-                mainMenu.classList.remove('active');
-                mainMenu.classList.add('hidden');
-                nameEntryScreen.classList.add('hidden');
-
-                if (this.gameMode === 'single' && !skipNameEntry) {
-                    const score = this.snakes[0].score;
-                    const type = (this.platform === 'pc') ? 'pc' : 'mobile';
-
-                    // 1. LOGGED IN USER: AUTO-SAVE (Updates Total XP / Games Played)
-                    if (this.currentUser) {
-                        this.saveScoreToBackend(this.currentUser.name, score, type)
-                            .then(res => {
-                                if (res && res.success) console.log("Score Saved Automatically");
-                            });
-
-                        // If it's a high score, maybe flash a message? 
-                        // For now, just falling through to Game Over screen is fine.
-                        // We could modify 'msg' below if we wanted.
-                    }
-                    // 2. GUEST: Only prompt if HIGH SCORE
-                    else if (score > 5 && this.checkHighScore(score)) {
-                        this.currentPendingScore = score;
-                        if (playerNameInput) {
-                            // Load saved name if available
-                            const savedName = localStorage.getItem('playerName');
-                            playerNameInput.value = savedName || "";
-                        }
-
-                        // ASYNC FETCH for Accurate Rank
-                        this.loadHighScores(type, 'best').then(freshData => {
-                            try {
-                                const scores = Array.isArray(freshData) ? freshData : [];
-                                const better = scores.filter(s => s.score >= score).length;
-                                const rank = better + 1;
-
-                                const rankMsg = document.getElementById('rank-msg');
-                                if (rankMsg) {
-                                    rankMsg.innerText = `CONGRATULATIONS, YOU ARE NUMBER ${rank}`;
+                    }, 5000);
+
+                    this.peer.on('open', (id) => {
+                        clearTimeout(connTimeout); // Success!
+                        console.log('My peer ID is: ' + id);
+
+                        // Display SHORT ID to user
+                        document.getElementById('host-id-display').innerText = shortId;
+                        document.getElementById('host-status').innerText = "WAITING FOR PLAYER 2...";
+                        document.getElementById('host-status').style.color = "#aaa";
+
+                        // Gen QR (Must include full ID)
+                        // URL Param ?join=vs_ABCD
+                        const url = location.protocol + '//' + location.host + location.pathname + '?join=' + id;
+                        document.getElementById('qrcode').innerHTML = "";
+                        new QRCode(document.getElementById("qrcode"), { text: url, width: 128, height: 128 });
+
+                        // Share Button Handler
+                        const shareBtn = document.getElementById('lobby-share-btn');
+                        if (shareBtn) {
+                            shareBtn.onclick = async () => {
+                                if (navigator.share) {
+                                    try {
+                                        await navigator.share({
+                                            title: 'Neon Snake Game',
+                                            text: 'Join my Neon Snake game!',
+                                            url: url
+                                        });
+                                        console.log('Shared successfully');
+                                    } catch (err) {
+                                        console.error('Share failed:', err);
+                                    }
+                                } else {
+                                    // Fallback: Copy to Clipboard
+                                    try {
+                                        await navigator.clipboard.writeText(url);
+                                        alert("Link copied to clipboard!");
+                                    } catch (err) {
+                                        prompt("Copy this link:", url);
+                                    }
                                 }
-                            } catch (e) { console.error("Rank Calc Error", e); }
+                            };
+                        }
+                    });
 
-                            // Show Screen
-                            nameEntryScreen.classList.remove('hidden');
-                            nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
-                            nameEntryScreen.classList.add('active');
-                            nameEntryScreen.style.display = 'flex';
-                            nameEntryScreen.style.opacity = '1';
-                            nameEntryScreen.style.visibility = 'visible';
-                            nameEntryScreen.style.pointerEvents = 'auto';
+                    this.peer.on('error', (err) => {
+                        clearTimeout(connTimeout);
+                        console.error("PeerJS Error:", err);
+                        alert("HOST ERROR: " + (err.type || err) + "\n\nTry refreshing or checking internet.");
+                        document.getElementById('host-status').innerText = "ERROR: " + (err.type || "UNKNOWN");
+                        document.getElementById('host-status').style.color = "red";
+                    });
 
-                            if (playerNameInput) playerNameInput.focus();
+                    this.peer.on('connection', (conn) => {
+                        console.log("Client connected!");
+                        this.conn = conn;
+                        this.isHost = true;
 
-                            // Show Auth Options if Guest
-                            const authContainer = document.getElementById('auth-options-container');
-                            if (authContainer) {
-                                authContainer.style.display = this.currentUser ? 'none' : 'block';
+                        document.getElementById('host-status').innerText = "PLAYER 2 CONNECTED! STARTING...";
+                        document.getElementById('host-status').style.color = "#00ff00";
+
+                        // Setup Data Listener (Robus Re-implementation)
+                        // If conn was already open, 'data' might fire immediately
+                        // If not, we wait.
+
+                        // Clear previous to avoid duplicates? (PeerJS usually handles this per conn instance)
+
+                        conn.on('data', (data) => {
+                            console.log("RX:", data); // Global Data Debug
+                            if (data.type === 'input') {
+                                this.handleRemoteInput(data.key);
+                            } else if (data.type === 'hello') {
+                                // RESOLUTION SYNC
+                                // alert("HOST RX HELLO: " + data.width + "x" + data.height); // DEBUG
+                                console.log("Client Resolution:", data.width, data.height);
+
+                                // NAME SYNC (v6.65 Fix)
+                                if (data.username) {
+                                    this.remotePlayerName = data.username;
+                                    console.log("Remote Player Name Synced:", this.remotePlayerName);
+                                    this.updateScoreUI();
+                                }
+
+                                // Lock it in
+                                this.multiplayerTargetWidth = data.width;
+                                this.multiplayerTargetHeight = data.height;
+
+                                try {
+                                    this.resize();
+                                } catch (e) { console.error("Resize Error:", e); }
+
+                                // Visual Confirmation of Sync
+                                const status = document.getElementById('host-status');
+                                if (status) {
+                                    status.innerText = `SYNCED WITH CLIENT (${data.width}x${data.height})`;
+                                    status.style.color = "#00ff88";
+                                    status.style.textShadow = "0 0 10px #00ff88";
+                                }
+                            } else if (data.type === 'restart') {
+                                this.startGame('multi');
+                            } else if (data.type === 'gameover') {
+                                this.gameOver(data.winner);
                             }
                         });
 
-                        return;
+                        const handleOpen = () => {
+                            // Start Game after delay
+                            setTimeout(() => {
+                                this.hideAllScreens();
+                                this.startGame('multi');
+                            }, 500);
+                        };
+
+                        if (conn.open) {
+                            handleOpen();
+                        } else {
+                            conn.on('open', handleOpen);
+                        }
+                    });
+                } catch (e) {
+                    alert("PeerJS Init Failed: " + e);
+                }
+            }
+
+            initListeners() {
+                document.addEventListener('keydown', (e) => this.handleInput(e));
+                // Restore Session
+                const savedUser = localStorage.getItem('snake_user');
+                if (savedUser) {
+                    try {
+                        this.currentUser = JSON.parse(savedUser);
+                        console.log("Restored Session:", this.currentUser.name);
+                    } catch (e) { console.error("Session Corrupt"); }
+                }
+
+                // Bind Auth UI
+                this.bindAuthListeners();
+
+                // Helper for reliable button clicks (Touch + Mouse)
+                const bindButton = (btn, callback) => {
+                    if (!btn) return;
+                    btn.onclick = (e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        // Haptic Unlock (Try to vibrate on user interaction)
+                        if (window.navigator && window.navigator.vibrate) {
+                            try { window.navigator.vibrate(50); } catch (e) { }
+                        }
+                        callback(e);
+                    };
+                    btn.ontouchend = (e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        // Haptic Unlock
+                        if (window.navigator && window.navigator.vibrate) {
+                            try { window.navigator.vibrate(50); } catch (e) { }
+                        }
+                        callback(e);
+                    };
+                };
+
+                bindButton(btn1P, () => { log("START: Single"); this.startGame('single'); });
+
+                // NEW MENU NAVIGATION (Explicit Dispay Logic)
+                bindButton(btnStart2P, () => {
+                    if (menuMainWrapper) menuMainWrapper.style.display = 'none';
+                    if (menu2PWrapper) {
+                        menu2PWrapper.classList.remove('hidden');
+                        menu2PWrapper.style.display = 'flex';
+                        menu2PWrapper.style.flexDirection = 'column';
+                        menu2PWrapper.style.alignItems = 'center';
+                        // BACK SUPPORT
+                        history.pushState({ screen: '2p-menu' }, '2 Player Mode', '#2p');
+                    }
+                });
+
+                bindButton(btnBackMain, () => {
+                    if (history.state && history.state.screen === '2p-menu') {
+                        history.back(); // Native back triggers popstate -> main menu
+                    } else {
+                        // Manual fallback
+                        if (menu2PWrapper) menu2PWrapper.style.display = 'none';
+                        if (menuMainWrapper) {
+                            menuMainWrapper.classList.remove('hidden');
+                            menuMainWrapper.style.display = 'flex';
+                            menuMainWrapper.style.flexDirection = 'column';
+                            menuMainWrapper.style.alignItems = 'center';
+                        }
+                    }
+                });
+
+                bindButton(btn2P, () => { log("START: Multi"); this.startGame('multi'); });
+
+                bindButton(restartBtn, () => {
+                    log("RESTART CLICK");
+                    if (this.isClient && this.conn && this.conn.open) {
+                        this.conn.send({ type: 'restart' });
+                    } else {
+                        this.startGame(this.gameMode);
+                    }
+                });
+
+                bindButton(menuBtn, () => {
+                    this.stopGame(); // Clean up (peers, loops)
+                    this.showMainMenu();
+                });
+                bindButton(btnResume, () => this.togglePause());
+
+                // Host/Join Buttons too (defined in initMultiplayer, but we can grab them here or leave them default?)
+                // Let's rely on initMultiplayer for those, or re-bind them if we can access them.
+                // Better to just fix them in initMultiplayer if they are broken.
+                // Actually, initMultiplayer does `btnHost.onclick`. We should upgrade that too.
+
+                if (submitScoreBtn) bindButton(submitScoreBtn, () => this.submitHighScore());
+
+                // v3.17: Separate Login/Register Buttons on Game Over
+                const btnGoLogin = document.getElementById('btn-go-login');
+                const btnGoRegister = document.getElementById('btn-go-register');
+
+                if (btnGoLogin) {
+                    bindButton(btnGoLogin, () => {
+                        this.hideAllScreens();
+                        this.showLoginScreen();
+                    });
+                }
+                if (btnGoRegister) {
+                    bindButton(btnGoRegister, () => {
+                        this.hideAllScreens();
+                        this.showRegisterScreen();
+                    });
+                }
+
+                // Global Touch Listeners (Window) for maximum reliability
+                window.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+                window.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+                window.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
+
+                // Enter key for name entry
+                if (playerNameInput) {
+                    playerNameInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') this.submitHighScore();
+                    });
+                }
+
+                // High Score Navigation
+                const btnHighScores = document.getElementById('btn-highscores');
+                const btnBackHighScores = document.getElementById('btn-back-highscores');
+                const highScoreScreen = document.getElementById('high-score-screen');
+
+                // TABS
+                const tabMobile = document.getElementById('tab-mobile');
+                const tabPC = document.getElementById('tab-pc');
+                const sortBest = document.getElementById('sort-best');
+                const sortTotal = document.getElementById('sort-total');
+
+                if (tabMobile) bindButton(tabMobile, () => this.updateTabs('mobile') || this.loadHighScores('mobile'));
+                if (tabPC) bindButton(tabPC, () => this.updateTabs('pc') || this.loadHighScores('pc'));
+
+                if (sortBest) bindButton(sortBest, () => this.updateTabs(null, 'best') || this.loadHighScores(null, 'best'));
+                if (sortTotal) bindButton(sortTotal, () => this.updateTabs(null, 'total') || this.loadHighScores(null, 'total'));
+
+                if (btnHighScores) {
+                    bindButton(btnHighScores, () => {
+                        if (mainMenu) mainMenu.classList.add('hidden');
+                        this.showHighScoreScreen(); // Use new helper
+
+                        // SPACE SAVING: Move Title to Main Header
+                        const title = document.querySelector('h1.neon-title');
+                        if (title) title.innerText = "HIGH SCORES";
+
+                        // Force Default View: Mobile
+                        this.updateTabs('mobile');
+                        this.loadHighScores('mobile');
+                    });
+                } else {
+                    console.error("High Score Button NOT FOUND");
+                }
+
+                bindButton(btnBackHighScores, () => {
+                    if (highScoreScreen) {
+                        highScoreScreen.classList.add('hidden');
+                        highScoreScreen.classList.remove('active');
+                    }
+                    this.showMainMenu(); // Return to Main Menu
+                });
+
+                // ABOUT BUTTON & LOGIC
+                const btnAbout = document.getElementById('btn-about');
+                const aboutScreen = document.getElementById('about-screen');
+                const aboutBackBtn = document.getElementById('about-back-btn');
+                const contactEmail = document.getElementById('contact-email');
+
+                if (btnAbout) {
+                    bindButton(btnAbout, () => {
+                        this.hideAllScreens();
+                        if (aboutScreen) {
+                            aboutScreen.classList.remove('hidden');
+                            aboutScreen.classList.remove('nuclear-hidden'); // CRITICAL FIX
+                            aboutScreen.classList.add('active');
+                            aboutScreen.style.display = 'block';
+                            // BACK SUPPORT
+                            history.pushState({ screen: 'about' }, 'About', '#about');
+                        }
+                    });
+                }
+
+                if (aboutBackBtn) {
+                    bindButton(aboutBackBtn, () => {
+                        if (history.state && history.state.screen === 'about') history.back();
+                        else this.showMainMenu();
+                    });
+                }
+
+                if (contactEmail) {
+                    contactEmail.onclick = () => {
+                        const u = 'borchgrevink';
+                        const d = 'gmail.com';
+                        contactEmail.innerText = u + '@' + d;
+                        contactEmail.style.color = '#fff';
+                        contactEmail.style.cursor = 'text';
+                        contactEmail.title = '';
+                        contactEmail.onclick = null;
+                    };
+                }
+
+                // DELETE ACCOUNT BUTTON (v3.20)
+                const btnProfileDelete = document.getElementById('btn-profile-delete');
+
+                // --- MISSING BINDINGS RE-BIND (Fix for Back Gesture & Missing logic) ---
+                const btnAdmin = document.getElementById('btn-admin-panel');
+                const btnAdminClose = document.getElementById('btn-admin-close');
+                const btnProfileBack = document.getElementById('btn-profile-back');
+
+                if (btnAdmin) {
+                    bindButton(btnAdmin, () => {
+                        this.hideAllScreens();
+                        const adminScreen = document.getElementById('admin-screen');
+                        if (adminScreen) {
+                            adminScreen.classList.remove('hidden');
+                            adminScreen.classList.remove('nuclear-hidden');
+                            adminScreen.classList.add('active');
+                            adminScreen.style.display = 'block';
+                            this.loadAdmin();
+                            // BACK SUPPORT
+                            history.pushState({ screen: 'admin' }, 'Admin', '#admin');
+                        }
+                    });
+                }
+
+                if (btnAdminClose) {
+                    bindButton(btnAdminClose, () => {
+                        if (history.state && history.state.screen === 'admin') history.back();
+                        else this.showMainMenu();
+                    });
+                }
+
+                if (btnProfileBack) {
+                    bindButton(btnProfileBack, () => {
+                        if (history.state && history.state.screen === 'profile') history.back();
+                        else this.showMainMenu();
+                    });
+                }
+                // -----------------------------------------------------------------------
+
+                if (btnProfileDelete) {
+                    bindButton(btnProfileDelete, () => {
+                        if (confirm("Are you sure you want to PERMANENTLY delete your account? Stats and High Scores will be lost.")) {
+                            const pwd = prompt("Please enter your password to confirm deletion:");
+                            if (pwd) {
+                                this.deleteMyAccount(pwd);
+                            }
+                        }
+                    });
+                }
+            }
+
+            showMainMenu() {
+                this.isRunning = false;
+                // RESET MENU STATE (v9.0)
+                const mm = document.getElementById('menu-main-wrapper');
+                const m2 = document.getElementById('menu-2p-wrapper');
+
+                // Defaut: Show Main, Hide 2P
+                if (mm) {
+                    mm.classList.remove('hidden');
+                    mm.style.display = 'flex';
+                    mm.style.flexDirection = 'column';
+                    mm.style.alignItems = 'center';
+                }
+                if (m2) {
+                    m2.classList.add('hidden');
+                    m2.style.display = 'none';
+                }
+                this.isPaused = false;
+                this.gameMode = null;
+
+                // Restore Title
+                const title = document.querySelector('h1.neon-title');
+                if (title) title.innerText = "NEON SNAKE";
+
+                this.hideAllScreens();
+
+                // Update Login Button Text
+                const btnMenuLogin = document.getElementById('btn-menu-login');
+                if (btnMenuLogin) {
+                    if (this.currentUser) {
+                        btnMenuLogin.innerText = "PROFILE: " + this.currentUser.name;
+                        btnMenuLogin.style.color = "#00ffff"; // Cyan for user
+                    } else {
+                        btnMenuLogin.innerText = "LOGIN / PROFILE";
+                        btnMenuLogin.style.color = "#FFD700"; // Gold for action
                     }
                 }
 
-                let msg = "GAME OVER";
-                let color = COLORS.p1;
+                this.hideAllScreens();
 
-                // BROADCAST SYNC (Host only sends, Client only receives)
+                const mainMenu = document.getElementById('main-menu'); // FIX: Define it!
+                if (mainMenu) {
+                    mainMenu.classList.remove('hidden');
+                    mainMenu.classList.remove('nuclear-hidden');
+                    mainMenu.classList.add('active');
+                    mainMenu.style.display = 'flex'; // Reset to flex
+                }
+                this.touchStartX = 0;
+                this.touchStartY = 0;
+                if (gameOverScreen) {
+                    gameOverScreen.classList.remove('active');
+                    gameOverScreen.classList.add('hidden');
+                }
+                if (nameEntryScreen) nameEntryScreen.classList.add('hidden');
+                if (scoreBoard) scoreBoard.classList.add('hidden');
+                if (dynamicLegend) dynamicLegend.innerHTML = '';
+                if (btnResume) btnResume.classList.add('hidden');
+
+                // Ensure High Score screen is hidden
+                const highScoreScreen = document.getElementById('high-score-screen');
+                if (highScoreScreen) {
+                    highScoreScreen.classList.add('hidden');
+                    highScoreScreen.classList.remove('active');
+                    highScoreScreen.classList.add('nuclear-hidden');
+                }
+
+                this.touchStartY = 0;
+
+                // FX Systems
+                this.sound = new SoundManager();
+                this.particles = new ParticleSystem();
+                this.shakeX = 0;
+                this.shakeY = 0;
+                this.shakeTimer = 0;
+
+                this.loadHighScores();
+                this.draw();
+            }
+
+            triggerShake(amount = 5) {
+                this.shakeTimer = amount;
+            }
+
+            init() {
+                // This init function seems to be missing from the provided context,
+                // but the instruction implies it should exist.
+                // Adding a placeholder if it's not defined elsewhere.
+            }
+
+            joinGame(hostId) {
+                console.log("Joining Host:", hostId);
+                this.stopGame(); // KILL ANY RUNNING GAME
+
+                // UI Feedback
+                this.hideAllScreens();
+                const mm = document.getElementById('main-menu');
+                if (mm) {
+                    mm.style.display = 'none';
+                    mm.classList.add('nuclear-hidden');
+                }
+
+                document.getElementById('main-menu').classList.remove('active');
+                document.getElementById('main-menu').classList.add('hidden');
+                document.getElementById('join-screen').classList.add('hidden');
+
+                const lobby = document.getElementById('lobby-screen');
+                lobby.classList.remove('hidden');
+                lobby.classList.add('active');
+                document.getElementById('qrcode').innerHTML = "";
+                document.querySelector('#lobby-screen p').style.display = 'none';
+
+                document.getElementById('host-id-display').innerText = hostId;
+                const statusEl = document.getElementById('host-status');
+                statusEl.innerText = "INITIALIZING CLIENT...";
+                statusEl.style.color = "#ffff00";
+
                 try {
-                    if (this.isHost) {
-                        this.broadcastGameOver(winnerIndex);
-                    }
-                } catch (e) { console.error("Broadcast Error", e); }
+                    this.peer = new Peer();
 
-                // SHOW LOGIN PROMPT IF GUEST (ON GAME OVER)
-                const goAuth = document.getElementById('game-over-auth-options');
-                if (goAuth) {
-                    goAuth.style.display = (!this.currentUser) ? 'flex' : 'none';
+                    this.peer.on('open', (id) => {
+                        statusEl.innerText = "FINDING HOST " + hostId + "...";
+
+                        this.conn = this.peer.connect(hostId);
+
+                        this.conn.on('open', () => {
+                            statusEl.innerText = "CONNECTED! SYNCING...";
+                            statusEl.style.color = "#00ff00";
+                            this.isClient = true;
+
+                            // Start Hello Loop (Keep Alive & Sync Enforcer)
+                            this.helloInterval = setInterval(() => {
+                                if (this.conn && this.conn.open) {
+                                    this.conn.send({
+                                        type: 'hello',
+                                        width: window.innerWidth,
+                                        height: window.innerHeight,
+                                        username: this.currentUser ? this.currentUser.name : 'Guest'
+                                    });
+                                }
+                            }, 1000);
+                        });
+
+                        this.conn.on('data', (data) => {
+                            // 1. STATE UPATE
+                            if (data.type === 'state') {
+                                this.clientState = data;
+
+                                // SYNC DIMENSIONS (New v3.8 Fix)
+                                if (data.dims) {
+                                    if (CANVAS_WIDTH !== data.dims.w || CANVAS_HEIGHT !== data.dims.h) {
+                                        console.log("SYNC DIMS:", data.dims);
+                                        // PERSIST TARGETS so resize() uses them!
+                                        this.multiplayerTargetWidth = data.dims.w;
+                                        this.multiplayerTargetHeight = data.dims.h;
+
+                                        // Apply immediately
+                                        CANVAS_WIDTH = data.dims.w;
+                                        CANVAS_HEIGHT = data.dims.h;
+                                        canvas.width = CANVAS_WIDTH;
+                                        canvas.height = CANVAS_HEIGHT;
+                                        canvas.style.width = CANVAS_WIDTH + 'px';
+                                        canvas.style.height = CANVAS_HEIGHT + 'px';
+                                    }
+                                }
+
+                                // SYNC HOST NAME (v6.52 Fix)
+                                if (data.hostName) {
+                                    this.remotePlayerName = data.hostName.toUpperCase();
+                                    this.updateScoreUI(); // TRIGGER STATS FETCH IMMEDIATELY
+                                }
+
+                                if (!this.isRunning) {
+                                    lobby.classList.add('hidden');
+                                    lobby.classList.remove('active');
+                                    this.startGame('multi');
+                                }
+                            }
+                            // 2. GAME OVER
+                            else if (data.type === 'gameover') {
+                                console.log("CLIENT RX GAMEOVER:", data.winner); // Debug
+                                this.gameOver(data.winner);
+                            }
+                            // 3. MATCH SAVED (v6.95 Sync)
+                            else if (data.type === 'match_saved') {
+                                this.showMatchSavedToast();
+                            }
+                        });
+
+                        this.conn.on('error', (err) => {
+                            alert("CLIENT Connection Error: " + err);
+                            location.reload();
+                        });
+
+                        setTimeout(() => {
+                            if (!this.conn.open) {
+                                alert("TIMEOUT: Could not connect to Host " + hostId + ".\nCheck firewalls?");
+                                location.reload();
+                            }
+                        }, 8000);
+                    });
+
+                    this.peer.on('error', err => {
+                        alert("CLIENT Peer Error: " + err.type);
+                        location.reload();
+                    });
+
+                } catch (e) {
+                    alert("CLIENT EXCEPTION: " + e);
+                    location.reload();
+                }
+            }
+
+            // --- HIGH SCORE SYSTEM (v4.94) ---
+
+            checkHighScore(score) {
+                try {
+                    // Check against cache for current platform or default
+                    const type = this.platform || 'mobile';
+                    const raw = localStorage.getItem('snake_highscores_cache_' + type);
+                    const scores = JSON.parse(raw || '[]');
+                    if (!Array.isArray(scores)) return true;
+                    if (scores.length < 50) return true;
+                    return score > scores[scores.length - 1].score;
+                } catch (e) {
+                    console.error("HighScore Check Error", e);
+                    return true;
+                }
+            }
+
+            submitHighScore() {
+                // If Logged In, use that name. If not, use Input or "Anonymous"
+                let name = "Anonymous";
+                if (this.currentUser) {
+                    name = this.currentUser.name;
+                } else if (playerNameInput) {
+                    const val = playerNameInput.value.trim();
+                    if (val) {
+                        name = val.toUpperCase();
+                        localStorage.setItem('playerName', name); // Remember manually entered name
+                    }
                 }
 
-                if (this.gameMode === 'multi') {
-                    // MULTIPLAYER MODE: Resolve names for UI
-                    let p1Name = "PLAYER 1";
-                    let p2Name = "PLAYER 2";
+                const score = this.currentPendingScore;
+                // HARDENED CHECK (v6.67): Force PC if screen is wide, ignoring touch capabilities
+                const type = (window.innerWidth > 768) ? 'pc' : 'mobile';
+
+                // PENDING SCORE LOGIC (v3.13)
+                // Always store this, in case they decide to Login/Register right after seeing this screen.
+                this.pendingScore = { score: score, type: type, timestamp: Date.now() };
+
+                if (submitScoreBtn) {
+                    submitScoreBtn.disabled = true;
+                    submitScoreBtn.innerText = "SAVING...";
+                }
+
+                // Hide entry screen first
+                nameEntryScreen.classList.add('hidden');
+                nameEntryScreen.classList.remove('active');
+
+                this.saveScoreToBackend(name, score, type)
+                    .then(data => {
+                        this.updateTabs(type);
+                        this.loadHighScores(type);
+                        this.showHighScoreScreen();
+
+                        if (submitScoreBtn) {
+                            submitScoreBtn.disabled = false;
+                            submitScoreBtn.innerText = "SUBMIT";
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("Failed to save score. Offline?");
+                        this.showMainMenu();
+                        if (submitScoreBtn) {
+                            submitScoreBtn.disabled = false;
+                            submitScoreBtn.innerText = "RETRY";
+                        }
+                    });
+            }
+
+            showHighScoreScreen() {
+                this.hideAllScreens();
+
+                const highScoreScreen = document.getElementById('high-score-screen');
+                if (highScoreScreen) {
+                    highScoreScreen.classList.remove('hidden');
+                    highScoreScreen.classList.remove('nuclear-hidden');
+                    highScoreScreen.classList.add('active');
+                    highScoreScreen.style.display = 'flex';
+
+                    // BACK SUPPORT
+                    history.pushState({ screen: 'high-scores' }, 'High Scores', '#high-scores');
+
+                    // Set active tab logic
+                    this.updateTabs(this.viewingPlatform || this.platform);
+                    this.loadHighScores(this.viewingPlatform || this.platform);
+                }
+            }
+
+            updateTabs(activeType, activeSort) {
+                if (activeType) this.viewingPlatform = activeType;
+                if (activeSort) this.viewingSort = activeSort;
+
+                if (!this.viewingSort) this.viewingSort = 'best'; // Default
+
+                const tM = document.getElementById('tab-mobile');
+                const tP = document.getElementById('tab-pc');
+                const sB = document.getElementById('sort-best');
+                const sT = document.getElementById('sort-total');
+
+                // Platform Tabs
+                if (tM && tP) {
+                    if (this.viewingPlatform === 'mobile') {
+                        tM.classList.remove('secondary'); tM.classList.add('active');
+                        tP.classList.add('secondary'); tP.classList.remove('active');
+                        tP.style.opacity = '0.5'; tM.style.opacity = '1';
+                    } else {
+                        tP.classList.remove('secondary'); tP.classList.add('active');
+                        tM.classList.add('secondary'); tM.classList.remove('active');
+                        tM.style.opacity = '0.5'; tP.style.opacity = '1';
+                    }
+                }
+
+                // Sort Tabs
+                if (sB && sT) {
+                    if (this.viewingSort === 'best') {
+                        sB.classList.remove('secondary'); sB.classList.add('active');
+                        sT.classList.add('secondary'); sT.classList.remove('active');
+                        sT.style.opacity = '0.5'; sB.style.opacity = '1';
+                    } else {
+                        sT.classList.remove('secondary'); sT.classList.add('active');
+                        sB.classList.add('secondary'); sB.classList.remove('active');
+                        sB.style.opacity = '0.5'; sT.style.opacity = '1';
+                    }
+                }
+            }
+
+            loadHighScores(type, sort) {
+                type = type || this.viewingPlatform || 'mobile';
+                sort = sort || this.viewingSort || 'best';
+
+                const list = document.getElementById('high-score-list');
+                if (!list) return;
+
+                list.innerHTML = '<li style="text-align:center;">LOADING...</li>';
+
+                // Cache key per platform AND sort
+                const cacheKey = 'snake_highscores_cache_' + type + '_' + sort;
+
+                // Try Cache First
+                try {
+                    const raw = localStorage.getItem(cacheKey);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        this.renderHighScores(data);
+                    }
+                } catch (e) { }
+
+                // Fetch Live
+                return fetch(`api.php?type=${type}&sort=${sort}&t=${Date.now()}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        localStorage.setItem(cacheKey, JSON.stringify(data));
+                        this.renderHighScores(data);
+                        return data; // Pass data to next chain
+                    })
+                    .catch(err => {
+                        console.error("Score Load Error", err);
+                        // Fallback to cache without clearing
+                        return [];
+                    });
+            }
+
+            renderHighScores(data) {
+                const list = document.getElementById('high-score-list');
+                if (!list) return;
+                list.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<li style="text-align:center; color:#888;">NO SCORES YET</li>';
+                    return;
+                }
+
+                const isTotal = (this.viewingSort === 'total');
+                const suffix = ''; // User requested removal of " XP" suffix
+
+                data.forEach((entry, index) => {
+                    const li = document.createElement('li');
+                    // Format large numbers
+                    const val = parseInt(entry.score).toLocaleString();
+                    li.innerHTML = `<span>${index + 1}. ${entry.name}</span> <span>${val}${suffix}</span>`;
+                    list.appendChild(li);
+                });
+            }
+
+            startGame(mode) {
+                // alert("STARTING GAME: " + mode);
+                console.log("STARTING GAME MODE:", mode);
+
+                try {
+                    this.gameMode = mode;
+                    this.resize();
+                    this.snakes = [];
+                    this.powerups = [];
+                    this.walls = [];
+                    this.projectiles = [];
+                    this.baseSpeed = 100;
+                    this.currentSpeed = this.baseSpeed;
+                    this.totalFoodEaten = 0;
+                    this.isPaused = false;
+                    this.lastTime = performance.now();
+                    this.gameStartTime = Date.now(); // TRACK DURATION
+
+                    console.log("Initializing Snakes...");
+                    if (mode === 'single') {
+                        const s1 = new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
+                            { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+
+                        // SPAWN PROTECTION (Fix Immediate Crash)
+                        s1.invulnerable = true;
+                        setTimeout(() => s1.invulnerable = false, 2000);
+
+                        this.snakes.push(s1);
+                    } else {
+                        const s1 = new Snake(1, COLORS.p1, { x: 5, y: 5 }, { x: 1, y: 0 },
+                            { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' });
+
+                        // Ensure valid start pos for P2 (Relative to Grid Size)
+                        const gridW = Math.floor(CANVAS_WIDTH / GRID_SIZE);
+                        const gridH = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
+
+                        let p2x = gridW - 5;
+                        let p2y = gridH - 5;
+
+                        // Safety Bounds (ensure at least inside map)
+                        if (p2x < 2) p2x = gridW - 2;
+                        if (p2y < 2) p2y = gridH - 2;
+                        if (p2x >= gridW) p2x = gridW - 1; // Strict Clamp
+
+                        const s2 = new Snake(2, COLORS.p2, { x: p2x, y: p2y }, { x: -1, y: 0 },
+                            { up: 'w', down: 's', left: 'a', right: 'd' });
+
+                        // SPAWN PROTECTION
+                        s2.invulnerable = true;
+                        setTimeout(() => s2.invulnerable = false, 2000);
+
+                        this.snakes = [s1, s2];
+                    }
+                    console.log("Snakes initialized:", this.snakes.length);
+
+                    // Force a resize check BEFORE spawning to avoid 0x0 canvas -> Center Spawn Fallback
+                    this.resize();
+
+                    // Validate Canvas Size
+                    if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) {
+                        console.error("CRITICAL: Canvas size 0. Forcing defaults.");
+                        CANVAS_WIDTH = 800; CANVAS_HEIGHT = 600;
+                        canvas.width = 800; canvas.height = 600;
+                    }
+
+                    // Safety delay for spawn if canvas is somehow still weird, otherwise immediate
+                    this.spawnFood();
+                    this.spawnFood();
+                    this.spawnFood();
+
+                    this.isRunning = true;
+
+                    this.hideAllScreens();
+                    scoreBoard.classList.remove('hidden');
+
+                    if (p2ScoreBox) p2ScoreBox.style.display = mode === 'single' ? 'none' : 'flex';
+
+                    // UPDATE HUD NAMES (v6.48 Logic)
                     const p1Label = document.getElementById('p1-name-label');
                     const p2Label = document.getElementById('p2-name-label');
-                    if (p1Label) p1Name = p1Label.innerText;
-                    if (p2Label) p2Name = p2Label.innerText;
+                    const p1Best = document.getElementById('p1-best-score');
 
-                    if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
-                    else if (winnerIndex === 0) { msg = p1Name + " WINS!"; color = COLORS.p1; }
-                    else { msg = p2Name + " WINS!"; color = COLORS.p2; }
+                    if (p1Label) {
+                        if (this.isClient) {
+                            // I AM CLIENT (P2)
+                            // P1 is Host (Default "HOST", updated via sync)
+                            // P2 is ME
+                            p1Label.innerText = "HOST";
+                            p1Label.style.color = "#00ff88";
 
-                    // Only Host records to DB
-                    if (!this.isClient) {
-                        try {
-                            const wName = (winnerIndex === -1) ? "DRAW" : (winnerIndex === 0 ? p1Name : p2Name);
-                            this.recordMatchStats(p1Name.toUpperCase(), p2Name.toUpperCase(), wName.toUpperCase());
-                        } catch (e) { console.error("Record Match Error:", e); }
+                            if (p2Label && this.currentUser) {
+                                p2Label.innerText = this.currentUser.name.toUpperCase();
+                            }
+                        } else {
+                            // I AM HOST (P1) or SINGLE PLAYER
+                            // P1 is ME
+                            if (this.currentUser) {
+                                p1Label.innerText = this.currentUser.name.toUpperCase();
+                                p1Label.style.color = "#00ff88";
+                            } else {
+                                p1Label.innerText = "PLAYER 1";
+                                p1Label.style.color = "";
+                            }
+
+                            // P2 is "PLAYER 2" or "JOINING..." (updated via sync)
+                            if (p2Label) p2Label.innerText = "PLAYER 2";
+                        }
+
+                        if (p1Best) {
+                            // Only show best score if Single Player
+                            if (this.gameMode === 'single') {
+                                p1Best.innerText = "LOADING...";
+                                this.updatePersonalBestDisplay();
+                            } else {
+                                p1Best.innerText = "";
+                            }
+                        }
                     }
-                    // GAME OVER H2H STATS (v3.05 Logic - Robust)
-                    const h2hContainer = document.getElementById('h2h-game-over-stats');
-                    if (h2hContainer) {
-                        try {
-                            // 1. UPDATE SESSION STATS (Local or Offline Tracking)
-                            if (!this.sessionStats) this.sessionStats = { p1: 0, p2: 0, draws: 0 };
-                            if (winnerIndex === 0) this.sessionStats.p1++;
-                            else if (winnerIndex === 1) this.sessionStats.p2++;
-                            else this.sessionStats.draws++;
 
-                            // 2. RENDER SESSION STATS IMMEDIATELY (Fallback)
-                            const sP1 = (p1Name && p1Name.trim() !== "") ? p1Name.toUpperCase() : "P1";
-                            const sP2 = (p2Name && p2Name.trim() !== "") ? p2Name.toUpperCase() : "P2";
+                    this.h2hStatsFetched = false; // Reset for new match statistics fetch
+                    this.updateScoreUI();
 
-                            // Safe Colors (Hardcoded to determine visibility)
-                            // We ignore global COLORS here to be absolutely sure.
-                            const cP1 = '#00ff88';
-                            const cP2 = '#00ccff';
+                    // WAKE LOCK (Mobile/iPhone Fix)
+                    if ('wakeLock' in navigator) {
+                        try { navigator.wakeLock.request('screen'); } catch (e) { }
+                    }
 
-                            const renderStats = (w, l, d, name1, name2) => {
-                                // Vertical Stack 3-Column Layout (v3.11)
-                                // User Request: "Draw over score like names", "Same font size", "White color"
-                                const labelStyle = "font-size:0.9rem; font-weight:bold; margin-bottom:2px; letter-spacing:1px;";
-                                const scoreStyle = "font-size:1.4rem; font-weight:bold;";
+                    if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
-                                return `
+                    // FORCE FIRST BROADCAST to ensure Client starts immediately
+                    this.broadcastState();
+
+                    this.loop(this.lastTime);
+
+                    console.log("Game Start Sequence Complete.");
+
+                } catch (e) {
+                    console.error("START GAME ERROR:", e);
+                    alert("START ERROR: " + e.message);
+                }
+            }
+
+            resize() {
+                const container = canvas.parentElement;
+
+                // LAYOUT FIX v8.0 (DEFENSIVE HYBRID)
+                // Goal: Guarantee visibility by taking the conservative minimum of available space.
+                if (!container) return;
+
+                // 1. Reset Container to allow measurement
+                container.style.width = '100%';
+                container.style.height = '';
+                container.style.flex = '1';
+                canvas.style.height = '0px';
+                canvas.style.width = '0px';
+
+                // 2. Measure Method A: Flexbox (Trusted, but sometimes includes hidden parts)
+                const flexH = container.clientHeight;
+
+                // 3. Measure Method B: Window Math (Raw, but ignores margins sometimes)
+                // We calculate exactly how much space is left from the container's top to the window bottom
+                const rect = container.getBoundingClientRect();
+                const top = rect.top > 0 ? rect.top : 100; // Fallback if 0
+                const mathH = window.innerHeight - top;
+
+                // 4. THE SAFE CHOICE
+                // Use the SMALLER of the two. This ensures we don't overflow if Flexbox thinks it has more space than the Window actually has.
+                let availableH = Math.min(flexH, mathH);
+                let availableW = container.clientWidth - 4; // Border safety
+
+                // 5. THE SAFETY BUFFER (The "Finger Width" Guarantee)
+                // We subtract a strict 40px. 
+                // - On Mobile: This clears the address bar / home swipe bar.
+                // - On PC: This clears typical taskbars or window borders.
+                const SAFETY_BUFFER = 40;
+                availableH -= SAFETY_BUFFER;
+
+                // 7. Multiplayer Sync Override
+                let logicalW = availableW;
+                let logicalH = availableH;
+
+                if (this.multiplayerTargetWidth) {
+                    const targetW = Math.min(availableW, this.multiplayerTargetWidth);
+                    const targetH = Math.min(availableH, this.multiplayerTargetHeight);
+
+                    // Only wipe if the sync state actually CHANGED (v7.01 Fix)
+                    if (this._lastSyncW !== targetW || this._lastSyncH !== targetH) {
+                        this.foods = [];
+                        this._lastSyncW = targetW;
+                        this._lastSyncH = targetH;
+                    }
+
+                    logicalW = targetW;
+                    logicalH = targetH;
+                }
+
+                // 8. Box Snap (Grid Alignment)
+                this.cols = Math.floor(logicalW / GRID_SIZE);
+                this.rows = Math.floor(logicalH / GRID_SIZE);
+
+                // 9. Set Physical Dimensions
+                CANVAS_WIDTH = this.cols * GRID_SIZE;
+                CANVAS_HEIGHT = this.rows * GRID_SIZE;
+
+                canvas.width = CANVAS_WIDTH;
+                canvas.height = CANVAS_HEIGHT;
+
+                // 10. Lock Container (Shrink-Wrap)
+                canvas.style.width = CANVAS_WIDTH + "px";
+                canvas.style.height = CANVAS_HEIGHT + "px";
+
+                container.style.width = (CANVAS_WIDTH + 4) + 'px';
+                container.style.height = (CANVAS_HEIGHT + 4) + 'px';
+
+                // BORDER COLOR LOGIC (v6.66)
+                // Use Blue for Client (P2), Green for Host/Single (P1)
+                const borderColor = this.isClient ? '#00ccff' : '#00ff88';
+                container.style.border = `2px solid ${borderColor}`;
+
+                container.style.flex = 'none'; // Lock it down again
+
+                this.maxX = this.cols - 1;
+                this.maxY = this.rows - 1;
+
+                // FOOD BOUNDARY SAFETY (v6.98)
+                // If the board shrunk, some food might be outside.
+                if (this.foods && this.foods.length > 0) {
+                    const before = this.foods.length;
+                    this.foods = this.foods.filter(f => f.x <= this.maxX && f.y <= this.maxY);
+                    // Respawn if we lost food due to shrink
+                    while (this.foods.length < before && this.foods.length < 3) {
+                        this.spawnFood();
+                    }
+                }
+
+                // 3. UI Updates based on device
+                const btn1P = document.getElementById('btn-1p');
+                if (btn1P) {
+                    if (window.innerWidth < 768) btn1P.innerText = "START 1 PLAYER";
+                    else btn1P.innerText = "START 1 PLAYER";
+                }
+
+                this.draw();
+            }
+
+            spawnFood() {
+                // Limit max foods just in case, but aim for 3-5
+                if (this.foods.length >= 5) return;
+
+                let valid = false;
+                let attempts = 0;
+
+                if (CANVAS_WIDTH <= 0 || CANVAS_HEIGHT <= 0) this.resize();
+
+                let maxX = Math.floor(CANVAS_WIDTH / GRID_SIZE);
+                let maxY = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
+
+                if (maxX <= 1 || maxY <= 1) {
+                    maxX = 40;
+                    maxY = 30;
+                }
+
+                let newFood = {};
+
+                while (!valid && attempts < 100) {
+                    attempts++;
+                    newFood = {
+                        x: Math.floor(Math.random() * (this.maxX + 1)),
+                        y: Math.floor(Math.random() * (this.maxY + 1)),
+                        createdAt: Date.now() // Add timestamp for respawn logic
+                    };
+                    valid = !this.isOccupied(newFood);
+                }
+
+                if (!valid) {
+                    // Force Random if stuck
+                    newFood = {
+                        x: Math.floor(Math.random() * (this.maxX + 1)),
+                        y: Math.floor(Math.random() * (this.maxY + 1))
+                    };
+                }
+
+                this.foods.push(newFood);
+            }
+
+            // ... spawnPowerUp omitted ...
+
+            updateDynamicLegend() {
+                if (!dynamicLegend) return;
+
+                // Force Redraw Every Frame (No Caching)
+                dynamicLegend.innerHTML = '';
+
+                let renderPowerups = this.powerups || []; // Default to empty array
+
+                // 1. Draw Static Powerups (Available on board)
+                renderPowerups.forEach(p => {
+                    const def = this.powerUpTypes[p.type];
+                    const div = document.createElement('div');
+                    div.className = 'legend-item';
+                    div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+                    dynamicLegend.appendChild(div);
+                });
+
+                // 2. Draw Active Timers (Ghost Style: Individual rows)
+                const s1 = this.snakes[0];
+                if (s1) {
+
+                    // Helper to add a timer row
+                    const addTimer = (type, seconds, labelOverride = null) => {
+                        const def = this.powerUpTypes[type];
+                        const label = labelOverride || def.label;
+                        const div = document.createElement('div');
+                        div.className = 'legend-item'; // Use standard class
+                        // Add specific styling to make it pop
+                        div.style.color = '#fff';
+                        div.style.fontWeight = 'bold';
+                        div.style.textShadow = '0 0 5px ' + def.color;
+
+                        div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+                        dynamicLegend.appendChild(div);
+                    };
+
+                    if (s1.ghostTimer > 0) {
+                        addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+                    }
+                    if (s1.shieldTimer > 0) {
+                        addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+                    }
+                    if (s1.magnetTimer > 0) {
+                        addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+                    }
+                }
+            }
+
+            spawnPowerUp() {
+                if (this.powerups.length >= 5) return;
+
+                let type = '';
+
+                // TEST MODE OVERRIDE
+                if (this.testMode && this.powerUpTypes[this.testMode]) {
+                    type = this.testMode;
+                } else {
+                    let availableTypes = Object.keys(this.powerUpTypes);
+
+                    if (this.gameMode === 'single') {
+                        // Exclude multiplayer-only powerups in single player
+                        availableTypes = availableTypes.filter(t => !['eraser', 'blind', 'ice', 'switch', 'torpedo'].includes(t));
+                    }
+
+                    if (this.totalFoodEaten < 10) {
+                        availableTypes = availableTypes.filter(t => t !== 'slow');
+                    }
+
+                    // Logic: Bomb is useless if nothing to destroy
+                    const hasTargets = (this.walls.length > 0 || this.powerups.length > 0);
+                    if (!hasTargets) {
+                        availableTypes = availableTypes.filter(t => t !== 'bomb');
+                    }
+
+                    // Logic: Boost 'Wall' frequency
+                    if (availableTypes.includes('wall')) {
+                        availableTypes.push('wall');
+                        availableTypes.push('wall');
+                        availableTypes.push('wall');
+                    }
+
+                    if (availableTypes.length === 0) return;
+                    type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+                }
+
+                let valid = false;
+                let pos = {};
+                let attempts = 0;
+                // Increased attempts for long snakes
+                while (!valid && attempts < 100) {
+                    attempts++;
+                    pos = {
+                        x: Math.floor(Math.random() * (CANVAS_WIDTH / GRID_SIZE)),
+                        y: Math.floor(Math.random() * (CANVAS_HEIGHT / GRID_SIZE)),
+                        type: type,
+                        createdAt: Date.now()
+                    };
+                    valid = !this.isOccupied(pos);
+                }
+                if (valid) this.powerups.push(pos);
+            }
+
+            isOccupied(pos) {
+                // Safety: Round input position to ensure integer comparison
+                const px = Math.round(pos.x);
+                const py = Math.round(pos.y);
+
+                if (this.foods) {
+                    for (let f of this.foods) {
+                        if (Math.round(f.x) === px && Math.round(f.y) === py) return true;
+                    }
+                }
+                if (this.snakes) {
+                    for (let snake of this.snakes) {
+                        if (!snake || !snake.body) continue;
+                        for (let segment of snake.body) {
+                            // Float-safe integer comparison
+                            if (Math.round(segment.x) === px && Math.round(segment.y) === py) return true;
+                        }
+                    }
+                }
+                if (this.walls) {
+                    for (let w of this.walls) {
+                        if (Math.round(w.x) === px && Math.round(w.y) === py) return true;
+                    }
+                }
+                if (this.powerups) {
+                    for (let p of this.powerups) {
+                        if (Math.round(p.x) === px && Math.round(p.y) === py) return true;
+                    }
+                }
+                // Projectiles usually move fast, but safe to check
+                if (this.projectiles) {
+                    for (let proj of this.projectiles) {
+                        if (Math.round(proj.x) === px && Math.round(proj.y) === py) return true;
+                    }
+                }
+                return false;
+            }
+
+            handleTouchStart(e) {
+                // FAILSAFE RESTART (Tap Screen if Game Over)
+                if (!this.isRunning && this.restartZone) {
+                    location.reload(); // Simple restart
+                    return;
+                }
+
+                // Allow clicks on buttons/inputs/menu to pass through
+                if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.menu-screen')) {
+                    // Do not prevent default
+                } else {
+                    e.preventDefault();
+                }
+
+                const touch = e.changedTouches[0];
+                this.touchStartX = touch.clientX;
+                this.touchStartY = touch.clientY;
+                if (typeof log !== 'undefined') log(`Start: ${Math.floor(this.touchStartX)},${Math.floor(this.touchStartY)}`);
+            }
+
+            handleTouchMove(e) {
+                // Prevent scrolling if NOT inside menu OR if checking high scores
+                // FIX: Allow default behavior (scrolling) if target is within a scrollable area
+                if (e.target.closest('.scrollable') || e.target.closest('#high-score-list')) {
+                    e.stopPropagation(); // Stop game logic from seeing this
+                    return; // LET DEFAULT SCROLL HAPPEN
+                } else if (!e.target.closest('.menu-screen')) {
+                    e.preventDefault();
+                }
+
+                if (!this.isRunning || this.isPaused) return;
+
+                const touch = e.changedTouches[0];
+                const deltaX = touch.clientX - this.touchStartX;
+                const deltaY = touch.clientY - this.touchStartY;
+
+                // Continuous Swipe Threshold (Lower than tap threshold slightly to feel responsive?)
+                // REDUCED TO 15px for ultra-responsive continuous control
+                if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
+                    let key = '';
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
+                    } else {
+                        key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
+                    }
+
+                    if (typeof log !== 'undefined') log(`CONT SWIPE: ${key}`);
+                    this.handleInput({ key: key, preventDefault: () => { } });
+
+                    // RESET Start Position to current finger position
+                    // This is the key for "Continuous" swiping (Up -> Right without lifting)
+                    this.touchStartX = touch.clientX;
+                    this.touchStartY = touch.clientY;
+                }
+            }
+
+            handleTouchEnd(e) {
+                // Always allow button clicks to finish
+                if (e.target.closest('button') || e.target.closest('input')) {
+                    return;
+                }
+
+                if (!e.target.closest('.menu-screen')) {
+                    e.preventDefault();
+                }
+
+                const touch = e.changedTouches[0];
+                const deltaX = touch.clientX - this.touchStartX;
+                const deltaY = touch.clientY - this.touchStartY;
+
+                if (typeof log !== 'undefined') log(`End dX:${Math.floor(deltaX)} dY:${Math.floor(deltaY)} Run:${this.isRunning} Paused:${this.isPaused}`);
+
+                if (!this.isRunning || this.isPaused) return;
+
+                // Threshold for swipe vs tap (Reduced to 10px for responsiveness)
+                if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
+                    // if (typeof log !== 'undefined') log("Tap ignored (<10px)");
+                    return;
+                }
+
+                // Determine Direction
+                let key = '';
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // Horizontal
+                    key = deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
+                } else {
+                    // Vertical
+                    key = deltaY > 0 ? 'ArrowDown' : 'ArrowUp';
+                }
+
+                if (typeof log !== 'undefined') log(`SWIPE END: ${key}`);
+                this.handleInput({ key: key, preventDefault: () => { } });
+            }
+
+            handleRemoteInput(key) {
+                if (typeof log !== 'undefined') log("HOST RX: " + key);
+
+                if (this.snakes.length > 1 && this.snakes[1]) {
+                    const p2 = this.snakes[1];
+
+                    // MAP Arrows (from Client Touch) to WASD (Player 2 Local)
+                    let mappedKey = key;
+                    if (key === 'ArrowUp') mappedKey = 'w';
+                    if (key === 'ArrowDown') mappedKey = 's';
+                    if (key === 'ArrowLeft') mappedKey = 'a';
+                    if (key === 'ArrowRight') mappedKey = 'd';
+
+                    p2.handleInput(mappedKey);
+                }
+            }
+
+
+            handleInput(e) {
+                if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
+                    this.togglePause();
+                    return;
+                }
+
+                // FIRE TORPEDO INPUT (Removed - Now Auto-Fire on Pickup)
+
+
+                // Network Client Input
+                if (this.isClient) {
+                    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Shift', ' '].includes(e.key)) {
+                        e.preventDefault();
+                        if (this.conn && this.conn.open) {
+                            this.conn.send({ type: 'input', key: e.key });
+                        }
+                    }
+                    return; // Client ONLY sends input, does not move locally
+                }
+
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+                this.snakes.forEach(s => s.handleInput(e.key));
+            }
+
+            togglePause() {
+                this.isPaused = !this.isPaused;
+
+                const uiLayer = document.getElementById('ui-layer');
+                if (uiLayer) uiLayer.style.display = 'block';
+
+                if (this.isPaused) {
+                    mainMenu.classList.remove('hidden');
+                    mainMenu.classList.remove('nuclear-hidden'); // UN-NUKE
+                    mainMenu.classList.add('active');
+                    mainMenu.style.display = 'flex';
+                    if (btnResume) btnResume.classList.remove('hidden');
+                } else {
+                    mainMenu.classList.add('hidden');
+                    mainMenu.classList.remove('active');
+                    if (btnResume) btnResume.classList.add('hidden');
+
+                    this.lastTime = performance.now();
+                    this.loop(this.lastTime);
+                }
+            }
+
+            gameOver(winnerIndex, skipNameEntry = false) {
+                try {
+                    this.isRunning = false;
+                    this.isPaused = false;
+
+                    if (uiLayer) {
+                        uiLayer.style.display = 'block';
+                        // Force reflow
+                        uiLayer.offsetHeight;
+                    }
+
+                    // DEFINE UI ELEMENTS (v6.78 Fix)
+                    const winnerText = document.getElementById('winner-text');
+                    const btnResume = document.getElementById('btn-resume');
+                    const dynamicLegend = document.getElementById('dynamic-legend');
+                    const goLoginBtn = document.getElementById('go-login-btn');
+                    const playerNameInput = document.getElementById('player-name-input'); // Re-define safely
+                    const h2hBox = document.getElementById('h2h-game-over-stats');
+                    if (h2hBox) h2hBox.style.display = 'none'; // Hide by default (Show only in Multi)
+
+                    mainMenu.classList.remove('active');
+                    mainMenu.classList.add('hidden');
+                    nameEntryScreen.classList.add('hidden');
+
+                    if (this.gameMode === 'single' && !skipNameEntry) {
+                        const score = this.snakes[0].score;
+                        const type = (this.platform === 'pc') ? 'pc' : 'mobile';
+
+                        // 1. LOGGED IN USER: AUTO-SAVE (Updates Total XP / Games Played)
+                        if (this.currentUser) {
+                            this.saveScoreToBackend(this.currentUser.name, score, type)
+                                .then(res => {
+                                    if (res && res.success) console.log("Score Saved Automatically");
+                                });
+
+                            // If it's a high score, maybe flash a message? 
+                            // For now, just falling through to Game Over screen is fine.
+                            // We could modify 'msg' below if we wanted.
+                        }
+                        // 2. GUEST: Only prompt if HIGH SCORE
+                        else if (score > 5 && this.checkHighScore(score)) {
+                            this.currentPendingScore = score;
+                            if (playerNameInput) {
+                                // Load saved name if available
+                                const savedName = localStorage.getItem('playerName');
+                                playerNameInput.value = savedName || "";
+                            }
+
+                            // ASYNC FETCH for Accurate Rank
+                            this.loadHighScores(type, 'best').then(freshData => {
+                                try {
+                                    const scores = Array.isArray(freshData) ? freshData : [];
+                                    const better = scores.filter(s => s.score >= score).length;
+                                    const rank = better + 1;
+
+                                    const rankMsg = document.getElementById('rank-msg');
+                                    if (rankMsg) {
+                                        rankMsg.innerText = `CONGRATULATIONS, YOU ARE NUMBER ${rank}`;
+                                    }
+                                } catch (e) { console.error("Rank Calc Error", e); }
+
+                                // Show Screen
+                                nameEntryScreen.classList.remove('hidden');
+                                nameEntryScreen.classList.remove('nuclear-hidden'); // UN-NUKE NAME ENTRY
+                                nameEntryScreen.classList.add('active');
+                                nameEntryScreen.style.display = 'flex';
+                                nameEntryScreen.style.opacity = '1';
+                                nameEntryScreen.style.visibility = 'visible';
+                                nameEntryScreen.style.pointerEvents = 'auto';
+
+                                if (playerNameInput) playerNameInput.focus();
+
+                                // Show Auth Options if Guest
+                                const authContainer = document.getElementById('auth-options-container');
+                                if (authContainer) {
+                                    authContainer.style.display = this.currentUser ? 'none' : 'block';
+                                }
+                            });
+
+                            return;
+                        }
+                    }
+
+                    let msg = "GAME OVER";
+                    let color = COLORS.p1;
+
+                    // BROADCAST SYNC (Host only sends, Client only receives)
+                    try {
+                        if (this.isHost) {
+                            this.broadcastGameOver(winnerIndex);
+                        }
+                    } catch (e) { console.error("Broadcast Error", e); }
+
+                    // SHOW LOGIN PROMPT IF GUEST (ON GAME OVER)
+                    const goAuth = document.getElementById('game-over-auth-options');
+                    if (goAuth) {
+                        goAuth.style.display = (!this.currentUser) ? 'flex' : 'none';
+                    }
+
+                    if (this.gameMode === 'multi') {
+                        // MULTIPLAYER MODE: Resolve names for UI
+                        let p1Name = "PLAYER 1";
+                        let p2Name = "PLAYER 2";
+                        const p1Label = document.getElementById('p1-name-label');
+                        const p2Label = document.getElementById('p2-name-label');
+                        if (p1Label) p1Name = p1Label.innerText;
+                        if (p2Label) p2Name = p2Label.innerText;
+
+                        if (winnerIndex === -1) { msg = "DRAW!"; color = "#fff"; }
+                        else if (winnerIndex === 0) { msg = p1Name + " WINS!"; color = COLORS.p1; }
+                        else { msg = p2Name + " WINS!"; color = COLORS.p2; }
+
+                        // Only Host records to DB
+                        if (!this.isClient) {
+                            try {
+                                const wName = (winnerIndex === -1) ? "DRAW" : (winnerIndex === 0 ? p1Name : p2Name);
+                                this.recordMatchStats(p1Name.toUpperCase(), p2Name.toUpperCase(), wName.toUpperCase());
+                            } catch (e) { console.error("Record Match Error:", e); }
+                        }
+                        // GAME OVER H2H STATS (v3.05 Logic - Robust)
+                        const h2hContainer = document.getElementById('h2h-game-over-stats');
+                        if (h2hContainer) {
+                            try {
+                                // 1. UPDATE SESSION STATS (Local or Offline Tracking)
+                                if (!this.sessionStats) this.sessionStats = { p1: 0, p2: 0, draws: 0 };
+                                if (winnerIndex === 0) this.sessionStats.p1++;
+                                else if (winnerIndex === 1) this.sessionStats.p2++;
+                                else this.sessionStats.draws++;
+
+                                // 2. RENDER SESSION STATS IMMEDIATELY (Fallback)
+                                const sP1 = (p1Name && p1Name.trim() !== "") ? p1Name.toUpperCase() : "P1";
+                                const sP2 = (p2Name && p2Name.trim() !== "") ? p2Name.toUpperCase() : "P2";
+
+                                // Safe Colors (Hardcoded to determine visibility)
+                                // We ignore global COLORS here to be absolutely sure.
+                                const cP1 = '#00ff88';
+                                const cP2 = '#00ccff';
+
+                                const renderStats = (w, l, d, name1, name2) => {
+                                    // Vertical Stack 3-Column Layout (v3.11)
+                                    // User Request: "Draw over score like names", "Same font size", "White color"
+                                    const labelStyle = "font-size:0.9rem; font-weight:bold; margin-bottom:2px; letter-spacing:1px;";
+                                    const scoreStyle = "font-size:1.4rem; font-weight:bold;";
+
+                                    return `
                                     <div style="display:flex; flex-direction:row; width:100%; justify-content:space-around; align-items:center; text-align:center;">
                                         
                                         <!-- Player 1 -->
@@ -2343,1597 +2341,1597 @@ window.addEventListener('DOMContentLoaded', () => {
 
                                     </div>
                                 `;
-                            };
+                                };
 
-                            // Initial Render (Session Stats) - Replaces content safely
-                            h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
+                                // Initial Render (Session Stats) - Replaces content safely
+                                h2hContainer.innerHTML = renderStats(this.sessionStats.p1, this.sessionStats.p2, this.sessionStats.draws, sP1, sP2);
 
-                            // Restore Standard Visibility (No Red Borders)
-                            h2hContainer.style.opacity = "1";
-                            h2hContainer.style.display = "flex";
+                                // Restore Standard Visibility (No Red Borders)
+                                h2hContainer.style.opacity = "1";
+                                h2hContainer.style.display = "flex";
 
-                            // 3. TRY FETCHING DB STATS (If Online / Logged In)
-                            if (this.gameMode === 'multi') {
-                                // ... existing fetch logic ...
-                                const myName = sP1;
-                                const oppName = sP2;
-                                if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
-                                    fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
-                                        .then(r => r.json()).then(d => {
-                                            if (d.success && d.matches) {
-                                                // ... calc w, l, dr ...
-                                                let w = 0, l = 0, dr = 0;
-                                                d.matches.forEach(m => {
-                                                    const u1 = (m.p1_name || "").toUpperCase();
-                                                    const u2 = (m.p2_name || "").toUpperCase();
-                                                    const winN = (m.winner_name || "").toUpperCase();
-                                                    if ((u1 === myName && u2 === oppName) || (u2 === myName && u1 === oppName)) {
-                                                        if (winN === myName) w++;
-                                                        else if (winN === "DRAW" || !winN || winN === "") dr++;
-                                                        else l++;
-                                                    }
-                                                });
-                                                h2hContainer.innerHTML = renderStats(w, l, dr, myName, oppName);
-                                            }
-                                        }).catch(e => { });
+                                // 3. TRY FETCHING DB STATS (If Online / Logged In)
+                                if (this.gameMode === 'multi') {
+                                    // ... existing fetch logic ...
+                                    const myName = sP1;
+                                    const oppName = sP2;
+                                    if (myName !== "PLAYER 1" && oppName !== "PLAYER 2") {
+                                        fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
+                                            .then(r => r.json()).then(d => {
+                                                if (d.success && d.matches) {
+                                                    // ... calc w, l, dr ...
+                                                    let w = 0, l = 0, dr = 0;
+                                                    d.matches.forEach(m => {
+                                                        const u1 = (m.p1_name || "").toUpperCase();
+                                                        const u2 = (m.p2_name || "").toUpperCase();
+                                                        const winN = (m.winner_name || "").toUpperCase();
+                                                        if ((u1 === myName && u2 === oppName) || (u2 === myName && u1 === oppName)) {
+                                                            if (winN === myName) w++;
+                                                            else if (winN === "DRAW" || !winN || winN === "") dr++;
+                                                            else l++;
+                                                        }
+                                                    });
+                                                    h2hContainer.innerHTML = renderStats(w, l, dr, myName, oppName);
+                                                }
+                                            }).catch(e => { });
+                                    }
                                 }
+                            } catch (e) {
+                                console.error("H2H Render Error:", e);
+                                h2hContainer.innerText = "STATS ERROR";
+                                h2hContainer.style.color = "red";
                             }
-                        } catch (e) {
-                            console.error("H2H Render Error:", e);
-                            h2hContainer.innerText = "STATS ERROR";
-                            h2hContainer.style.color = "red";
                         }
-                    }
 
-                } else {
-                    // SINGLE PLAYER MODE
-                    if (this.currentUser) {
-                        msg = "SCORE SAVED!";
-                        color = "#00ffff";
-                    }
-                    // FIXED ID BUG (v9.0) - Was h2h-stats-container
-                    const statsContainer = document.getElementById('h2h-game-over-stats');
-                    if (statsContainer) statsContainer.innerHTML = "";
-                }
-
-                // --- SHOW THE SCREEN ---
-                if (winnerText) {
-                    winnerText.innerText = msg;
-                    winnerText.style.color = color;
-                }
-
-                gameOverScreen.classList.remove('hidden');
-                gameOverScreen.classList.remove('nuclear-hidden');
-                gameOverScreen.classList.add('active');
-                gameOverScreen.style.display = 'flex';
-                gameOverScreen.style.opacity = '1';
-                gameOverScreen.style.visibility = 'visible';
-
-                if (btnResume) btnResume.classList.add('hidden');
-                if (dynamicLegend) dynamicLegend.innerHTML = '';
-
-
-            } catch (err) {
-                console.error(err);
-                alert("Game Over!");
-            }
-        }
-
-        recordMatchStats(p1, p2, winner, duration) {
-            // PENDING MATCH LOGIC (v3.13)
-            // If Guest, save strictly for retroactive sync on login.
-            if (!this.currentUser) {
-                console.log("Guest Match Ended. Storing for potential Login...");
-                this.pendingMatch = {
-                    p1: p1,
-                    p2: p2,
-                    winner: winner,
-                    duration: duration,
-                    timestamp: Date.now()
-                };
-                return; // Don't try to log to DB if not logged in
-            }
-            return fetch('auth.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'log_match',
-                    p1: p1,
-                    p2: p2,
-                    winner: winner,
-                    duration: duration
-                })
-            }).then(res => res.json())
-                .then(data => {
-                    if (data && data.success) {
-                        this.showMatchSavedToast();
-                        if (this.isHost) this.broadcastMatchSaved();
                     } else {
-                        console.error("Match Log Failed:", data);
-                        alert("Match Save Failed: " + (data.error || "Unknown Error") + "\n\nPLEASE REPORT THIS!");
+                        // SINGLE PLAYER MODE
+                        if (this.currentUser) {
+                            msg = "SCORE SAVED!";
+                            color = "#00ffff";
+                        }
+                        // FIXED ID BUG (v9.0) - Was h2h-stats-container
+                        const statsContainer = document.getElementById('h2h-game-over-stats');
+                        if (statsContainer) statsContainer.innerHTML = "";
                     }
-                })
-                .catch(e => {
-                    console.error("Log Match Error:", e);
-                    alert("Network Error Saving Match: " + e.message);
-                });
-        }
 
-        showMatchSavedToast() {
-            // Toast removed per user request v6.98
-        }
+                    // --- SHOW THE SCREEN ---
+                    if (winnerText) {
+                        winnerText.innerText = msg;
+                        winnerText.style.color = color;
+                    }
 
-        broadcastMatchSaved() {
-            if (!this.isHost || !this.conn || !this.conn.open) return;
-            try {
-                this.conn.send({ type: 'match_saved' });
-            } catch (e) { }
-        }
+                    gameOverScreen.classList.remove('hidden');
+                    gameOverScreen.classList.remove('nuclear-hidden');
+                    gameOverScreen.classList.add('active');
+                    gameOverScreen.style.display = 'flex';
+                    gameOverScreen.style.opacity = '1';
+                    gameOverScreen.style.visibility = 'visible';
 
-        displayH2HStats(p1, p2) {
-            const container = document.getElementById('winner-text'); // Append below winner text
-            if (!container) return;
+                    if (btnResume) btnResume.classList.add('hidden');
+                    if (dynamicLegend) dynamicLegend.innerHTML = '';
 
-            // Check if stats box exists, if not create
-            let statsBox = document.getElementById('h2h-stats-box');
-            if (!statsBox) {
-                statsBox = document.createElement('div');
-                statsBox.id = 'h2h-stats-box';
-                statsBox.style.cssText = "margin-top:10px; font-size:1rem; color:#ccc;";
-                container.parentNode.insertBefore(statsBox, container.nextSibling);
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Game Over!");
+                }
             }
-            statsBox.innerHTML = "Loading Stats...";
 
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'get_h2h_stats', p1: p1, p2: p2 })
-            }).then(r => r.json()).then(d => {
-                if (d.success && d.stats) {
-                    statsBox.innerHTML = `
+            recordMatchStats(p1, p2, winner, duration) {
+                // PENDING MATCH LOGIC (v3.13)
+                // If Guest, save strictly for retroactive sync on login.
+                if (!this.currentUser) {
+                    console.log("Guest Match Ended. Storing for potential Login...");
+                    this.pendingMatch = {
+                        p1: p1,
+                        p2: p2,
+                        winner: winner,
+                        duration: duration,
+                        timestamp: Date.now()
+                    };
+                    return; // Don't try to log to DB if not logged in
+                }
+                return fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'log_match',
+                        p1: p1,
+                        p2: p2,
+                        winner: winner,
+                        duration: duration
+                    })
+                }).then(res => res.json())
+                    .then(data => {
+                        if (data && data.success) {
+                            this.showMatchSavedToast();
+                            if (this.isHost) this.broadcastMatchSaved();
+                        } else {
+                            console.error("Match Log Failed:", data);
+                            alert("Match Save Failed: " + (data.error || "Unknown Error") + "\n\nPLEASE REPORT THIS!");
+                        }
+                    })
+                    .catch(e => {
+                        console.error("Log Match Error:", e);
+                        alert("Network Error Saving Match: " + e.message);
+                    });
+            }
+
+            showMatchSavedToast() {
+                // Toast removed per user request v6.98
+            }
+
+            broadcastMatchSaved() {
+                if (!this.isHost || !this.conn || !this.conn.open) return;
+                try {
+                    this.conn.send({ type: 'match_saved' });
+                } catch (e) { }
+            }
+
+            displayH2HStats(p1, p2) {
+                const container = document.getElementById('winner-text'); // Append below winner text
+                if (!container) return;
+
+                // Check if stats box exists, if not create
+                let statsBox = document.getElementById('h2h-stats-box');
+                if (!statsBox) {
+                    statsBox = document.createElement('div');
+                    statsBox.id = 'h2h-stats-box';
+                    statsBox.style.cssText = "margin-top:10px; font-size:1rem; color:#ccc;";
+                    container.parentNode.insertBefore(statsBox, container.nextSibling);
+                }
+                statsBox.innerHTML = "Loading Stats...";
+
+                fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'get_h2h_stats', p1: p1, p2: p2 })
+                }).then(r => r.json()).then(d => {
+                    if (d.success && d.stats) {
+                        statsBox.innerHTML = `
                         <div style="display:flex; gap:20px; justify-content:center;">
                             <span style="color:${COLORS.p1}">${p1}: ${d.stats.p1_wins} Wins</span>
                             <span style="color:#888">Draws: ${d.stats.draws}</span>
                             <span style="color:${COLORS.p2}">${p2}: ${d.stats.p2_wins} Wins</span>
                         </div>
                     `;
-                } else {
-                    statsBox.innerHTML = "";
-                }
-            }).catch(e => console.error(e));
-        }
-
-        saveScoreToBackend(name, score, type) {
-            return fetch('api.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, score: score, type: type })
-            })
-                .then(res => res.json())
-                .catch(err => {
-                    console.error("Save Score Error:", err);
-                    return { success: false };
-                });
-        }
-
-        broadcastGameOver(winnerIndex) {
-            if (!this.isHost || !this.conn || !this.conn.open) return;
-
-            // REDUNDANT BROADCAST (Fix for Mobile Packet Loss)
-            // Send 10 times over 1 second to ensure delivery
-            let count = 0;
-            const spam = setInterval(() => {
-                if (this.conn && this.conn.open) {
-                    try {
-                        this.conn.send({ type: 'gameover', winner: winnerIndex });
-                    } catch (e) { }
-                }
-                count++;
-                if (count >= 10) clearInterval(spam);
-            }, 100);
-        }
-
-        // Fix Restart Button visibility for Client
-        // Ensure buttons are rebound or checked in GameOver
-        triggerShieldEffect(x, y) {
-            // Visual Flare
-            const div = document.createElement('div');
-            div.innerText = "SHIELD BLOCKED!";
-            div.style.position = 'absolute';
-            div.style.left = (x * GRID_SIZE) + 'px';
-            div.style.top = (y * GRID_SIZE) + 'px';
-            div.style.color = '#fff';
-            div.style.fontWeight = 'bold';
-            div.style.textShadow = '0 0 5px #000';
-            div.style.zIndex = '100';
-            div.style.pointerEvents = 'none';
-            div.className = 'shield-broken-msg'; // Add class for animation
-            document.body.appendChild(div);
-
-            // Animate up and fade
-            let op = 1;
-            let top = y * GRID_SIZE;
-            const anim = setInterval(() => {
-                op -= 0.05;
-                top -= 1;
-                div.style.opacity = op;
-                div.style.top = top + 'px';
-                if (op <= 0) {
-                    clearInterval(anim);
-                    div.remove();
-                }
-            }, 50);
-
-            // Flash Screen
-            const flash = document.createElement('div');
-            flash.style.position = 'fixed';
-            flash.style.top = '0'; flash.style.left = '0';
-            flash.style.width = '100vw'; flash.style.height = '100vh';
-            flash.style.background = 'rgba(255, 255, 255, 0.3)';
-            flash.style.zIndex = '99';
-            flash.style.pointerEvents = 'none';
-            document.body.appendChild(flash);
-            setTimeout(() => flash.remove(), 100);
-        }
-
-        update() {
-            if (this.isPaused) return;
-            // CRITICAL FIX: Client is a PURE RENDERER. Do not run local physics!
-            if (this.isClient) return;
-
-            const now = Date.now();
-            // Use true delta time for smoother timers if framerate dips
-            // Note: this.lastTime is updated at end of loop(), but here we need delta for logic.
-            // Actually, the loop runs at `currentSpeed` interval!
-            // Standard loop: requestAnimationFrame runs freely?
-            // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
-            // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
-            // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
-            const tickRate = this.currentSpeed;
-
-            if (this.speedEffectTimer > 0) {
-                this.speedEffectTimer -= tickRate;
-                if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+                    } else {
+                        statsBox.innerHTML = "";
+                    }
+                }).catch(e => console.error(e));
             }
 
-            // Power-Up Lifespan
-            const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
-            this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
-
-            // Food Lifespan & Minimum Check
-            const foodCountBefore = this.foods.length;
-            this.foods = this.foods.filter(f => now - (f.createdAt || now) < 30000); // 30s limit
-
-            // Ensure at least 3 foods at all times on Host
-            if (this.foods.length < 3) {
-                while (this.foods.length < 3) {
-                    this.spawnFood();
-                }
+            saveScoreToBackend(name, score, type) {
+                return fetch('api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, score: score, type: type })
+                })
+                    .then(res => res.json())
+                    .catch(err => {
+                        console.error("Save Score Error:", err);
+                        return { success: false };
+                    });
             }
 
-            // Capture OLD HEADS (Before Move) for Swap Detection
-            const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
-            const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
+            broadcastGameOver(winnerIndex) {
+                if (!this.isHost || !this.conn || !this.conn.open) return;
 
-            // Update Snakes (Collision & Movement)
-            this.snakes.forEach(s => {
-                // SLOW EFFECT (Individual)
-                if (s.slowTimer > 0) {
-                    s.slowTimer -= tickRate;
-                    // Skip every other frame to simulate 50% speed
-                    s.slowSkip = !s.slowSkip;
-                    if (s.slowSkip) return;
+                // REDUNDANT BROADCAST (Fix for Mobile Packet Loss)
+                // Send 10 times over 1 second to ensure delivery
+                let count = 0;
+                const spam = setInterval(() => {
+                    if (this.conn && this.conn.open) {
+                        try {
+                            this.conn.send({ type: 'gameover', winner: winnerIndex });
+                        } catch (e) { }
+                    }
+                    count++;
+                    if (count >= 10) clearInterval(spam);
+                }, 100);
+            }
+
+            // Fix Restart Button visibility for Client
+            // Ensure buttons are rebound or checked in GameOver
+            triggerShieldEffect(x, y) {
+                // Visual Flare
+                const div = document.createElement('div');
+                div.innerText = "SHIELD BLOCKED!";
+                div.style.position = 'absolute';
+                div.style.left = (x * GRID_SIZE) + 'px';
+                div.style.top = (y * GRID_SIZE) + 'px';
+                div.style.color = '#fff';
+                div.style.fontWeight = 'bold';
+                div.style.textShadow = '0 0 5px #000';
+                div.style.zIndex = '100';
+                div.style.pointerEvents = 'none';
+                div.className = 'shield-broken-msg'; // Add class for animation
+                document.body.appendChild(div);
+
+                // Animate up and fade
+                let op = 1;
+                let top = y * GRID_SIZE;
+                const anim = setInterval(() => {
+                    op -= 0.05;
+                    top -= 1;
+                    div.style.opacity = op;
+                    div.style.top = top + 'px';
+                    if (op <= 0) {
+                        clearInterval(anim);
+                        div.remove();
+                    }
+                }, 50);
+
+                // Flash Screen
+                const flash = document.createElement('div');
+                flash.style.position = 'fixed';
+                flash.style.top = '0'; flash.style.left = '0';
+                flash.style.width = '100vw'; flash.style.height = '100vh';
+                flash.style.background = 'rgba(255, 255, 255, 0.3)';
+                flash.style.zIndex = '99';
+                flash.style.pointerEvents = 'none';
+                document.body.appendChild(flash);
+                setTimeout(() => flash.remove(), 100);
+            }
+
+            update() {
+                if (this.isPaused) return;
+                // CRITICAL FIX: Client is a PURE RENDERER. Do not run local physics!
+                if (this.isClient) return;
+
+                const now = Date.now();
+                // Use true delta time for smoother timers if framerate dips
+                // Note: this.lastTime is updated at end of loop(), but here we need delta for logic.
+                // Actually, the loop runs at `currentSpeed` interval!
+                // Standard loop: requestAnimationFrame runs freely?
+                // NO. existing loop: `if (timestamp - this.lastTime < this.currentSpeed) return;`
+                // This means the loop runs at ~10 FPS (100ms) or 20 FPS (50ms).
+                // FIX: Decrement by `this.currentSpeed` (the actual elapsed time per tick).
+                const tickRate = this.currentSpeed;
+
+                if (this.speedEffectTimer > 0) {
+                    this.speedEffectTimer -= tickRate;
+                    if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
                 }
 
-                s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
-                    // Shield Break Callback (Particles?)
-                    this.triggerShieldEffect(x, y);
+                // Power-Up Lifespan
+                const duration = (this.gameMode === 'multi' && this.platform === 'pc') ? 15000 : 5000;
+                this.powerups = this.powerups.filter(p => now - p.createdAt < duration);
+
+                // Food Lifespan & Minimum Check
+                const foodCountBefore = this.foods.length;
+                this.foods = this.foods.filter(f => now - (f.createdAt || now) < 30000); // 30s limit
+
+                // Ensure at least 3 foods at all times on Host
+                if (this.foods.length < 3) {
+                    while (this.foods.length < 3) {
+                        this.spawnFood();
+                    }
+                }
+
+                // Capture OLD HEADS (Before Move) for Swap Detection
+                const oldH1 = this.snakes[0] ? { x: this.snakes[0].body[0].x, y: this.snakes[0].body[0].y } : null;
+                const oldH2 = this.snakes[1] ? { x: this.snakes[1].body[0].x, y: this.snakes[1].body[0].y } : null;
+
+                // Update Snakes (Collision & Movement)
+                this.snakes.forEach(s => {
+                    // SLOW EFFECT (Individual)
+                    if (s.slowTimer > 0) {
+                        s.slowTimer -= tickRate;
+                        // Skip every other frame to simulate 50% speed
+                        s.slowSkip = !s.slowSkip;
+                        if (s.slowSkip) return;
+                    }
+
+                    s.move(this.walls, this.gameMode === 'single', this.currentSpeed, (x, y) => {
+                        // Shield Break Callback (Particles?)
+                        this.triggerShieldEffect(x, y);
+                    });
                 });
-            });
 
-            this.updateProjectiles(this.currentSpeed); // Move projectiles
+                this.updateProjectiles(this.currentSpeed); // Move projectiles
 
-            this.checkCollisions();    // GAME OVER CHECKS - ROBUST MODE
-            // Use snake count to ensure Multi physics runs even if gameMode string is glitchy
-            if (this.snakes.length === 1) {
-                if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
-                    this.gameOver();
-                    return;
-                }
-            } else if (this.snakes.length > 1) {
-                let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
-                let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+                this.checkCollisions();    // GAME OVER CHECKS - ROBUST MODE
+                // Use snake count to ensure Multi physics runs even if gameMode string is glitchy
+                if (this.snakes.length === 1) {
+                    if (this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y))) {
+                        this.gameOver();
+                        return;
+                    }
+                } else if (this.snakes.length > 1) {
+                    let p1d = this.snakes[0].isDead || this.snakes[0].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
+                    let p2d = this.snakes[1].isDead || this.snakes[1].checkSelfCollision((x, y) => this.triggerShieldEffect(x, y));
 
-                // Head-to-Head/Body collision logic
-                const h1 = this.snakes[0].body[0];
-                const h2 = this.snakes[1].body[0];
-                const headOn = (h1.x === h2.x && h1.y === h2.y);
+                    // Head-to-Head/Body collision logic
+                    const h1 = this.snakes[0].body[0];
+                    const h2 = this.snakes[1].body[0];
+                    const headOn = (h1.x === h2.x && h1.y === h2.y);
 
-                // P1 Head hits P2 Body
-                // If Head-on, we skip index 0 here and handle it in specific block
-                this.snakes[1].body.forEach((seg, idx) => {
-                    if (headOn && idx === 0) return; // Handled later
+                    // P1 Head hits P2 Body
+                    // If Head-on, we skip index 0 here and handle it in specific block
+                    this.snakes[1].body.forEach((seg, idx) => {
+                        if (headOn && idx === 0) return; // Handled later
 
-                    if (h1.x === seg.x && h1.y === seg.y) {
-                        // COLLISION!
-                        if (this.snakes[0].hasShield) {
-                            // P1 has shield: Survives crash
-                            this.snakes[0].hasShield = false;
-                            this.triggerShieldEffect(h1.x, h1.y);
+                        if (h1.x === seg.x && h1.y === seg.y) {
+                            // COLLISION!
+                            if (this.snakes[0].hasShield) {
+                                // P1 has shield: Survives crash
+                                this.snakes[0].hasShield = false;
+                                this.triggerShieldEffect(h1.x, h1.y);
 
-                            // SHIELD SMASH: If P2 does NOT have shield (and we hit body)
-                            // P2 dies! (Shield as weapon)
-                            if (!this.snakes[1].hasShield) {
+                                // SHIELD SMASH: If P2 does NOT have shield (and we hit body)
+                                // P2 dies! (Shield as weapon)
+                                if (!this.snakes[1].hasShield) {
+                                    p2d = true;
+                                }
+                                // If P2 HAS shield, P2 survives, P1 shield just broke. 
+                                // (Bouncing off Armor)
+                            } else {
+                                // No shield: P1 dies
+                                p1d = true;
+                            }
+                        }
+                    });
+
+                    // P2 Head hits P1 Body
+                    this.snakes[0].body.forEach((seg, idx) => {
+                        if (headOn && idx === 0) return;
+
+                        if (h2.x === seg.x && h2.y === seg.y) {
+                            if (this.snakes[1].hasShield) {
+                                this.snakes[1].hasShield = false;
+                                this.triggerShieldEffect(h2.x, h2.y);
+                                if (!this.snakes[0].hasShield) {
+                                    p1d = true; // SMASH
+                                }
+                            } else {
                                 p2d = true;
                             }
-                            // If P2 HAS shield, P2 survives, P1 shield just broke. 
-                            // (Bouncing off Armor)
-                        } else {
-                            // No shield: P1 dies
-                            p1d = true;
                         }
-                    }
-                });
+                    });
 
-                // P2 Head hits P1 Body
-                this.snakes[0].body.forEach((seg, idx) => {
-                    if (headOn && idx === 0) return;
-
-                    if (h2.x === seg.x && h2.y === seg.y) {
-                        if (this.snakes[1].hasShield) {
-                            this.snakes[1].hasShield = false;
-                            this.triggerShieldEffect(h2.x, h2.y);
-                            if (!this.snakes[0].hasShield) {
-                                p1d = true; // SMASH
-                            }
-                        } else {
-                            p2d = true;
-                        }
-                    }
-                });
-
-                // HEAD-ON COLLISION (Same Tile)
-                if (headOn) {
-                    const p1Shield = this.snakes[0].hasShield;
-                    const p2Shield = this.snakes[1].hasShield;
-
-                    if (p1Shield && p2Shield) {
-                        // BOUNCE / MUTUAL BREAK
-                        this.snakes[0].hasShield = false;
-                        this.snakes[1].hasShield = false;
-                        this.triggerShieldEffect(h1.x, h1.y);
-                        // No deaths
-                    } else if (p1Shield) {
-                        // P1 Wins
-                        this.snakes[0].hasShield = false;
-                        this.triggerShieldEffect(h1.x, h1.y);
-                        p2d = true;
-                    } else if (p2Shield) {
-                        // P2 Wins
-                        this.snakes[1].hasShield = false;
-                        this.triggerShieldEffect(h1.x, h1.y);
-                        p1d = true;
-                    } else {
-                        // NO SHIELDS: MUTUAL DESTRUCTION
-                        p1d = true;
-                        p2d = true;
-                    }
-                }
-
-                // HEAD SWAP COLLISION (Passed through each other)
-                if (oldH1 && oldH2) {
-                    if (h1.x === oldH2.x && h1.y === oldH2.y && h2.x === oldH1.x && h2.y === oldH1.y) {
-                        // FIX: Check Shields!
+                    // HEAD-ON COLLISION (Same Tile)
+                    if (headOn) {
                         const p1Shield = this.snakes[0].hasShield;
                         const p2Shield = this.snakes[1].hasShield;
 
                         if (p1Shield && p2Shield) {
+                            // BOUNCE / MUTUAL BREAK
                             this.snakes[0].hasShield = false;
                             this.snakes[1].hasShield = false;
                             this.triggerShieldEffect(h1.x, h1.y);
+                            // No deaths
                         } else if (p1Shield) {
-                            p2d = true;
+                            // P1 Wins
                             this.snakes[0].hasShield = false;
+                            this.triggerShieldEffect(h1.x, h1.y);
+                            p2d = true;
                         } else if (p2Shield) {
-                            p1d = true;
+                            // P2 Wins
                             this.snakes[1].hasShield = false;
+                            this.triggerShieldEffect(h1.x, h1.y);
+                            p1d = true;
                         } else {
-                            p1d = true; p2d = true;
-                            console.log("CRITICAL: HEAD SWAP DETECTED! FORCE GAME OVER.");
+                            // NO SHIELDS: MUTUAL DESTRUCTION
+                            p1d = true;
+                            p2d = true;
                         }
                     }
-                }
 
-                if (p1d && p2d) {
-                    this.triggerDeath(this.snakes[0]);
-                    this.triggerDeath(this.snakes[1]);
-                    this.gameOver(-1); return;
-                }
-                if (p1d) {
-                    this.triggerDeath(this.snakes[0]);
-                    this.gameOver(1); return;
-                }
-                if (p2d) {
-                    this.triggerDeath(this.snakes[1]);
-                    this.gameOver(0); return;
-                }
-            }
+                    // HEAD SWAP COLLISION (Passed through each other)
+                    if (oldH1 && oldH2) {
+                        if (h1.x === oldH2.x && h1.y === oldH2.y && h2.x === oldH1.x && h2.y === oldH1.y) {
+                            // FIX: Check Shields!
+                            const p1Shield = this.snakes[0].hasShield;
+                            const p2Shield = this.snakes[1].hasShield;
 
-
-
-
-            // Timed Powerup Spawning (Independent of eating)
-            if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
-                this.spawnPowerUp();
-                this.lastPowerUpTime = now;
-                // Randomize next delay: 5s to 15s
-                this.nextPowerUpDelay = 5000 + Math.random() * 10000;
-            }
-
-            // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
-            this.snakes.forEach(s => {
-                let ate = false;
-                let ateIndex = -1;
-
-                for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
-                    const f = this.foods[fIdx];
-
-                    // Regular Eat
-                    if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                        ate = true;
-                        ateIndex = fIdx;
-                        break;
-                    }
-
-                    // Magnet Logic (Pull closest food)
-                    else if (s.magnetTimer > 0) {
-                        const head = s.body[0];
-                        const dx = f.x - head.x;
-                        const dy = f.y - head.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-
-                        if (dist < 15 && dist > 0) {
-                            // Pull food closer
-                            if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
-                            else f.y -= Math.sign(dy);
-
-                            // Check capture
-                            if (s.body[0].x === f.x && s.body[0].y === f.y) {
-                                ate = true;
-                                ateIndex = fIdx;
-                                break;
+                            if (p1Shield && p2Shield) {
+                                this.snakes[0].hasShield = false;
+                                this.snakes[1].hasShield = false;
+                                this.triggerShieldEffect(h1.x, h1.y);
+                            } else if (p1Shield) {
+                                p2d = true;
+                                this.snakes[0].hasShield = false;
+                            } else if (p2Shield) {
+                                p1d = true;
+                                this.snakes[1].hasShield = false;
+                            } else {
+                                p1d = true; p2d = true;
+                                console.log("CRITICAL: HEAD SWAP DETECTED! FORCE GAME OVER.");
                             }
                         }
                     }
-                }
 
-                if (ate && ateIndex !== -1) {
-                    // Remove the eaten piece
-                    this.foods.splice(ateIndex, 1);
-
-                    this.baseSpeed *= 0.99;
-                    if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
-
-                    s.growPending++;
-                    s.score++;
-                    this.totalFoodEaten++;
-
-                    // Trigger FX for eating
-                    this.sound.play('eat');
-                    this.particles.explode(s.body[0].x, s.body[0].y, COLORS.food, 5);
-
-                    // Spawn Replacement right away to keep map full
-                    this.spawnFood();
-                    // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
-                    // User asked for "random", not "just when eaten".
-                    // But maybe small chance?
-                    if (Math.random() < 0.2) this.spawnPowerUp();
-
-                    this.updateScoreUI();
-                }
-            });
-
-            // Eat Powerups
-            this.snakes.forEach((s, sIdx) => {
-                const head = s.body[0];
-                for (let i = 0; i < this.powerups.length; i++) {
-                    const p = this.powerups[i];
-                    if (head.x === p.x && head.y === p.y) {
-                        this.applyPowerUp(s, p.type, sIdx);
-                        this.powerups.splice(i, 1);
-                        break;
+                    if (p1d && p2d) {
+                        this.triggerDeath(this.snakes[0]);
+                        this.triggerDeath(this.snakes[1]);
+                        this.gameOver(-1); return;
+                    }
+                    if (p1d) {
+                        this.triggerDeath(this.snakes[0]);
+                        this.gameOver(1); return;
+                    }
+                    if (p2d) {
+                        this.triggerDeath(this.snakes[1]);
+                        this.gameOver(0); return;
                     }
                 }
-            });
-        }
 
-        triggerDeath(snake) {
-            if (!snake) return;
-            this.sound.play('die');
-            const head = snake.body[0];
-            this.particles.explode(head.x, head.y, snake.color, 20);
-            this.triggerShake(10);
 
-            // HAPTIC FEEDBACK (Android only usually)
-            if (window.navigator && window.navigator.vibrate) {
-                window.navigator.vibrate(400); // Long vibration for death
-            }
-        }
 
-        checkCollisions() {
-            // 5. Check Projectile Collisions
-            if (this.projectiles.length > 0) {
-                for (let pIndex = this.projectiles.length - 1; pIndex >= 0; pIndex--) {
-                    const p = this.projectiles[pIndex];
-                    let projectileHit = false;
 
-                    for (let s of this.snakes) {
-                        // Don't hit owner
-                        if (s.id === p.ownerId) continue;
+                // Timed Powerup Spawning (Independent of eating)
+                if (now - this.lastPowerUpTime > this.nextPowerUpDelay) {
+                    this.spawnPowerUp();
+                    this.lastPowerUpTime = now;
+                    // Randomize next delay: 5s to 15s
+                    this.nextPowerUpDelay = 5000 + Math.random() * 10000;
+                }
 
-                        // Projectile Hit Snake
-                        s.body.forEach((seg, i) => {
-                            if (p.x === seg.x && p.y === seg.y) {
-                                // Hit!
-                                this.sound.play('explode');
-                                this.particles.explode(p.x, p.y, COLORS.orange, 15);
-                                this.triggerShake(5);
+                // Eat Food (Combined Magnet & Regular) - MULTI FOOD SUPPORT
+                this.snakes.forEach(s => {
+                    let ate = false;
+                    let ateIndex = -1;
 
-                                // Haptic Hit
-                                if (window.navigator && window.navigator.vibrate) {
-                                    window.navigator.vibrate(100);
-                                }
+                    for (let fIdx = 0; fIdx < this.foods.length; fIdx++) {
+                        const f = this.foods[fIdx];
 
-                                projectileHit = true; // Mark projectile for removal
+                        // Regular Eat
+                        if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                            ate = true;
+                            ateIndex = fIdx;
+                            break;
+                        }
 
-                                // Head Hit
-                                if (i === 0) {
-                                    if (s.hasShield) {
-                                        s.hasShield = false;
-                                        this.triggerShieldEffect(p.x, p.y);
-                                    } else {
-                                        s.isDead = true;
-                                    }
-                                } else { // Body Hit
-                                    if (s.hasShield) {
-                                        s.hasShield = false;
-                                        this.triggerShieldEffect(p.x, p.y);
-                                    } else {
-                                        s.isDead = true;
-                                    }
+                        // Magnet Logic (Pull closest food)
+                        else if (s.magnetTimer > 0) {
+                            const head = s.body[0];
+                            const dx = f.x - head.x;
+                            const dy = f.y - head.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < 15 && dist > 0) {
+                                // Pull food closer
+                                if (Math.abs(dx) > Math.abs(dy)) f.x -= Math.sign(dx);
+                                else f.y -= Math.sign(dy);
+
+                                // Check capture
+                                if (s.body[0].x === f.x && s.body[0].y === f.y) {
+                                    ate = true;
+                                    ateIndex = fIdx;
+                                    break;
                                 }
                             }
-                        });
+                        }
                     }
-                    if (projectileHit) {
-                        this.projectiles.splice(pIndex, 1); // Destroy projectile
+
+                    if (ate && ateIndex !== -1) {
+                        // Remove the eaten piece
+                        this.foods.splice(ateIndex, 1);
+
+                        this.baseSpeed *= 0.99;
+                        if (this.speedEffectTimer <= 0) this.currentSpeed = this.baseSpeed;
+
+                        s.growPending++;
+                        s.score++;
+                        this.totalFoodEaten++;
+
+                        // Trigger FX for eating
+                        this.sound.play('eat');
+                        this.particles.explode(s.body[0].x, s.body[0].y, COLORS.food, 5);
+
+                        // Spawn Replacement right away to keep map full
+                        this.spawnFood();
+                        // Note: We do NOT spawnPowerUp here anymore, or we can do it rarely.
+                        // User asked for "random", not "just when eaten".
+                        // But maybe small chance?
+                        if (Math.random() < 0.2) this.spawnPowerUp();
+
+                        this.updateScoreUI();
                     }
-                }
-            }
-
-            // 6. Check Deaths
-            const deadSnakes = this.snakes.filter(s => s.isDead);
-            if (deadSnakes.length > 0) {
-                // Trigger FX for all dead snakes
-                deadSnakes.forEach(s => this.triggerDeath(s));
-
-                // Determine winner based on who is dead
-                if (this.snakes.length === 1) {
-                    this.gameOver(0); // Single player, player 1 died
-                } else if (this.snakes.length > 1) {
-                    const p1Dead = this.snakes[0].isDead;
-                    const p2Dead = this.snakes[1].isDead;
-
-                    if (p1Dead && p2Dead) {
-                        this.gameOver(-1); // Draw
-                    } else if (p1Dead) {
-                        this.gameOver(1); // Player 1 died, Player 2 wins
-                    } else if (p2Dead) {
-                        this.gameOver(0); // Player 2 died, Player 1 wins
-                    }
-                }
-            }
-        }
-
-        applyPowerUp(user, type, userIdx) {
-            const enemy = this.snakes[userIdx === 0 ? 1 : 0];
-            const isMulti = this.gameMode === 'multi';
-
-            // Trigger FX for pickup
-            this.sound.play('pickup');
-
-            switch (type) {
-                case 'blind':
-                    if (isMulti && enemy) {
-                        // PC: 2 seconds (Invisible Snake)
-                        // Mobile: 5 seconds (Black Screen) - though invisible snake works there too if logic applied
-                        // User specifically asked for this change for 2P PC.
-                        const duration = (this.platform === 'pc') ? 2000 : 5000;
-                        enemy.blindTimer = duration;
-                    }
-                    break;
-                case 'ghost':
-                    if (isMulti && enemy) {
-                        enemy.wallTrapTimer += 10000;
-                        // Feedback? Done in Draw/Legend
-                    } else {
-                        user.ghostTimer += 5000;
-                    }
-                    break;
-                case 'speed':
-                    this.currentSpeed = 50;
-                    this.speedEffectTimer = 3000;
-                    break;
-                case 'slow':
-                    if (isMulti && enemy) {
-                        enemy.slowTimer = 10000; // 10s Slow for Enemy
-                    } else {
-                        this.currentSpeed = 200; // Global Slow Motion (1P)
-                        this.speedEffectTimer = 5000;
-                    }
-                    break;
-                case 'bomb':
-                    this.spawnFood();
-                    this.powerups = [];
-                    this.walls = [];
-                    this.projectiles = []; // Clear Torpedoes too!
-                    break;
-                case 'shield':
-                    user.hasShield = true;
-                    // Fix: Initialize if 0, otherwise add
-                    if (user.shieldTimer <= 0) user.shieldTimer = 10000;
-                    else user.shieldTimer += 10000;
-                    break;
-                case 'magnet': user.magnetTimer += 10000; break;
-                case 'wall':
-                    const tail = user.body[user.body.length - 1];
-                    // Multi: Add Owner ID for Safe Passage
-                    // Single: No owner needed (or same logic works if ID matches)
-                    this.walls.push({ x: tail.x, y: tail.y, ownerId: user.id });
-                    break;
-                case 'ice':
-                    if (isMulti && enemy) enemy.frozenTimer = 2000;
-                    break;
-                case 'switch':
-                    if (isMulti && enemy) {
-                        const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
-                        const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
-                    }
-                    break;
-                case 'torpedo':
-                    user.hasTorpedo = true;
-                    this.fireTorpedo(user); // Auto-fire immediately
-                    break;
-            }
-        }
-
-        fireTorpedo(user) {
-            if (!user.hasTorpedo) return;
-            user.hasTorpedo = false;
-            this.sound.play('shoot');
-            this.triggerShake(2);
-
-            // Directions to shoot (Up, Down, Left, Right)
-            const head = user.body[0];
-            const dirs = [
-                { x: 0, y: -1 }, // Up
-                { x: 0, y: 1 },  // Down
-                { x: -1, y: 0 }, // Left
-                { x: 1, y: 0 }   // Right
-            ];
-
-            dirs.forEach(d => {
-                this.projectiles.push({
-                    x: head.x + d.x,
-                    y: head.y + d.y,
-                    dx: d.x,
-                    dy: d.y,
-                    ownerId: user.id,
-                    color: user.color, // Stamped color
-                    createdAt: Date.now()
                 });
-            });
-        }
 
-        updateProjectiles(tickRate) {
-            const now = Date.now();
-            for (let i = this.projectiles.length - 1; i >= 0; i--) {
-                const p = this.projectiles[i];
+                // Eat Powerups
+                this.snakes.forEach((s, sIdx) => {
+                    const head = s.body[0];
+                    for (let i = 0; i < this.powerups.length; i++) {
+                        const p = this.powerups[i];
+                        if (head.x === p.x && head.y === p.y) {
+                            this.applyPowerUp(s, p.type, sIdx);
+                            this.powerups.splice(i, 1);
+                            break;
+                        }
+                    }
+                });
+            }
 
-                // Move (Grid based movement?)
-                // To make it smooth/fast, maybe move every tick?
-                // Let's move 1 grid per tick for now.
-                p.x += p.dx;
-                p.y += p.dy;
+            triggerDeath(snake) {
+                if (!snake) return;
+                this.sound.play('die');
+                const head = snake.body[0];
+                this.particles.explode(head.x, head.y, snake.color, 20);
+                this.triggerShake(10);
 
-                // WRAPPING LOGIC (Through Walls)
-                const gridW = CANVAS_WIDTH / GRID_SIZE;
-                const gridH = CANVAS_HEIGHT / GRID_SIZE;
-
-                if (p.x < 0) p.x = Math.floor(gridW - 1);
-                if (p.x >= gridW) p.x = 0;
-                if (p.y < 0) p.y = Math.floor(gridH - 1);
-                if (p.y >= gridH) p.y = 0;
-
-                // Wall Collision: IGNORED (Ghost Projectiles)
-                // if (this.walls.some(w => w.x === p.x && w.y === p.y)) {
-                //    this.projectiles.splice(i, 1);
-                //    continue;
-                // }
-
-                // Timeout (5 seconds)
-                if (now - p.createdAt > 5000) {
-                    this.projectiles.splice(i, 1);
-                    continue;
+                // HAPTIC FEEDBACK (Android only usually)
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(400); // Long vibration for death
                 }
             }
-        }
 
-        updateScoreUI() {
-            const score1 = document.getElementById('score-p1');
-            const score2 = document.getElementById('score-p2');
+            checkCollisions() {
+                // 5. Check Projectile Collisions
+                if (this.projectiles.length > 0) {
+                    for (let pIndex = this.projectiles.length - 1; pIndex >= 0; pIndex--) {
+                        const p = this.projectiles[pIndex];
+                        let projectileHit = false;
 
-            // SCORING SOURCE (v3.12 Fix)
-            // Client must read from clientState, Host reads from local snakes
-            let sourceConf = (this.isClient && this.clientState && this.clientState.snakes)
-                ? this.clientState.snakes
-                : this.snakes;
+                        for (let s of this.snakes) {
+                            // Don't hit owner
+                            if (s.id === p.ownerId) continue;
 
-            if (score1) score1.innerText = (sourceConf[0] ? sourceConf[0].score : 0);
-            if (score2) score2.innerText = (sourceConf[1] ? sourceConf[1].score : 0);
+                            // Projectile Hit Snake
+                            s.body.forEach((seg, i) => {
+                                if (p.x === seg.x && p.y === seg.y) {
+                                    // Hit!
+                                    this.sound.play('explode');
+                                    this.particles.explode(p.x, p.y, COLORS.orange, 15);
+                                    this.triggerShake(5);
 
-            // REMOTE NAME SYNC (v6.67 Refined)
-            const p1Label = document.getElementById('p1-name-label');
-            const p2Label = document.getElementById('p2-name-label');
-            // Get local name or fallback to Guest
-            const myName = this.currentUser ? this.currentUser.name : "Guest";
+                                    // Haptic Hit
+                                    if (window.navigator && window.navigator.vibrate) {
+                                        window.navigator.vibrate(100);
+                                    }
 
-            if (this.isClient) {
-                // I AM PLAYER 2 (Client)
-                // P1 is Host (Remote), P2 is Me (Local)
-                if (this.remotePlayerName && p1Label) p1Label.innerText = this.remotePlayerName;
-                if (p2Label) p2Label.innerText = myName;
+                                    projectileHit = true; // Mark projectile for removal
 
-            } else {
-                // I AM PLAYER 1 (Host/Local)
-                // P1 is Me (Local), P2 is Client (Remote)
-                if (p1Label) p1Label.innerText = myName;
-                if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
-            }
-
-            // H2H STATS (v7.05 - Synchronized with Profile Logic)
-            if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
-                const myName = (this.currentUser ? this.currentUser.name : "Guest").toUpperCase();
-                const oppName = this.remotePlayerName.toUpperCase();
-
-                this.h2hStatsFetched = true;
-                fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
-                    .then(r => r.json()).then(d => {
-                        const p1Stat = document.getElementById('p1-best-score');
-                        const p2Stat = document.getElementById('p2-best-score');
-
-                        if (d.success && d.matches) {
-                            let w = 0, l = 0, dr = 0;
-
-                            d.matches.forEach(m => {
-                                const p1 = (m.p1_name || "").toUpperCase();
-                                const p2 = (m.p2_name || "").toUpperCase();
-                                const winN = (m.winner_name || "").toUpperCase();
-
-                                // Only count matches against the current opponent
-                                if ((p1 === myName && p2 === oppName) || (p2 === myName && p1 === oppName)) {
-                                    if (winN === myName) w++;
-                                    else if (winN === "DRAW" || !winN || winN === "") dr++;
-                                    else l++;
+                                    // Head Hit
+                                    if (i === 0) {
+                                        if (s.hasShield) {
+                                            s.hasShield = false;
+                                            this.triggerShieldEffect(p.x, p.y);
+                                        } else {
+                                            s.isDead = true;
+                                        }
+                                    } else { // Body Hit
+                                        if (s.hasShield) {
+                                            s.hasShield = false;
+                                            this.triggerShieldEffect(p.x, p.y);
+                                        } else {
+                                            s.isDead = true;
+                                        }
+                                    }
                                 }
                             });
+                        }
+                        if (projectileHit) {
+                            this.projectiles.splice(pIndex, 1); // Destroy projectile
+                        }
+                    }
+                }
 
-                            // Determine which HUD slot is Mine and which is Theirs
-                            // Host: P1=Me, P2=Them | Client: P1=Them, P2=Me
-                            const mySlot = this.isClient ? p2Stat : p1Stat;
-                            const theirSlot = this.isClient ? p1Stat : p2Stat;
+                // 6. Check Deaths
+                const deadSnakes = this.snakes.filter(s => s.isDead);
+                if (deadSnakes.length > 0) {
+                    // Trigger FX for all dead snakes
+                    deadSnakes.forEach(s => this.triggerDeath(s));
 
-                            if (mySlot) {
-                                mySlot.parentElement.style.display = 'flex';
-                                mySlot.innerText = `W:${w} L:${l} D:${dr}`;
-                                mySlot.style.color = this.isClient ? '#00ffff' : '#00ff88';
-                            }
-                            if (theirSlot) {
-                                theirSlot.parentElement.style.display = 'flex';
-                                theirSlot.innerText = `W:${l} L:${w} D:${dr}`;
-                                theirSlot.style.color = this.isClient ? '#00ff88' : '#00ffff';
-                            }
+                    // Determine winner based on who is dead
+                    if (this.snakes.length === 1) {
+                        this.gameOver(0); // Single player, player 1 died
+                    } else if (this.snakes.length > 1) {
+                        const p1Dead = this.snakes[0].isDead;
+                        const p2Dead = this.snakes[1].isDead;
+
+                        if (p1Dead && p2Dead) {
+                            this.gameOver(-1); // Draw
+                        } else if (p1Dead) {
+                            this.gameOver(1); // Player 1 died, Player 2 wins
+                        } else if (p2Dead) {
+                            this.gameOver(0); // Player 2 died, Player 1 wins
+                        }
+                    }
+                }
+            }
+
+            applyPowerUp(user, type, userIdx) {
+                const enemy = this.snakes[userIdx === 0 ? 1 : 0];
+                const isMulti = this.gameMode === 'multi';
+
+                // Trigger FX for pickup
+                this.sound.play('pickup');
+
+                switch (type) {
+                    case 'blind':
+                        if (isMulti && enemy) {
+                            // PC: 2 seconds (Invisible Snake)
+                            // Mobile: 5 seconds (Black Screen) - though invisible snake works there too if logic applied
+                            // User specifically asked for this change for 2P PC.
+                            const duration = (this.platform === 'pc') ? 2000 : 5000;
+                            enemy.blindTimer = duration;
+                        }
+                        break;
+                    case 'ghost':
+                        if (isMulti && enemy) {
+                            enemy.wallTrapTimer += 10000;
+                            // Feedback? Done in Draw/Legend
                         } else {
-                            // Fallback
-                            if (p1Stat) { p1Stat.innerText = "W:0 L:0 D:0"; p1Stat.parentElement.style.display = 'flex'; }
-                            if (p2Stat) { p2Stat.innerText = "W:0 L:0 D:0"; p2Stat.parentElement.style.display = 'flex'; }
+                            user.ghostTimer += 5000;
                         }
-                    }).catch(err => {
-                        console.error("H2H HUD Error:", err);
-                    });
-            }
-        }
-
-        updateDynamicLegend() {
-            if (!dynamicLegend) return;
-
-            // Force Redraw Every Frame (No Caching)
-            dynamicLegend.innerHTML = '';
-
-            let renderPowerups = this.powerups;
-            if (this.isClient && this.clientState) {
-                renderPowerups = this.clientState.powerups;
-            }
-
-            // 1. Draw Static Powerups (Available on board)
-            if (renderPowerups) {
-                renderPowerups.forEach(p => {
-                    const def = this.powerUpTypes[p.type];
-                    const div = document.createElement('div');
-                    div.className = 'legend-item';
-                    div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
-                    dynamicLegend.appendChild(div);
-                });
-            }
-
-            // 2. Draw Active Timers (Ghost Style: Individual rows)
-            const s1 = this.snakes[0];
-            const s2 = this.snakes[1];
-
-            // Helper to add a timer row
-            const addTimer = (type, seconds, labelOverride = null) => {
-                const def = this.powerUpTypes[type];
-                const label = labelOverride || def.label;
-                const div = document.createElement('div');
-                div.className = 'legend-item'; // Use standard class
-                // Add specific styling to make it pop
-                div.style.color = '#fff';
-                div.style.fontWeight = 'bold';
-                div.style.textShadow = '0 0 5px ' + def.color;
-
-                div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
-                dynamicLegend.appendChild(div);
-            };
-
-            if (this.gameMode === 'single' && s1) {
-                if (s1.ghostTimer > 0) {
-                    addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
-                }
-                if (s1.shieldTimer > 0) {
-                    addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
-                }
-                if (s1.magnetTimer > 0) {
-                    addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
-                }
-                // Speed (Global)
-                if (this.speedEffectTimer > 0) {
-                    const isSlow = this.currentSpeed > this.baseSpeed;
-                    addTimer(isSlow ? 'slow' : 'speed', Math.ceil(this.speedEffectTimer / 1000), isSlow ? "MATRIX" : "SPEED");
-                }
-            } else if (this.gameMode === 'multi') {
-                // Multi Mode Legends
-
-                // Wall Trap (Ghost)
-                if (s1 && s1.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
-                if (s2 && s2.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
-
-                // Slow (Targeted)
-                if (s1 && s1.slowTimer > 0) addTimer('slow', Math.ceil(s1.slowTimer / 1000), "P1 SLOWED");
-                if (s2 && s2.slowTimer > 0) addTimer('slow', Math.ceil(s2.slowTimer / 1000), "P2 SLOWED");
-
-                // Speed (Global - applies to frame rate usually, but logic is tricky in 2P)
-                // Actually 'speed' powerup in 2P sets this.currentSpeed too!
-                if (this.speedEffectTimer > 0) {
-                    addTimer('speed', Math.ceil(this.speedEffectTimer / 1000), "SPEED UP");
-                }
-
-                // Magnet
-                if (s1 && s1.magnetTimer > 0) addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "P1 MAGNET");
-                if (s2 && s2.magnetTimer > 0) addTimer('magnet', Math.ceil(s2.magnetTimer / 1000), "P2 MAGNET");
-
-                // Shield
-                if (s1 && s1.shieldTimer > 0) addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "P1 SHIELD");
-                if (s2 && s2.shieldTimer > 0) addTimer('shield', Math.ceil(s2.shieldTimer / 1000), "P2 SHIELD");
-            }
-        }
-
-        draw() {
-
-            const ctx = this.ctx;
-            ctx.fillStyle = COLORS.bg; // Clear with BG color
-            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-            // 1. UPDATE FX
-            if (this.shakeTimer > 0) {
-                this.shakeX = (Math.random() - 0.5) * 10;
-                this.shakeY = (Math.random() - 0.5) * 10;
-                this.shakeTimer--;
-            } else {
-                this.shakeX = 0;
-                this.shakeY = 0;
-            }
-            this.particles.update();
-
-            // (Redundant ctx and clear removed)
-
-            ctx.save();
-            ctx.translate(this.shakeX, this.shakeY);
-
-            // 2. MAIN WORLD RENDER (Protected)
-            try {
-                let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
-                let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
-                let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
-                let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
-                let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
-
-                // Walls / Mines
-                renderWalls.forEach(w => {
-                    this.drawRect(w.x, w.y, COLORS.brown);
-                    let borderColor = '#ff0000';
-                    if (w.ownerId) {
-                        const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
-                        if (ownerSnake) borderColor = ownerSnake.color;
-                        else borderColor = '#ffff00';
-
-                        // Mine Dot
-                        ctx.fillStyle = borderColor;
-                        const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
-                        const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
-                        ctx.beginPath();
-                        ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                    ctx.strokeStyle = borderColor;
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-                });
-
-                // Particles
-                this.particles.draw(ctx);
-
-                // Powerups
-                renderPowerups.forEach(p => {
-                    const def = this.powerUpTypes[p.type];
-                    this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
-                });
-
-                // Foods
-                renderFoods.forEach(f => {
-                    this.drawRect(f.x, f.y, COLORS.food, true);
-                });
-
-                // Projectiles
-                renderProjectiles.forEach(p => {
-                    const size = GRID_SIZE / 2;
-                    const center = (GRID_SIZE - size) / 2;
-                    ctx.fillStyle = p.color || '#FFD700'; // Use owner color or gold
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = p.color || '#FFD700';
-                    ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
-                    ctx.shadowBlur = 0;
-                });
-
-                // Snakes
-                renderSnakes.forEach(snake => {
-                    if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) return;
-
-                    const snakeColor = snake.hasShield ? COLORS.silver :
-                        snake.ghostTimer > 0 ? COLORS.ghost :
-                            snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
-
-                    // Blind visual
-                    if (this.gameMode === 'single') {
-                        const container = document.querySelector('.game-container');
-                        if (container) {
-                            if (snake.blindTimer > 0) container.classList.add('blinded');
-                            else container.classList.remove('blinded');
+                        break;
+                    case 'speed':
+                        this.currentSpeed = 50;
+                        this.speedEffectTimer = 3000;
+                        break;
+                    case 'slow':
+                        if (isMulti && enemy) {
+                            enemy.slowTimer = 10000; // 10s Slow for Enemy
+                        } else {
+                            this.currentSpeed = 200; // Global Slow Motion (1P)
+                            this.speedEffectTimer = 5000;
                         }
-                    }
+                        break;
+                    case 'bomb':
+                        this.spawnFood();
+                        this.powerups = [];
+                        this.walls = [];
+                        this.projectiles = []; // Clear Torpedoes too!
+                        break;
+                    case 'shield':
+                        user.hasShield = true;
+                        // Fix: Initialize if 0, otherwise add
+                        if (user.shieldTimer <= 0) user.shieldTimer = 10000;
+                        else user.shieldTimer += 10000;
+                        break;
+                    case 'magnet': user.magnetTimer += 10000; break;
+                    case 'wall':
+                        const tail = user.body[user.body.length - 1];
+                        // Multi: Add Owner ID for Safe Passage
+                        // Single: No owner needed (or same logic works if ID matches)
+                        this.walls.push({ x: tail.x, y: tail.y, ownerId: user.id });
+                        break;
+                    case 'ice':
+                        if (isMulti && enemy) enemy.frozenTimer = 2000;
+                        break;
+                    case 'switch':
+                        if (isMulti && enemy) {
+                            const tempBody = user.body; user.body = enemy.body; enemy.body = tempBody;
+                            const tempDir = user.direction; user.direction = enemy.direction; enemy.direction = tempDir;
+                        }
+                        break;
+                    case 'torpedo':
+                        user.hasTorpedo = true;
+                        this.fireTorpedo(user); // Auto-fire immediately
+                        break;
+                }
+            }
 
-                    snake.body.forEach((segment, index) => {
-                        if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
-                        else ctx.fillStyle = snakeColor;
-                        this.drawRect(segment.x, segment.y, ctx.fillStyle, index === 0);
+            fireTorpedo(user) {
+                if (!user.hasTorpedo) return;
+                user.hasTorpedo = false;
+                this.sound.play('shoot');
+                this.triggerShake(2);
+
+                // Directions to shoot (Up, Down, Left, Right)
+                const head = user.body[0];
+                const dirs = [
+                    { x: 0, y: -1 }, // Up
+                    { x: 0, y: 1 },  // Down
+                    { x: -1, y: 0 }, // Left
+                    { x: 1, y: 0 }   // Right
+                ];
+
+                dirs.forEach(d => {
+                    this.projectiles.push({
+                        x: head.x + d.x,
+                        y: head.y + d.y,
+                        dx: d.x,
+                        dy: d.y,
+                        ownerId: user.id,
+                        color: user.color, // Stamped color
+                        createdAt: Date.now()
                     });
                 });
+            }
 
-                // Legend Override
-                if (this.gameMode === 'single') {
-                    this.powerUpTypes['ghost'].label = 'GHOST';
-                    this.powerUpTypes['wall'].label = 'Mine';
+            updateProjectiles(tickRate) {
+                const now = Date.now();
+                for (let i = this.projectiles.length - 1; i >= 0; i--) {
+                    const p = this.projectiles[i];
+
+                    // Move (Grid based movement?)
+                    // To make it smooth/fast, maybe move every tick?
+                    // Let's move 1 grid per tick for now.
+                    p.x += p.dx;
+                    p.y += p.dy;
+
+                    // WRAPPING LOGIC (Through Walls)
+                    const gridW = CANVAS_WIDTH / GRID_SIZE;
+                    const gridH = CANVAS_HEIGHT / GRID_SIZE;
+
+                    if (p.x < 0) p.x = Math.floor(gridW - 1);
+                    if (p.x >= gridW) p.x = 0;
+                    if (p.y < 0) p.y = Math.floor(gridH - 1);
+                    if (p.y >= gridH) p.y = 0;
+
+                    // Wall Collision: IGNORED (Ghost Projectiles)
+                    // if (this.walls.some(w => w.x === p.x && w.y === p.y)) {
+                    //    this.projectiles.splice(i, 1);
+                    //    continue;
+                    // }
+
+                    // Timeout (5 seconds)
+                    if (now - p.createdAt > 5000) {
+                        this.projectiles.splice(i, 1);
+                        continue;
+                    }
+                }
+            }
+
+            updateScoreUI() {
+                const score1 = document.getElementById('score-p1');
+                const score2 = document.getElementById('score-p2');
+
+                // SCORING SOURCE (v3.12 Fix)
+                // Client must read from clientState, Host reads from local snakes
+                let sourceConf = (this.isClient && this.clientState && this.clientState.snakes)
+                    ? this.clientState.snakes
+                    : this.snakes;
+
+                if (score1) score1.innerText = (sourceConf[0] ? sourceConf[0].score : 0);
+                if (score2) score2.innerText = (sourceConf[1] ? sourceConf[1].score : 0);
+
+                // REMOTE NAME SYNC (v6.67 Refined)
+                const p1Label = document.getElementById('p1-name-label');
+                const p2Label = document.getElementById('p2-name-label');
+                // Get local name or fallback to Guest
+                const myName = this.currentUser ? this.currentUser.name : "Guest";
+
+                if (this.isClient) {
+                    // I AM PLAYER 2 (Client)
+                    // P1 is Host (Remote), P2 is Me (Local)
+                    if (this.remotePlayerName && p1Label) p1Label.innerText = this.remotePlayerName;
+                    if (p2Label) p2Label.innerText = myName;
+
                 } else {
-                    this.powerUpTypes['ghost'].label = 'Wall Trap';
-                    this.powerUpTypes['wall'].label = 'Mine';
-                }
-                this.updateDynamicLegend();
-
-                // Clean UI
-                if (this.isRunning) {
-                    const uiLayer = document.getElementById('ui-layer');
-                    if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
-                    const join = document.getElementById('join-screen');
-                    if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
+                    // I AM PLAYER 1 (Host/Local)
+                    // P1 is Me (Local), P2 is Client (Remote)
+                    if (p1Label) p1Label.innerText = myName;
+                    if (this.remotePlayerName && p2Label) p2Label.innerText = this.remotePlayerName;
                 }
 
-            } catch (fatalE) {
-                console.error("FATAL DRAW ERROR:", fatalE);
+                // H2H STATS (v7.05 - Synchronized with Profile Logic)
+                if (this.gameMode === 'multi' && this.remotePlayerName && !this.h2hStatsFetched) {
+                    const myName = (this.currentUser ? this.currentUser.name : "Guest").toUpperCase();
+                    const oppName = this.remotePlayerName.toUpperCase();
+
+                    this.h2hStatsFetched = true;
+                    fetch('auth.php', { method: 'POST', body: JSON.stringify({ action: 'get_match_history', username: myName }) })
+                        .then(r => r.json()).then(d => {
+                            const p1Stat = document.getElementById('p1-best-score');
+                            const p2Stat = document.getElementById('p2-best-score');
+
+                            if (d.success && d.matches) {
+                                let w = 0, l = 0, dr = 0;
+
+                                d.matches.forEach(m => {
+                                    const p1 = (m.p1_name || "").toUpperCase();
+                                    const p2 = (m.p2_name || "").toUpperCase();
+                                    const winN = (m.winner_name || "").toUpperCase();
+
+                                    // Only count matches against the current opponent
+                                    if ((p1 === myName && p2 === oppName) || (p2 === myName && p1 === oppName)) {
+                                        if (winN === myName) w++;
+                                        else if (winN === "DRAW" || !winN || winN === "") dr++;
+                                        else l++;
+                                    }
+                                });
+
+                                // Determine which HUD slot is Mine and which is Theirs
+                                // Host: P1=Me, P2=Them | Client: P1=Them, P2=Me
+                                const mySlot = this.isClient ? p2Stat : p1Stat;
+                                const theirSlot = this.isClient ? p1Stat : p2Stat;
+
+                                if (mySlot) {
+                                    mySlot.parentElement.style.display = 'flex';
+                                    mySlot.innerText = `W:${w} L:${l} D:${dr}`;
+                                    mySlot.style.color = this.isClient ? '#00ffff' : '#00ff88';
+                                }
+                                if (theirSlot) {
+                                    theirSlot.parentElement.style.display = 'flex';
+                                    theirSlot.innerText = `W:${l} L:${w} D:${dr}`;
+                                    theirSlot.style.color = this.isClient ? '#00ff88' : '#00ffff';
+                                }
+                            } else {
+                                // Fallback
+                                if (p1Stat) { p1Stat.innerText = "W:0 L:0 D:0"; p1Stat.parentElement.style.display = 'flex'; }
+                                if (p2Stat) { p2Stat.innerText = "W:0 L:0 D:0"; p2Stat.parentElement.style.display = 'flex'; }
+                            }
+                        }).catch(err => {
+                            console.error("H2H HUD Error:", err);
+                        });
+                }
             }
 
-            ctx.restore();
-        }
+            updateDynamicLegend() {
+                if (!dynamicLegend) return;
 
-        drawRect(x, y, color, glow = false) {
-            const ctx = this.ctx;
-            ctx.fillStyle = color;
-            if (glow) {
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = color;
-            } else {
+                // Force Redraw Every Frame (No Caching)
+                dynamicLegend.innerHTML = '';
+
+                let renderPowerups = this.powerups;
+                if (this.isClient && this.clientState) {
+                    renderPowerups = this.clientState.powerups;
+                }
+
+                // 1. Draw Static Powerups (Available on board)
+                if (renderPowerups) {
+                    renderPowerups.forEach(p => {
+                        const def = this.powerUpTypes[p.type];
+                        const div = document.createElement('div');
+                        div.className = 'legend-item';
+                        div.innerHTML = `<span class="dot ${p.type}" style="background-color:${def.color}"></span> ${def.label}`;
+                        dynamicLegend.appendChild(div);
+                    });
+                }
+
+                // 2. Draw Active Timers (Ghost Style: Individual rows)
+                const s1 = this.snakes[0];
+                const s2 = this.snakes[1];
+
+                // Helper to add a timer row
+                const addTimer = (type, seconds, labelOverride = null) => {
+                    const def = this.powerUpTypes[type];
+                    const label = labelOverride || def.label;
+                    const div = document.createElement('div');
+                    div.className = 'legend-item'; // Use standard class
+                    // Add specific styling to make it pop
+                    div.style.color = '#fff';
+                    div.style.fontWeight = 'bold';
+                    div.style.textShadow = '0 0 5px ' + def.color;
+
+                    div.innerHTML = `<span class="dot ${type}" style="background-color:${def.color}; box-shadow: 0 0 8px ${def.color}"></span> ${label} (${seconds}s)`;
+                    dynamicLegend.appendChild(div);
+                };
+
+                if (this.gameMode === 'single' && s1) {
+                    if (s1.ghostTimer > 0) {
+                        addTimer('ghost', Math.ceil(s1.ghostTimer / 1000), "GHOST");
+                    }
+                    if (s1.shieldTimer > 0) {
+                        addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "SHIELD");
+                    }
+                    if (s1.magnetTimer > 0) {
+                        addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "MAGNET");
+                    }
+                    // Speed (Global)
+                    if (this.speedEffectTimer > 0) {
+                        const isSlow = this.currentSpeed > this.baseSpeed;
+                        addTimer(isSlow ? 'slow' : 'speed', Math.ceil(this.speedEffectTimer / 1000), isSlow ? "MATRIX" : "SPEED");
+                    }
+                } else if (this.gameMode === 'multi') {
+                    // Multi Mode Legends
+
+                    // Wall Trap (Ghost)
+                    if (s1 && s1.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s1.wallTrapTimer / 1000), "P1 TRAPPED");
+                    if (s2 && s2.wallTrapTimer > 0) addTimer('ghost', Math.ceil(s2.wallTrapTimer / 1000), "P2 TRAPPED");
+
+                    // Slow (Targeted)
+                    if (s1 && s1.slowTimer > 0) addTimer('slow', Math.ceil(s1.slowTimer / 1000), "P1 SLOWED");
+                    if (s2 && s2.slowTimer > 0) addTimer('slow', Math.ceil(s2.slowTimer / 1000), "P2 SLOWED");
+
+                    // Speed (Global - applies to frame rate usually, but logic is tricky in 2P)
+                    // Actually 'speed' powerup in 2P sets this.currentSpeed too!
+                    if (this.speedEffectTimer > 0) {
+                        addTimer('speed', Math.ceil(this.speedEffectTimer / 1000), "SPEED UP");
+                    }
+
+                    // Magnet
+                    if (s1 && s1.magnetTimer > 0) addTimer('magnet', Math.ceil(s1.magnetTimer / 1000), "P1 MAGNET");
+                    if (s2 && s2.magnetTimer > 0) addTimer('magnet', Math.ceil(s2.magnetTimer / 1000), "P2 MAGNET");
+
+                    // Shield
+                    if (s1 && s1.shieldTimer > 0) addTimer('shield', Math.ceil(s1.shieldTimer / 1000), "P1 SHIELD");
+                    if (s2 && s2.shieldTimer > 0) addTimer('shield', Math.ceil(s2.shieldTimer / 1000), "P2 SHIELD");
+                }
+            }
+
+            draw() {
+
+                const ctx = this.ctx;
+                ctx.fillStyle = COLORS.bg; // Clear with BG color
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // 1. UPDATE FX
+                if (this.shakeTimer > 0) {
+                    this.shakeX = (Math.random() - 0.5) * 10;
+                    this.shakeY = (Math.random() - 0.5) * 10;
+                    this.shakeTimer--;
+                } else {
+                    this.shakeX = 0;
+                    this.shakeY = 0;
+                }
+                this.particles.update();
+
+                // (Redundant ctx and clear removed)
+
+                ctx.save();
+                ctx.translate(this.shakeX, this.shakeY);
+
+                // 2. MAIN WORLD RENDER (Protected)
+                try {
+                    let renderSnakes = this.isClient && this.clientState ? this.clientState.snakes : (this.snakes || []);
+                    let renderFoods = this.isClient && this.clientState ? this.clientState.foods : (this.foods || []);
+                    let renderPowerups = this.isClient && this.clientState ? this.clientState.powerups : (this.powerups || []);
+                    let renderWalls = this.isClient && this.clientState ? this.clientState.walls : (this.walls || []);
+                    let renderProjectiles = this.isClient && this.clientState ? (this.clientState.projectiles || []) : (this.projectiles || []);
+
+                    // Walls / Mines
+                    renderWalls.forEach(w => {
+                        this.drawRect(w.x, w.y, COLORS.brown);
+                        let borderColor = '#ff0000';
+                        if (w.ownerId) {
+                            const ownerSnake = renderSnakes.find(s => s.id === w.ownerId);
+                            if (ownerSnake) borderColor = ownerSnake.color;
+                            else borderColor = '#ffff00';
+
+                            // Mine Dot
+                            ctx.fillStyle = borderColor;
+                            const cx = w.x * GRID_SIZE + GRID_SIZE / 2;
+                            const cy = w.y * GRID_SIZE + GRID_SIZE / 2;
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, GRID_SIZE / 4, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.strokeStyle = borderColor;
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(w.x * GRID_SIZE + 4, w.y * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
+                    });
+
+                    // Particles
+                    this.particles.draw(ctx);
+
+                    // Powerups
+                    renderPowerups.forEach(p => {
+                        const def = this.powerUpTypes[p.type];
+                        this.drawRect(p.x, p.y, def ? def.color : '#fff', true);
+                    });
+
+                    // Foods
+                    renderFoods.forEach(f => {
+                        this.drawRect(f.x, f.y, COLORS.food, true);
+                    });
+
+                    // Projectiles
+                    renderProjectiles.forEach(p => {
+                        const size = GRID_SIZE / 2;
+                        const center = (GRID_SIZE - size) / 2;
+                        ctx.fillStyle = p.color || '#FFD700'; // Use owner color or gold
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = p.color || '#FFD700';
+                        ctx.fillRect(p.x * GRID_SIZE + center, p.y * GRID_SIZE + center, size, size);
+                        ctx.shadowBlur = 0;
+                    });
+
+                    // Snakes
+                    renderSnakes.forEach(snake => {
+                        if (this.gameMode === 'multi' && this.platform === 'pc' && snake.blindTimer > 0) return;
+
+                        const snakeColor = snake.hasShield ? COLORS.silver :
+                            snake.ghostTimer > 0 ? COLORS.ghost :
+                                snake.blindTimer > 0 ? '#0a0a0a' : snake.color;
+
+                        // Blind visual
+                        if (this.gameMode === 'single') {
+                            const container = document.querySelector('.game-container');
+                            if (container) {
+                                if (snake.blindTimer > 0) container.classList.add('blinded');
+                                else container.classList.remove('blinded');
+                            }
+                        }
+
+                        snake.body.forEach((segment, index) => {
+                            if (snake.frozenTimer > 0) ctx.fillStyle = COLORS.cyan;
+                            else ctx.fillStyle = snakeColor;
+                            this.drawRect(segment.x, segment.y, ctx.fillStyle, index === 0);
+                        });
+                    });
+
+                    // Legend Override
+                    if (this.gameMode === 'single') {
+                        this.powerUpTypes['ghost'].label = 'GHOST';
+                        this.powerUpTypes['wall'].label = 'Mine';
+                    } else {
+                        this.powerUpTypes['ghost'].label = 'Wall Trap';
+                        this.powerUpTypes['wall'].label = 'Mine';
+                    }
+                    this.updateDynamicLegend();
+
+                    // Clean UI
+                    if (this.isRunning) {
+                        const uiLayer = document.getElementById('ui-layer');
+                        if (uiLayer && uiLayer.style.display !== 'none') uiLayer.style.setProperty('display', 'none', 'important');
+                        const join = document.getElementById('join-screen');
+                        if (join && join.style.display !== 'none') join.style.setProperty('display', 'none', 'important');
+                    }
+
+                } catch (fatalE) {
+                    console.error("FATAL DRAW ERROR:", fatalE);
+                }
+
+                ctx.restore();
+            }
+
+            drawRect(x, y, color, glow = false) {
+                const ctx = this.ctx;
+                ctx.fillStyle = color;
+                if (glow) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = color;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+                ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
                 ctx.shadowBlur = 0;
             }
-            ctx.fillRect(x * GRID_SIZE + 1, y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
-            ctx.shadowBlur = 0;
-        }
 
-        broadcastState() {
-            if (!this.isHost || !this.conn || !this.conn.open) return;
+            broadcastState() {
+                if (!this.isHost || !this.conn || !this.conn.open) return;
 
-            const state = {
-                type: 'state',
-                snakes: this.snakes,
-                foods: this.foods,
-                powerups: this.powerups,
-                walls: this.walls,
-                projectiles: this.projectiles,
-                dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
-                hostName: this.currentUser ? this.currentUser.name : (this.customName || 'PLAYER 1') // v3.12 Name Fix
-            };
+                const state = {
+                    type: 'state',
+                    snakes: this.snakes,
+                    foods: this.foods,
+                    powerups: this.powerups,
+                    walls: this.walls,
+                    projectiles: this.projectiles,
+                    dims: { w: CANVAS_WIDTH, h: CANVAS_HEIGHT },
+                    hostName: this.currentUser ? this.currentUser.name : (this.customName || 'PLAYER 1') // v3.12 Name Fix
+                };
 
-            try {
-                this.conn.send(state);
-            } catch (e) {
-                console.error("Broadcast Error:", e);
-            }
-        }
-
-        loop(timestamp) {
-            // 1. SCHEDULE NEXT FRAME IMMEDIATELY
-            this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
-
-            // 2. LOGIC
-            if (this.isRunning && !this.isPaused) {
-                if (timestamp - this.lastTime > this.currentSpeed) {
-                    this.lastTime = timestamp;
-                    try {
-                        this.update();
-                    } catch (e) {
-                        console.error("UPDATE CRASH:", e);
-                        this.isRunning = false;
-                    }
-                    if (this.isHost) {
-                        try { this.broadcastState(); } catch (e) { }
-                    }
+                try {
+                    this.conn.send(state);
+                } catch (e) {
+                    console.error("Broadcast Error:", e);
                 }
             }
 
-            // 3. RENDER
-            this.draw();
-        }
-        // --- AUTHENTICATION SYSTEM (v5.7) ---
+            loop(timestamp) {
+                // 1. SCHEDULE NEXT FRAME IMMEDIATELY
+                this.animationFrameId = requestAnimationFrame((ts) => this.loop(ts));
 
-        bindAuthListeners() {
-            // LOGIN SCREEN
-            const loginScreen = document.getElementById('login-screen');
-            const btnDoLogin = document.getElementById('btn-do-login');
-            const btnGotoReg = document.getElementById('btn-goto-register');
-            const btnGotoRecover = document.getElementById('btn-goto-recover');
-            const btnLoginBack = document.getElementById('btn-login-back');
-
-            if (btnDoLogin) btnDoLogin.onclick = () => {
-                const u = document.getElementById('login-user').value;
-                const p = document.getElementById('login-pass').value;
-                this.login(u, p);
-            };
-            if (btnGotoReg) btnGotoReg.onclick = () => {
-                loginScreen.classList.add('hidden');
-                const reg = document.getElementById('register-screen');
-                reg.classList.remove('hidden');
-                reg.classList.remove('nuclear-hidden');
-                reg.style.display = 'block';
-                reg.classList.add('active');
-            };
-            if (btnGotoRecover) btnGotoRecover.onclick = () => {
-                loginScreen.classList.add('hidden');
-                const rec = document.getElementById('recovery-screen');
-                rec.classList.remove('hidden');
-                rec.classList.remove('nuclear-hidden');
-                rec.style.display = 'block';
-                rec.classList.add('active');
-            };
-            if (btnLoginBack) btnLoginBack.onclick = () => {
-                loginScreen.classList.add('hidden');
-                this.showMainMenu();
-            };
-
-            // REGISTER SCREEN
-            const regScreen = document.getElementById('register-screen');
-            const btnDoReg = document.getElementById('btn-do-register');
-            const btnRegBack = document.getElementById('btn-register-back');
-            const regSecQ = document.getElementById('reg-sec-q');
-            const regCustomQ = document.getElementById('reg-custom-q');
-
-            if (regSecQ) {
-                regSecQ.onchange = () => {
-                    if (regSecQ.value === 'custom') {
-                        regCustomQ.classList.remove('hidden');
-                        regCustomQ.focus();
-                    } else {
-                        regCustomQ.classList.add('hidden');
+                // 2. LOGIC
+                if (this.isRunning && !this.isPaused) {
+                    if (timestamp - this.lastTime > this.currentSpeed) {
+                        this.lastTime = timestamp;
+                        try {
+                            this.update();
+                        } catch (e) {
+                            console.error("UPDATE CRASH:", e);
+                            this.isRunning = false;
+                        }
+                        if (this.isHost) {
+                            try { this.broadcastState(); } catch (e) { }
+                        }
                     }
-                };
-            }
-
-            if (btnDoReg) btnDoReg.onclick = () => {
-                const u = document.getElementById('reg-user').value;
-                const p = document.getElementById('reg-pass').value;
-                let sq = document.getElementById('reg-sec-q').value;
-                const sa = document.getElementById('reg-sec-a').value;
-
-                if (sq === 'custom') {
-                    sq = document.getElementById('reg-custom-q').value.trim();
-                    if (!sq) { alert("Please enter your custom question!"); return; }
                 }
 
-                this.register(u, p, sq, sa);
-            };
-            if (btnRegBack) btnRegBack.onclick = () => {
-                regScreen.classList.add('hidden');
-                loginScreen.classList.remove('hidden');
-                loginScreen.classList.remove('nuclear-hidden');
-                loginScreen.style.display = 'block';
-            };
-
-            // NEW AUTH LISTENERS (Name Entry Screen)
-            const btnQuickLogin = document.getElementById('btn-quick-login');
-            const btnQuickRegister = document.getElementById('btn-quick-register');
-
-            if (btnQuickLogin) {
-                btnQuickLogin.onclick = (e) => {
-                    // Prevent default form submission if any
-                    e.preventDefault();
-
-                    this.hideAllScreens();
-                    this.returnToNameEntry = true; // Flag to return
-                    if (loginScreen) {
-                        loginScreen.classList.remove('hidden'); loginScreen.classList.remove('nuclear-hidden');
-                        loginScreen.classList.add('active'); loginScreen.style.display = 'block';
-                    }
-                };
+                // 3. RENDER
+                this.draw();
             }
-            if (btnQuickRegister) {
-                btnQuickRegister.onclick = (e) => {
-                    e.preventDefault();
+            // --- AUTHENTICATION SYSTEM (v5.7) ---
 
-                    this.hideAllScreens();
-                    this.returnToNameEntry = true; // Flag to return
-                    if (regScreen) {
-                        regScreen.classList.remove('hidden'); regScreen.classList.remove('nuclear-hidden');
-                        regScreen.classList.add('active'); regScreen.style.display = 'block';
-                    }
+            bindAuthListeners() {
+                // LOGIN SCREEN
+                const loginScreen = document.getElementById('login-screen');
+                const btnDoLogin = document.getElementById('btn-do-login');
+                const btnGotoReg = document.getElementById('btn-goto-register');
+                const btnGotoRecover = document.getElementById('btn-goto-recover');
+                const btnLoginBack = document.getElementById('btn-login-back');
+
+                if (btnDoLogin) btnDoLogin.onclick = () => {
+                    const u = document.getElementById('login-user').value;
+                    const p = document.getElementById('login-pass').value;
+                    this.login(u, p);
                 };
-            }
+                if (btnGotoReg) btnGotoReg.onclick = () => {
+                    loginScreen.classList.add('hidden');
+                    const reg = document.getElementById('register-screen');
+                    reg.classList.remove('hidden');
+                    reg.classList.remove('nuclear-hidden');
+                    reg.style.display = 'block';
+                    reg.classList.add('active');
+                };
+                if (btnGotoRecover) btnGotoRecover.onclick = () => {
+                    loginScreen.classList.add('hidden');
+                    const rec = document.getElementById('recovery-screen');
+                    rec.classList.remove('hidden');
+                    rec.classList.remove('nuclear-hidden');
+                    rec.style.display = 'block';
+                    rec.classList.add('active');
+                };
+                if (btnLoginBack) btnLoginBack.onclick = () => {
+                    loginScreen.classList.add('hidden');
+                    this.showMainMenu();
+                };
 
-            // RECOVERY SCREEN
-            const recScreen = document.getElementById('recovery-screen');
-            const btnCheckUser = document.getElementById('btn-check-user');
-            const btnResetPass = document.getElementById('btn-reset-pass');
-            const btnRecBack = document.getElementById('btn-recover-back');
+                // REGISTER SCREEN
+                const regScreen = document.getElementById('register-screen');
+                const btnDoReg = document.getElementById('btn-do-register');
+                const btnRegBack = document.getElementById('btn-register-back');
+                const regSecQ = document.getElementById('reg-sec-q');
+                const regCustomQ = document.getElementById('reg-custom-q');
 
-            if (btnCheckUser) btnCheckUser.onclick = () => this.recoverStep1();
-            if (btnResetPass) btnResetPass.onclick = () => this.recoverStep2();
-            if (btnRecBack) btnRecBack.onclick = () => {
-                recScreen.classList.add('hidden');
-                loginScreen.classList.remove('hidden');
-                loginScreen.classList.remove('nuclear-hidden');
-                loginScreen.style.display = 'block';
-            };
+                if (regSecQ) {
+                    regSecQ.onchange = () => {
+                        if (regSecQ.value === 'custom') {
+                            regCustomQ.classList.remove('hidden');
+                            regCustomQ.focus();
+                        } else {
+                            regCustomQ.classList.add('hidden');
+                        }
+                    };
+                }
 
-            // PROFILE SCREEN
-            const profileScreen = document.getElementById('profile-screen');
-            const btnLogout = document.getElementById('btn-logout');
-            const btnProfileBack = document.getElementById('btn-profile-back');
-            const btnAdminPanel = document.getElementById('btn-admin-panel');
+                if (btnDoReg) btnDoReg.onclick = () => {
+                    const u = document.getElementById('reg-user').value;
+                    const p = document.getElementById('reg-pass').value;
+                    let sq = document.getElementById('reg-sec-q').value;
+                    const sa = document.getElementById('reg-sec-a').value;
 
-            if (btnLogout) btnLogout.onclick = () => this.logout();
-            if (btnProfileBack) btnProfileBack.onclick = () => {
-                profileScreen.classList.add('hidden');
-                this.showMainMenu();
-            };
-            if (btnAdminPanel) btnAdminPanel.onclick = () => {
-                profileScreen.classList.add('hidden');
-                const admin = document.getElementById('admin-screen');
-                admin.classList.remove('hidden');
-                admin.classList.remove('nuclear-hidden');
-                admin.style.display = 'block';
-                admin.classList.add('active');
-                this.loadAdmin();
-            };
+                    if (sq === 'custom') {
+                        sq = document.getElementById('reg-custom-q').value.trim();
+                        if (!sq) { alert("Please enter your custom question!"); return; }
+                    }
 
-            // ADMIN SCREEN
-            const adminScreen = document.getElementById('admin-screen');
-            const btnAdminRefresh = document.getElementById('btn-admin-refresh');
-            const btnAdminClose = document.getElementById('btn-admin-close');
-
-            const btnTabUsers = document.getElementById('btn-admin-tab-users');
-            const btnTabMatches = document.getElementById('btn-admin-tab-matches');
-            const viewUsers = document.getElementById('admin-users-view');
-            const viewMatches = document.getElementById('admin-matches-view');
-
-            if (btnTabUsers) btnTabUsers.onclick = () => {
-                viewUsers.classList.remove('hidden');
-                viewMatches.classList.add('hidden');
-                btnTabUsers.classList.add('active'); btnTabUsers.classList.remove('secondary');
-                btnTabMatches.classList.remove('active'); btnTabMatches.classList.add('secondary');
-                this.loadAdmin(); // Reload Users
-            };
-
-            if (btnTabMatches) btnTabMatches.onclick = () => {
-                viewUsers.classList.add('hidden');
-                viewMatches.classList.remove('hidden');
-                btnTabUsers.classList.remove('active'); btnTabUsers.classList.add('secondary');
-                btnTabMatches.classList.add('active'); btnTabMatches.classList.remove('secondary');
-                this.loadAdminMatches(); // Load Matches
-            };
-
-            if (btnAdminRefresh) btnAdminRefresh.onclick = () => this.loadAdmin();
-            if (btnAdminClose) btnAdminClose.onclick = () => {
-                adminScreen.classList.add('hidden');
-                // Clear list to force reload next time
-                document.getElementById('admin-user-list').innerHTML = '';
-
-                profileScreen.classList.remove('hidden');
-                profileScreen.classList.remove('nuclear-hidden');
-                profileScreen.style.display = 'block';
-            };
-
-            // MAIN MENU BUTTON
-            const btnMenuLogin = document.getElementById('btn-menu-login');
-            if (btnMenuLogin) btnMenuLogin.onclick = () => {
-                this.hideAllScreens();
-                if (this.currentUser) {
-                    profileScreen.classList.remove('hidden');
-                    profileScreen.classList.remove('nuclear-hidden');
-                    profileScreen.classList.add('active');
-                    profileScreen.style.display = 'block';
-                    this.updateProfileUI();
-                    // BACK SUPPORT
-                    history.pushState({ screen: 'profile' }, 'Profile', '#profile');
-                } else {
+                    this.register(u, p, sq, sa);
+                };
+                if (btnRegBack) btnRegBack.onclick = () => {
+                    regScreen.classList.add('hidden');
                     loginScreen.classList.remove('hidden');
                     loginScreen.classList.remove('nuclear-hidden');
-                    loginScreen.classList.add('active');
                     loginScreen.style.display = 'block';
-                    // BACK SUPPORT
-                    history.pushState({ screen: 'login' }, 'Login', '#login');
+                };
+
+                // NEW AUTH LISTENERS (Name Entry Screen)
+                const btnQuickLogin = document.getElementById('btn-quick-login');
+                const btnQuickRegister = document.getElementById('btn-quick-register');
+
+                if (btnQuickLogin) {
+                    btnQuickLogin.onclick = (e) => {
+                        // Prevent default form submission if any
+                        e.preventDefault();
+
+                        this.hideAllScreens();
+                        this.returnToNameEntry = true; // Flag to return
+                        if (loginScreen) {
+                            loginScreen.classList.remove('hidden'); loginScreen.classList.remove('nuclear-hidden');
+                            loginScreen.classList.add('active'); loginScreen.style.display = 'block';
+                        }
+                    };
                 }
-            };
-        }
+                if (btnQuickRegister) {
+                    btnQuickRegister.onclick = (e) => {
+                        e.preventDefault();
 
-        login(username, password) {
-            if (!username || !password) { alert("Please enter username and password"); return; }
-
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'login', username, password })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        // alert("Login Successful! Welcome, " + data.user.name);
-                        this.currentUser = data.user;
-                        this.isGuest = false; // reset
-                        localStorage.setItem('snake_user', JSON.stringify(data.user));
-                        localStorage.setItem('playerName', data.user.name);
-
-                        // RETROACTIVE STAT SAVING (v3.14 - Async Fix)
-                        const syncOps = [];
-
-                        if (this.pendingMatch) {
-                            console.log("Found Pending Match! Syncing...");
-                            const pm = this.pendingMatch;
-
-                            // v3.16 FIX: Unconditional Host Name Swap
-                            // Since pendingMatch is stored locally on Host, 'p1' is ALWAYS the local user (Guest).
-                            const oldName = pm.p1;
-                            pm.p1 = this.currentUser.name.toUpperCase();
-
-                            // If I won, update winner name too
-                            if (pm.winner === oldName) {
-                                pm.winner = this.currentUser.name.toUpperCase();
-                            }
-
-                            // Push Promise
-                            syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
-                            this.pendingMatch = null;
+                        this.hideAllScreens();
+                        this.returnToNameEntry = true; // Flag to return
+                        if (regScreen) {
+                            regScreen.classList.remove('hidden'); regScreen.classList.remove('nuclear-hidden');
+                            regScreen.classList.add('active'); regScreen.style.display = 'block';
                         }
+                    };
+                }
 
-                        if (this.pendingScore) {
-                            console.log("Found Pending Score! Syncing...");
-                            const ps = this.pendingScore;
-                            syncOps.push(
-                                this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
-                                    .then(() => console.log("Retroactive Score Saved"))
-                                    .catch(e => console.error("Retroactive Score Error", e))
-                            );
-                            this.pendingScore = null;
-                        }
+                // RECOVERY SCREEN
+                const recScreen = document.getElementById('recovery-screen');
+                const btnCheckUser = document.getElementById('btn-check-user');
+                const btnResetPass = document.getElementById('btn-reset-pass');
+                const btnRecBack = document.getElementById('btn-recover-back');
 
-                        // WAIT FOR SYNC before loading UI
-                        Promise.all(syncOps).then(() => {
-                            if (this.returnToNameEntry) {
-                                this.returnToNameEntry = false;
-                                this.hideAllScreens();
-                                const ne = document.getElementById('name-entry-screen');
-                                if (ne) {
-                                    ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
-                                    ne.classList.add('active'); ne.style.display = 'flex';
-                                    const inp = document.getElementById('player-name-input');
-                                    if (inp) inp.value = this.currentUser.name;
-                                    const ao = document.getElementById('auth-options-container');
-                                    if (ao) ao.style.display = 'none';
-                                }
-                            } else {
-                                this.hideAllScreens();
-                                const pScreen = document.getElementById('profile-screen');
-                                pScreen.classList.remove('hidden');
-                                pScreen.classList.remove('nuclear-hidden');
-                                pScreen.classList.add('active');
-                                pScreen.style.display = 'block';
-                                this.updateProfileUI(); // Load stats AFTER sync
-                            }
-                            this.updateProfileUI(); // Extra Load
-                        });
-                    } else {
-                        alert("Login Failed: " + data.error);
-                    }
-                })
-                .catch(e => alert("Login Error: " + e));
-        }
+                if (btnCheckUser) btnCheckUser.onclick = () => this.recoverStep1();
+                if (btnResetPass) btnResetPass.onclick = () => this.recoverStep2();
+                if (btnRecBack) btnRecBack.onclick = () => {
+                    recScreen.classList.add('hidden');
+                    loginScreen.classList.remove('hidden');
+                    loginScreen.classList.remove('nuclear-hidden');
+                    loginScreen.style.display = 'block';
+                };
 
-        register(username, password, secQ, secA) {
-            if (!username || !password) { alert("Please enter username and password"); return; }
-            if (!secQ || !secA) { alert("Please set a security question and answer for recovery."); return; }
+                // PROFILE SCREEN
+                const profileScreen = document.getElementById('profile-screen');
+                const btnLogout = document.getElementById('btn-logout');
+                const btnProfileBack = document.getElementById('btn-profile-back');
+                const btnAdminPanel = document.getElementById('btn-admin-panel');
 
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'register', username, password, security_question: secQ, security_answer: secA })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Account Created! Logging you in...");
-                        this.currentUser = data.user;
-                        localStorage.setItem('snake_user', JSON.stringify(data.user));
-                        localStorage.setItem('playerName', data.user.name);
-
-                        // RETROACTIVE STAT SAVING (v3.14 - Async Fix)
-                        const syncOps = [];
-
-                        if (this.pendingMatch) {
-                            console.log("Found Pending Match! Syncing...");
-                            const pm = this.pendingMatch;
-
-                            // v3.16 FIX: Unconditional Host Name Swap
-                            const oldName = pm.p1;
-                            pm.p1 = this.currentUser.name.toUpperCase();
-
-                            // If I won, update winner name too
-                            if (pm.winner === oldName) {
-                                pm.winner = this.currentUser.name.toUpperCase();
-                            }
-
-                            syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
-                            this.pendingMatch = null;
-                        }
-
-                        if (this.pendingScore) {
-                            console.log("Found Pending Score! Syncing...");
-                            const ps = this.pendingScore;
-                            syncOps.push(
-                                this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
-                                    .then(() => console.log("Retroactive Score Saved"))
-                                    .catch(e => console.error("Retroactive Score Error", e))
-                            );
-                            this.pendingScore = null;
-                        }
-
-                        // WAIT FOR SYNC before loading UI
-                        Promise.all(syncOps).then(() => {
-                            if (this.returnToNameEntry) {
-                                this.returnToNameEntry = false;
-                                this.hideAllScreens();
-                                const ne = document.getElementById('name-entry-screen');
-                                if (ne) {
-                                    ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
-                                    ne.classList.add('active'); ne.style.display = 'flex';
-                                    const inp = document.getElementById('player-name-input');
-                                    if (inp) inp.value = this.currentUser.name;
-                                    const ao = document.getElementById('auth-options-container');
-                                    if (ao) ao.style.display = 'none';
-                                }
-                            } else {
-                                this.hideAllScreens();
-                                const pScreen = document.getElementById('profile-screen');
-                                pScreen.classList.remove('hidden');
-                                pScreen.classList.remove('nuclear-hidden');
-                                pScreen.classList.add('active');
-                                pScreen.style.display = 'block';
-                                this.updateProfileUI();
-                            }
-                            this.updateProfileUI();
-                        });
-                    } else {
-                        alert("Registration Failed: " + data.error);
-                    }
-                })
-                .catch(e => alert("Register Error: " + e));
-        }
-
-        logout() {
-            if (confirm("Log out?")) {
-                this.currentUser = null;
-                localStorage.removeItem('snake_user');
-                alert("Logged out.");
-                this.showMainMenu();
-            }
-        }
-
-        async deleteMyAccount(password) {
-            if (!this.currentUser) return;
-            try {
-                const response = await fetch('auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete_account', username: this.currentUser.name, password: password })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    alert("Account Deleted. Goodbye!");
-                    this.currentUser = null;
-                    localStorage.removeItem('snake_user');
+                if (btnLogout) btnLogout.onclick = () => this.logout();
+                if (btnProfileBack) btnProfileBack.onclick = () => {
+                    profileScreen.classList.add('hidden');
                     this.showMainMenu();
-                } else {
-                    alert("Deletion Failed: " + data.error);
-                }
-            } catch (e) {
-                alert("Network Error: " + e);
-            }
-        }
+                };
+                if (btnAdminPanel) btnAdminPanel.onclick = () => {
+                    profileScreen.classList.add('hidden');
+                    const admin = document.getElementById('admin-screen');
+                    admin.classList.remove('hidden');
+                    admin.classList.remove('nuclear-hidden');
+                    admin.style.display = 'block';
+                    admin.classList.add('active');
+                    this.loadAdmin();
+                };
 
-        async updateProfileUI() {
-            if (!this.currentUser) return;
-            const adminText = (this.currentUser.is_admin == 1) ? ' <span style="color:gold; font-size:0.8rem;">(ADMIN)</span>' : '';
-            document.getElementById('profile-name').innerHTML = this.currentUser.name + adminText;
+                // ADMIN SCREEN
+                const adminScreen = document.getElementById('admin-screen');
+                const btnAdminRefresh = document.getElementById('btn-admin-refresh');
+                const btnAdminClose = document.getElementById('btn-admin-close');
 
-            // Show/Hide Admin Button & Delete Button
-            const btnAdmin = document.getElementById('btn-admin-panel');
-            const btnDelete = document.getElementById('btn-profile-delete');
+                const btnTabUsers = document.getElementById('btn-admin-tab-users');
+                const btnTabMatches = document.getElementById('btn-admin-tab-matches');
+                const viewUsers = document.getElementById('admin-users-view');
+                const viewMatches = document.getElementById('admin-matches-view');
 
-            // NEW ADMIN CLOSE LOGIC (v9.0)
-            const btnAdminClose = document.getElementById('btn-admin-close');
-            if (btnAdminClose) {
-                btnAdminClose.onclick = () => {
-                    document.getElementById('admin-screen').classList.add('hidden');
-                    // Return to Profile
-                    const ps = document.getElementById('profile-screen');
-                    if (ps) {
-                        ps.classList.remove('hidden');
-                        ps.classList.add('active');
-                        ps.style.display = 'block';
+                if (btnTabUsers) btnTabUsers.onclick = () => {
+                    viewUsers.classList.remove('hidden');
+                    viewMatches.classList.add('hidden');
+                    btnTabUsers.classList.add('active'); btnTabUsers.classList.remove('secondary');
+                    btnTabMatches.classList.remove('active'); btnTabMatches.classList.add('secondary');
+                    this.loadAdmin(); // Reload Users
+                };
+
+                if (btnTabMatches) btnTabMatches.onclick = () => {
+                    viewUsers.classList.add('hidden');
+                    viewMatches.classList.remove('hidden');
+                    btnTabUsers.classList.remove('active'); btnTabUsers.classList.add('secondary');
+                    btnTabMatches.classList.add('active'); btnTabMatches.classList.remove('secondary');
+                    this.loadAdminMatches(); // Load Matches
+                };
+
+                if (btnAdminRefresh) btnAdminRefresh.onclick = () => this.loadAdmin();
+                if (btnAdminClose) btnAdminClose.onclick = () => {
+                    adminScreen.classList.add('hidden');
+                    // Clear list to force reload next time
+                    document.getElementById('admin-user-list').innerHTML = '';
+
+                    profileScreen.classList.remove('hidden');
+                    profileScreen.classList.remove('nuclear-hidden');
+                    profileScreen.style.display = 'block';
+                };
+
+                // MAIN MENU BUTTON
+                const btnMenuLogin = document.getElementById('btn-menu-login');
+                if (btnMenuLogin) btnMenuLogin.onclick = () => {
+                    this.hideAllScreens();
+                    if (this.currentUser) {
+                        profileScreen.classList.remove('hidden');
+                        profileScreen.classList.remove('nuclear-hidden');
+                        profileScreen.classList.add('active');
+                        profileScreen.style.display = 'block';
+                        this.updateProfileUI();
+                        // BACK SUPPORT
+                        history.pushState({ screen: 'profile' }, 'Profile', '#profile');
+                    } else {
+                        loginScreen.classList.remove('hidden');
+                        loginScreen.classList.remove('nuclear-hidden');
+                        loginScreen.classList.add('active');
+                        loginScreen.style.display = 'block';
+                        // BACK SUPPORT
+                        history.pushState({ screen: 'login' }, 'Login', '#login');
                     }
                 };
             }
 
-            if (this.currentUser.is_admin == 1) {
-                // IS ADMIN
-                if (btnAdmin) {
-                    btnAdmin.classList.remove('hidden');
-                    btnAdmin.style.display = 'block';
-                }
-                // Hide Delete for Admin
-                if (btnDelete) btnDelete.style.display = 'none';
-            } else {
-                // NOT ADMIN
-                if (btnAdmin) {
-                    btnAdmin.classList.add('hidden');
-                    btnAdmin.style.display = 'none';
-                }
-                // Show Delete for Normal User
-                if (btnDelete) btnDelete.style.display = 'block';
-            }
+            login(username, password) {
+                if (!username || !password) { alert("Please enter username and password"); return; }
 
-            // Fetch Real Stats
-            try {
-                const response = await fetch('auth.php', {
+                fetch('auth.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
-                });
+                    body: JSON.stringify({ action: 'login', username, password })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            // alert("Login Successful! Welcome, " + data.user.name);
+                            this.currentUser = data.user;
+                            this.isGuest = false; // reset
+                            localStorage.setItem('snake_user', JSON.stringify(data.user));
+                            localStorage.setItem('playerName', data.user.name);
 
-                const text = await response.text();
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch (e) {
-                    console.error("STATS JSON ERROR:", text);
-                    // Only alert if it's a real error (not just empty)
-                    if (text.trim().length > 0) alert("STATS ERROR:\n" + text.substring(0, 500));
-                    return;
-                }
+                            // RETROACTIVE STAT SAVING (v3.14 - Async Fix)
+                            const syncOps = [];
 
-                if (data.success && data.stats) {
-                    document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
-                    document.getElementById('profile-games').innerText = data.stats.games_played || 0;
-                    document.getElementById('profile-best-mobile').innerText = data.stats.best_mobile || 0;
-                    document.getElementById('profile-best-pc').innerText = data.stats.best_pc || 0;
-                    document.getElementById('profile-joined').innerText = data.stats.created_at || '-';
-                } else {
-                    console.error("Stats API Error:", data.error);
-                }
-            } catch (err) {
-                console.error("Stats Network Error:", err);
-            }
+                            if (this.pendingMatch) {
+                                console.log("Found Pending Match! Syncing...");
+                                const pm = this.pendingMatch;
 
+                                // v3.16 FIX: Unconditional Host Name Swap
+                                // Since pendingMatch is stored locally on Host, 'p1' is ALWAYS the local user (Guest).
+                                const oldName = pm.p1;
+                                pm.p1 = this.currentUser.name.toUpperCase();
 
-            // Fetch Match History (v6.57)
-            this.fetchProfileMatchHistory(this.currentUser.name);
-        }
+                                // If I won, update winner name too
+                                if (pm.winner === oldName) {
+                                    pm.winner = this.currentUser.name.toUpperCase();
+                                }
 
-        async fetchProfileMatchHistory(username) {
-            const container = document.getElementById('profile-match-history');
-            if (!container) return;
+                                // Push Promise
+                                syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
+                                this.pendingMatch = null;
+                            }
 
-            container.innerHTML = "Loading matches...";
+                            if (this.pendingScore) {
+                                console.log("Found Pending Score! Syncing...");
+                                const ps = this.pendingScore;
+                                syncOps.push(
+                                    this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
+                                        .then(() => console.log("Retroactive Score Saved"))
+                                        .catch(e => console.error("Retroactive Score Error", e))
+                                );
+                                this.pendingScore = null;
+                            }
 
-            try {
-                const res = await fetch('auth.php', {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'get_match_history', username: username })
-                });
-                const data = await res.json();
-
-                if (data.success && data.matches && data.matches.length > 0) {
-                    let opponents = {};
-                    let wCount = 0;
-                    let lCount = 0;
-                    let dCount = 0;
-
-                    data.matches.forEach(m => {
-                        const myName = username.toUpperCase();
-                        const wName = (m.winner_name || "").toUpperCase();
-                        const isP1 = (m.p1_name.toUpperCase() === myName);
-                        const opponent = (isP1 ? m.p2_name : m.p1_name).toUpperCase();
-
-                        if (!opponents[opponent]) opponents[opponent] = { w: 0, l: 0, d: 0 };
-
-                        if (wName === myName) {
-                            wCount++; opponents[opponent].w++;
-                        } else if (wName === "DRAW" || !wName) {
-                            dCount++; opponents[opponent].d++;
+                            // WAIT FOR SYNC before loading UI
+                            Promise.all(syncOps).then(() => {
+                                if (this.returnToNameEntry) {
+                                    this.returnToNameEntry = false;
+                                    this.hideAllScreens();
+                                    const ne = document.getElementById('name-entry-screen');
+                                    if (ne) {
+                                        ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                                        ne.classList.add('active'); ne.style.display = 'flex';
+                                        const inp = document.getElementById('player-name-input');
+                                        if (inp) inp.value = this.currentUser.name;
+                                        const ao = document.getElementById('auth-options-container');
+                                        if (ao) ao.style.display = 'none';
+                                    }
+                                } else {
+                                    this.hideAllScreens();
+                                    const pScreen = document.getElementById('profile-screen');
+                                    pScreen.classList.remove('hidden');
+                                    pScreen.classList.remove('nuclear-hidden');
+                                    pScreen.classList.add('active');
+                                    pScreen.style.display = 'block';
+                                    this.updateProfileUI(); // Load stats AFTER sync
+                                }
+                                this.updateProfileUI(); // Extra Load
+                            });
                         } else {
-                            lCount++; opponents[opponent].l++;
+                            alert("Login Failed: " + data.error);
                         }
+                    })
+                    .catch(e => alert("Login Error: " + e));
+            }
+
+            register(username, password, secQ, secA) {
+                if (!username || !password) { alert("Please enter username and password"); return; }
+                if (!secQ || !secA) { alert("Please set a security question and answer for recovery."); return; }
+
+                fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'register', username, password, security_question: secQ, security_answer: secA })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Account Created! Logging you in...");
+                            this.currentUser = data.user;
+                            localStorage.setItem('snake_user', JSON.stringify(data.user));
+                            localStorage.setItem('playerName', data.user.name);
+
+                            // RETROACTIVE STAT SAVING (v3.14 - Async Fix)
+                            const syncOps = [];
+
+                            if (this.pendingMatch) {
+                                console.log("Found Pending Match! Syncing...");
+                                const pm = this.pendingMatch;
+
+                                // v3.16 FIX: Unconditional Host Name Swap
+                                const oldName = pm.p1;
+                                pm.p1 = this.currentUser.name.toUpperCase();
+
+                                // If I won, update winner name too
+                                if (pm.winner === oldName) {
+                                    pm.winner = this.currentUser.name.toUpperCase();
+                                }
+
+                                syncOps.push(this.recordMatchStats(pm.p1, pm.p2, pm.winner, pm.duration));
+                                this.pendingMatch = null;
+                            }
+
+                            if (this.pendingScore) {
+                                console.log("Found Pending Score! Syncing...");
+                                const ps = this.pendingScore;
+                                syncOps.push(
+                                    this.saveScoreToBackend(this.currentUser.name, ps.score, ps.type)
+                                        .then(() => console.log("Retroactive Score Saved"))
+                                        .catch(e => console.error("Retroactive Score Error", e))
+                                );
+                                this.pendingScore = null;
+                            }
+
+                            // WAIT FOR SYNC before loading UI
+                            Promise.all(syncOps).then(() => {
+                                if (this.returnToNameEntry) {
+                                    this.returnToNameEntry = false;
+                                    this.hideAllScreens();
+                                    const ne = document.getElementById('name-entry-screen');
+                                    if (ne) {
+                                        ne.classList.remove('hidden'); ne.classList.remove('nuclear-hidden');
+                                        ne.classList.add('active'); ne.style.display = 'flex';
+                                        const inp = document.getElementById('player-name-input');
+                                        if (inp) inp.value = this.currentUser.name;
+                                        const ao = document.getElementById('auth-options-container');
+                                        if (ao) ao.style.display = 'none';
+                                    }
+                                } else {
+                                    this.hideAllScreens();
+                                    const pScreen = document.getElementById('profile-screen');
+                                    pScreen.classList.remove('hidden');
+                                    pScreen.classList.remove('nuclear-hidden');
+                                    pScreen.classList.add('active');
+                                    pScreen.style.display = 'block';
+                                    this.updateProfileUI();
+                                }
+                                this.updateProfileUI();
+                            });
+                        } else {
+                            alert("Registration Failed: " + data.error);
+                        }
+                    })
+                    .catch(e => alert("Register Error: " + e));
+            }
+
+            logout() {
+                if (confirm("Log out?")) {
+                    this.currentUser = null;
+                    localStorage.removeItem('snake_user');
+                    alert("Logged out.");
+                    this.showMainMenu();
+                }
+            }
+
+        async deleteMyAccount(password) {
+                if (!this.currentUser) return;
+                try {
+                    const response = await fetch('auth.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'delete_account', username: this.currentUser.name, password: password })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert("Account Deleted. Goodbye!");
+                        this.currentUser = null;
+                        localStorage.removeItem('snake_user');
+                        this.showMainMenu();
+                    } else {
+                        alert("Deletion Failed: " + data.error);
+                    }
+                } catch (e) {
+                    alert("Network Error: " + e);
+                }
+            }
+
+        async updateProfileUI() {
+                if (!this.currentUser) return;
+                const adminText = (this.currentUser.is_admin == 1) ? ' <span style="color:gold; font-size:0.8rem;">(ADMIN)</span>' : '';
+                document.getElementById('profile-name').innerHTML = this.currentUser.name + adminText;
+
+                // Show/Hide Admin Button & Delete Button
+                const btnAdmin = document.getElementById('btn-admin-panel');
+                const btnDelete = document.getElementById('btn-profile-delete');
+
+                // NEW ADMIN CLOSE LOGIC (v9.0)
+                const btnAdminClose = document.getElementById('btn-admin-close');
+                if (btnAdminClose) {
+                    btnAdminClose.onclick = () => {
+                        document.getElementById('admin-screen').classList.add('hidden');
+                        // Return to Profile
+                        const ps = document.getElementById('profile-screen');
+                        if (ps) {
+                            ps.classList.remove('hidden');
+                            ps.classList.add('active');
+                            ps.style.display = 'block';
+                        }
+                    };
+                }
+
+                if (this.currentUser.is_admin == 1) {
+                    // IS ADMIN
+                    if (btnAdmin) {
+                        btnAdmin.classList.remove('hidden');
+                        btnAdmin.style.display = 'block';
+                    }
+                    // Hide Delete for Admin
+                    if (btnDelete) btnDelete.style.display = 'none';
+                } else {
+                    // NOT ADMIN
+                    if (btnAdmin) {
+                        btnAdmin.classList.add('hidden');
+                        btnAdmin.style.display = 'none';
+                    }
+                    // Show Delete for Normal User
+                    if (btnDelete) btnDelete.style.display = 'block';
+                }
+
+                // Fetch Real Stats
+                try {
+                    const response = await fetch('auth.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
                     });
 
-                    // Update Opponent Breakdown (v6.99 - List removed)
-                    const oppContainer = document.getElementById('profile-h2h-opponents');
-                    const oppList = document.getElementById('opponents-list');
-                    if (oppContainer && oppList) {
-                        oppContainer.style.display = 'block';
-                        let oppHtml = '';
-                        Object.keys(opponents).sort().forEach(name => {
-                            const s = opponents[name];
-                            oppHtml += `
+                    const text = await response.text();
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        console.error("STATS JSON ERROR:", text);
+                        // Only alert if it's a real error (not just empty)
+                        if (text.trim().length > 0) alert("STATS ERROR:\n" + text.substring(0, 500));
+                        return;
+                    }
+
+                    if (data.success && data.stats) {
+                        document.getElementById('profile-score').innerText = data.stats.total_xp || 0;
+                        document.getElementById('profile-games').innerText = data.stats.games_played || 0;
+                        document.getElementById('profile-best-mobile').innerText = data.stats.best_mobile || 0;
+                        document.getElementById('profile-best-pc').innerText = data.stats.best_pc || 0;
+                        document.getElementById('profile-joined').innerText = data.stats.created_at || '-';
+                    } else {
+                        console.error("Stats API Error:", data.error);
+                    }
+                } catch (err) {
+                    console.error("Stats Network Error:", err);
+                }
+
+
+                // Fetch Match History (v6.57)
+                this.fetchProfileMatchHistory(this.currentUser.name);
+            }
+
+        async fetchProfileMatchHistory(username) {
+                const container = document.getElementById('profile-match-history');
+                if (!container) return;
+
+                container.innerHTML = "Loading matches...";
+
+                try {
+                    const res = await fetch('auth.php', {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_match_history', username: username })
+                    });
+                    const data = await res.json();
+
+                    if (data.success && data.matches && data.matches.length > 0) {
+                        let opponents = {};
+                        let wCount = 0;
+                        let lCount = 0;
+                        let dCount = 0;
+
+                        data.matches.forEach(m => {
+                            const myName = username.toUpperCase();
+                            const wName = (m.winner_name || "").toUpperCase();
+                            const isP1 = (m.p1_name.toUpperCase() === myName);
+                            const opponent = (isP1 ? m.p2_name : m.p1_name).toUpperCase();
+
+                            if (!opponents[opponent]) opponents[opponent] = { w: 0, l: 0, d: 0 };
+
+                            if (wName === myName) {
+                                wCount++; opponents[opponent].w++;
+                            } else if (wName === "DRAW" || !wName) {
+                                dCount++; opponents[opponent].d++;
+                            } else {
+                                lCount++; opponents[opponent].l++;
+                            }
+                        });
+
+                        // Update Opponent Breakdown (v6.99 - List removed)
+                        const oppContainer = document.getElementById('profile-h2h-opponents');
+                        const oppList = document.getElementById('opponents-list');
+                        if (oppContainer && oppList) {
+                            oppContainer.style.display = 'block';
+                            let oppHtml = '';
+                            Object.keys(opponents).sort().forEach(name => {
+                                const s = opponents[name];
+                                oppHtml += `
                                 <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-family:monospace; padding:5px 0; border-bottom:1px solid #333;">
                                     <span style="color:#00ffff">${name}</span>
                                     <span>
@@ -3943,208 +3941,208 @@ window.addEventListener('DOMContentLoaded', () => {
                                     </span>
                                 </div>
                             `;
-                        });
-                        oppList.innerHTML = oppHtml;
+                            });
+                            oppList.innerHTML = oppHtml;
+                        }
+
+                        // Reset Match History List (Emptying as requested)
+                        if (container) container.innerHTML = "";
+
+                        // Update Summary
+                        const winEl = document.getElementById('h2h-wins');
+                        const lossEl = document.getElementById('h2h-losses');
+                        const drawEl = document.getElementById('h2h-draws');
+                        if (winEl) winEl.innerText = wCount;
+                        if (lossEl) lossEl.innerText = lCount;
+                        if (drawEl) drawEl.innerText = dCount;
+
+                    } else {
+                        container.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">No matches played yet.</div>';
+                        // Reset Summary
+                        const winEl = document.getElementById('h2h-wins');
+                        const lossEl = document.getElementById('h2h-losses');
+                        const drawEl = document.getElementById('h2h-draws');
+                        if (winEl) winEl.innerText = '0';
+                        if (lossEl) lossEl.innerText = '0';
+                        if (drawEl) drawEl.innerText = '0';
                     }
-
-                    // Reset Match History List (Emptying as requested)
-                    if (container) container.innerHTML = "";
-
-                    // Update Summary
-                    const winEl = document.getElementById('h2h-wins');
-                    const lossEl = document.getElementById('h2h-losses');
-                    const drawEl = document.getElementById('h2h-draws');
-                    if (winEl) winEl.innerText = wCount;
-                    if (lossEl) lossEl.innerText = lCount;
-                    if (drawEl) drawEl.innerText = dCount;
-
-                } else {
-                    container.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">No matches played yet.</div>';
-                    // Reset Summary
-                    const winEl = document.getElementById('h2h-wins');
-                    const lossEl = document.getElementById('h2h-losses');
-                    const drawEl = document.getElementById('h2h-draws');
-                    if (winEl) winEl.innerText = '0';
-                    if (lossEl) lossEl.innerText = '0';
-                    if (drawEl) drawEl.innerText = '0';
+                } catch (e) {
+                    console.error("Profile History Error:", e);
+                    container.innerHTML = "";
                 }
-            } catch (e) {
-                console.error("Profile History Error:", e);
-                container.innerHTML = "";
             }
-        }
 
         async updatePersonalBestDisplay() {
-            // FIX: Prevent HUD overwrite in Multiplayer
-            if (this.gameMode === 'multi') return;
+                // FIX: Prevent HUD overwrite in Multiplayer
+                if (this.gameMode === 'multi') return;
 
-            const targetEl = document.getElementById('p1-best-score');
-            if (!targetEl) return;
+                const targetEl = document.getElementById('p1-best-score');
+                if (!targetEl) return;
 
-            if (this.currentUser) {
+                if (this.currentUser) {
+                    try {
+                        const response = await fetch('auth.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+                        });
+                        const data = await response.json();
+                        if (data.success && data.stats) {
+                            const mobileBest = data.stats.best_mobile || 0;
+                            const pcBest = data.stats.best_pc || 0;
+                            targetEl.innerHTML = `BEST: M:${mobileBest} | PC:${pcBest}`;
+                        }
+                    } catch (e) {
+                        console.log("Failed to load Personal Best");
+                    }
+                } else {
+                    // FALLBACK: Load Global High Score for Guest
+                    // Check Cache first for instant load
+                    const type = this.platform || 'mobile';
+                    try {
+                        const raw = localStorage.getItem('snake_highscores_cache_' + type);
+                        if (raw) {
+                            const scores = JSON.parse(raw);
+                            if (scores && scores.length > 0) {
+                                targetEl.innerHTML = `BEST: ${scores[0].score} (${scores[0].name})`;
+                                return; // Done
+                            }
+                        }
+                    } catch (e) { }
+
+                    targetEl.innerHTML = "BEST: ---";
+                }
+            }
+
+            // --- PROPER RECOVERY ---
+            recoverStep1() {
+                const u = document.getElementById('rec-user').value;
+                if (!u) { alert("Enter username first"); return; }
+                fetch('auth.php', {
+                    method: 'POST', body: JSON.stringify({ action: 'get_question', username: u })
+                })
+                    .then(r => r.json()).then(d => {
+                        if (d.success) {
+                            document.getElementById('rec-step-2').classList.remove('hidden');
+                            document.getElementById('rec-question-display').innerText = d.question;
+                        } else { alert(d.error); }
+                    });
+            }
+
+            recoverStep2() {
+                const u = document.getElementById('rec-user').value;
+                const ans = document.getElementById('rec-answer').value;
+                const newP = document.getElementById('rec-new-pass').value;
+                if (!ans || !newP) { alert("Fill all fields"); return; }
+
+                fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'reset_password', username: u, security_answer: ans, new_password: newP })
+                })
+                    .then(r => r.json()).then(d => {
+                        if (d.success) {
+                            alert("Password Reset Successful! Please Login.");
+                            document.getElementById('recovery-screen').classList.add('hidden');
+                            const log = document.getElementById('login-screen');
+                            log.classList.remove('hidden');
+                            log.classList.remove('nuclear-hidden');
+                            log.style.display = 'block';
+                        } else { alert(d.error); }
+                    });
+            }
+
+        // --- ADMIN ---
+        async loadAdmin() {
+                if (!this.currentUser || this.currentUser.is_admin != 1) return;
+                const tbody = document.getElementById('admin-user-list');
+                tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+                console.log("Loading Admin List for:", this.currentUser.name);
+
                 try {
                     const response = await fetch('auth.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'get_stats', username: this.currentUser.name })
+                        body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
                     });
-                    const data = await response.json();
-                    if (data.success && data.stats) {
-                        const mobileBest = data.stats.best_mobile || 0;
-                        const pcBest = data.stats.best_pc || 0;
-                        targetEl.innerHTML = `BEST: M:${mobileBest} | PC:${pcBest}`;
+
+                    const text = await response.text();
+                    let d;
+                    try {
+                        d = JSON.parse(text);
+                    } catch (e) {
+                        console.error("JSON PARSE ERROR:", text);
+                        alert("SERVER ERROR:\n" + text.substring(0, 500));
+                        tbody.innerHTML = '<tr><td colspan="5" style="color:red">Server Error (Check Alert)</td></tr>';
+                        return;
                     }
-                } catch (e) {
-                    console.log("Failed to load Personal Best");
-                }
-            } else {
-                // FALLBACK: Load Global High Score for Guest
-                // Check Cache first for instant load
-                const type = this.platform || 'mobile';
-                try {
-                    const raw = localStorage.getItem('snake_highscores_cache_' + type);
-                    if (raw) {
-                        const scores = JSON.parse(raw);
-                        if (scores && scores.length > 0) {
-                            targetEl.innerHTML = `BEST: ${scores[0].score} (${scores[0].name})`;
-                            return; // Done
+
+                    console.log("Admin Data:", d);
+                    if (d.success) {
+                        // Update Global Stats
+                        if (document.getElementById('stat-total-players'))
+                            document.getElementById('stat-total-players').innerText = d.total_players || 0;
+                        if (document.getElementById('stat-total-games'))
+                            document.getElementById('stat-total-games').innerText = d.total_games || 0;
+
+                        if (d.users.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
+                        } else {
+                            // Cache for sorting
+                            this.adminUsersCache = d.users;
+                            this.adminSortDir = -1;
+                            this.renderAdminList(this.adminUsersCache);
                         }
-                    }
-                } catch (e) { }
-
-                targetEl.innerHTML = "BEST: ---";
-            }
-        }
-
-        // --- PROPER RECOVERY ---
-        recoverStep1() {
-            const u = document.getElementById('rec-user').value;
-            if (!u) { alert("Enter username first"); return; }
-            fetch('auth.php', {
-                method: 'POST', body: JSON.stringify({ action: 'get_question', username: u })
-            })
-                .then(r => r.json()).then(d => {
-                    if (d.success) {
-                        document.getElementById('rec-step-2').classList.remove('hidden');
-                        document.getElementById('rec-question-display').innerText = d.question;
-                    } else { alert(d.error); }
-                });
-        }
-
-        recoverStep2() {
-            const u = document.getElementById('rec-user').value;
-            const ans = document.getElementById('rec-answer').value;
-            const newP = document.getElementById('rec-new-pass').value;
-            if (!ans || !newP) { alert("Fill all fields"); return; }
-
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'reset_password', username: u, security_answer: ans, new_password: newP })
-            })
-                .then(r => r.json()).then(d => {
-                    if (d.success) {
-                        alert("Password Reset Successful! Please Login.");
-                        document.getElementById('recovery-screen').classList.add('hidden');
-                        const log = document.getElementById('login-screen');
-                        log.classList.remove('hidden');
-                        log.classList.remove('nuclear-hidden');
-                        log.style.display = 'block';
-                    } else { alert(d.error); }
-                });
-        }
-
-        // --- ADMIN ---
-        async loadAdmin() {
-            if (!this.currentUser || this.currentUser.is_admin != 1) return;
-            const tbody = document.getElementById('admin-user-list');
-            tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
-
-            console.log("Loading Admin List for:", this.currentUser.name);
-
-            try {
-                const response = await fetch('auth.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'admin_list_users', admin_user: this.currentUser.name })
-                });
-
-                const text = await response.text();
-                let d;
-                try {
-                    d = JSON.parse(text);
-                } catch (e) {
-                    console.error("JSON PARSE ERROR:", text);
-                    alert("SERVER ERROR:\n" + text.substring(0, 500));
-                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Server Error (Check Alert)</td></tr>';
-                    return;
-                }
-
-                console.log("Admin Data:", d);
-                if (d.success) {
-                    // Update Global Stats
-                    if (document.getElementById('stat-total-players'))
-                        document.getElementById('stat-total-players').innerText = d.total_players || 0;
-                    if (document.getElementById('stat-total-games'))
-                        document.getElementById('stat-total-games').innerText = d.total_games || 0;
-
-                    if (d.users.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5">No users found?</td></tr>';
                     } else {
-                        // Cache for sorting
-                        this.adminUsersCache = d.users;
-                        this.adminSortDir = -1;
-                        this.renderAdminList(this.adminUsersCache);
+                        tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
                     }
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + d.error + '</td></tr>';
+                } catch (err) {
+                    console.error("Network Error:", err);
+                    tbody.innerHTML = '<tr><td colspan="5" style="color:red">Network Error</td></tr>';
                 }
-            } catch (err) {
-                console.error("Network Error:", err);
-                tbody.innerHTML = '<tr><td colspan="5" style="color:red">Network Error</td></tr>';
-            }
-        }
-
-        sortAdminList(key) {
-            if (!this.adminUsersCache) return;
-
-            // Toggle direction
-            if (this.adminSortKey === key) {
-                this.adminSortDir *= -1;
-            } else {
-                this.adminSortKey = key;
-                this.adminSortDir = (key === 'username') ? 1 : -1; // Name ASC, nums DESC
             }
 
-            this.adminUsersCache.sort((a, b) => {
-                let valA = a[key];
-                let valB = b[key];
+            sortAdminList(key) {
+                if (!this.adminUsersCache) return;
 
-                // Numeric Check
-                if (key === 'id' || key === 'total_xp' || key === 'games_played') {
-                    valA = parseInt(valA) || 0;
-                    valB = parseInt(valB) || 0;
+                // Toggle direction
+                if (this.adminSortKey === key) {
+                    this.adminSortDir *= -1;
                 } else {
-                    valA = (valA || "").toString().toLowerCase();
-                    valB = (valB || "").toString().toLowerCase();
+                    this.adminSortKey = key;
+                    this.adminSortDir = (key === 'username') ? 1 : -1; // Name ASC, nums DESC
                 }
 
-                if (valA < valB) return -1 * this.adminSortDir;
-                if (valA > valB) return 1 * this.adminSortDir;
-                return 0;
-            });
+                this.adminUsersCache.sort((a, b) => {
+                    let valA = a[key];
+                    let valB = b[key];
 
-            this.renderAdminList(this.adminUsersCache);
-        }
+                    // Numeric Check
+                    if (key === 'id' || key === 'total_xp' || key === 'games_played') {
+                        valA = parseInt(valA) || 0;
+                        valB = parseInt(valB) || 0;
+                    } else {
+                        valA = (valA || "").toString().toLowerCase();
+                        valB = (valB || "").toString().toLowerCase();
+                    }
 
-        renderAdminList(users) {
-            const tbody = document.getElementById('admin-user-list');
-            tbody.innerHTML = '';
+                    if (valA < valB) return -1 * this.adminSortDir;
+                    if (valA > valB) return 1 * this.adminSortDir;
+                    return 0;
+                });
 
-            const data = users || this.adminUsersCache || [];
+                this.renderAdminList(this.adminUsersCache);
+            }
 
-            data.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
+            renderAdminList(users) {
+                const tbody = document.getElementById('admin-user-list');
+                tbody.innerHTML = '';
+
+                const data = users || this.adminUsersCache || [];
+
+                data.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
                     <td>${u.id}</td>
                     <td>${u.username} ${u.is_admin == 1 ? '<span style="color:gold">(A)</span>' : ''}</td>
                     <td>${u.total_xp || 0}</td>
@@ -4155,152 +4153,152 @@ window.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-small" onclick="window.gameInstance.deleteUser(${u.id}, '${u.username}')" style="color:red">Delete</button>
                     </td>
                 `;
-                tbody.appendChild(tr);
-            });
-        }
+                    tbody.appendChild(tr);
+                });
+            }
 
         async viewUserH2H(username) {
-            const modal = document.getElementById('admin-user-stats-modal');
-            const title = document.getElementById('admin-modal-title');
-            const content = document.getElementById('admin-modal-content');
-            if (!modal || !title || !content) return;
+                const modal = document.getElementById('admin-user-stats-modal');
+                const title = document.getElementById('admin-modal-title');
+                const content = document.getElementById('admin-modal-content');
+                if (!modal || !title || !content) return;
 
-            modal.classList.remove('hidden');
-            title.innerText = `H2H: ${username.toUpperCase()}`;
-            content.innerHTML = "Fetching match history...";
+                modal.classList.remove('hidden');
+                title.innerText = `H2H: ${username.toUpperCase()}`;
+                content.innerHTML = "Fetching match history...";
 
-            try {
-                const res = await fetch('auth.php', {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'get_match_history', username: username })
-                });
-                const data = await res.json();
-
-                if (data.success && data.matches) {
-                    let w = 0, l = 0, d = 0;
-                    let opps = {};
-
-                    data.matches.forEach(m => {
-                        const myN = username.toUpperCase();
-                        const winN = (m.winner_name || "").toUpperCase();
-                        const opp = (m.p1_name.toUpperCase() === myN ? m.p2_name : m.p1_name).toUpperCase();
-
-                        if (!opps[opp]) opps[opp] = { w: 0, l: 0, d: 0 };
-                        if (winN === myN) { w++; opps[opp].w++; }
-                        else if (winN === "DRAW" || !winN) { d++; opps[opp].d++; }
-                        else { l++; opps[opp].l++; }
+                try {
+                    const res = await fetch('auth.php', {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_match_history', username: username })
                     });
+                    const data = await res.json();
 
-                    let html = `<div style="background:rgba(0,0,0,0.5); padding:10px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-around;">
+                    if (data.success && data.matches) {
+                        let w = 0, l = 0, d = 0;
+                        let opps = {};
+
+                        data.matches.forEach(m => {
+                            const myN = username.toUpperCase();
+                            const winN = (m.winner_name || "").toUpperCase();
+                            const opp = (m.p1_name.toUpperCase() === myN ? m.p2_name : m.p1_name).toUpperCase();
+
+                            if (!opps[opp]) opps[opp] = { w: 0, l: 0, d: 0 };
+                            if (winN === myN) { w++; opps[opp].w++; }
+                            else if (winN === "DRAW" || !winN) { d++; opps[opp].d++; }
+                            else { l++; opps[opp].l++; }
+                        });
+
+                        let html = `<div style="background:rgba(0,0,0,0.5); padding:10px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-around;">
                         <span style="color:#00ff88">${w}W</span>
                         <span style="color:#ff5555">${l}L</span>
                         <span style="color:#aaa">${d}D</span>
                     </div>`;
 
-                    html += `<div style="font-size:0.75rem;">`;
-                    Object.keys(opps).sort().forEach(o => {
-                        const s = opps[o];
-                        html += `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #333;">
+                        html += `<div style="font-size:0.75rem;">`;
+                        Object.keys(opps).sort().forEach(o => {
+                            const s = opps[o];
+                            html += `<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #333;">
                             <span style="color:#fff">${o}</span>
                             <span><span style="color:#00ff88">${s.w}W</span> <span style="color:#ff5555">${s.l}L</span> <span style="color:#aaa">${s.d}D</span></span>
                         </div>`;
-                    });
-                    html += `</div>`;
-                    content.innerHTML = html;
-                } else {
-                    content.innerHTML = "No matches found.";
+                        });
+                        html += `</div>`;
+                        content.innerHTML = html;
+                    } else {
+                        content.innerHTML = "No matches found.";
+                    }
+                } catch (err) {
+                    content.innerHTML = "Error fetching stats.";
                 }
-            } catch (err) {
-                content.innerHTML = "Error fetching stats.";
             }
-        }
 
         async loadAdminMatches() {
-            try {
-                const res = await fetch('auth.php', {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'admin_list_matches', admin_user: this.currentUser.name })
-                });
-                const d = await res.json();
-                if (d.success) {
-                    this.renderMatchList(d.matches);
-                } else {
-                    document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
+                try {
+                    const res = await fetch('auth.php', {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'admin_list_matches', admin_user: this.currentUser.name })
+                    });
+                    const d = await res.json();
+                    if (d.success) {
+                        this.renderMatchList(d.matches);
+                    } else {
+                        document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Error: ' + d.error + '</td></tr>';
+                    }
+                } catch (e) {
+                    console.error(e);
+                    document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
                 }
-            } catch (e) {
-                console.error(e);
-                document.getElementById('admin-match-list').innerHTML = '<tr><td colspan="5">Network Error</td></tr>';
-            }
-        }
-
-        renderMatchList(matches) {
-            const tbody = document.getElementById('admin-match-list');
-            tbody.innerHTML = '';
-            if (!matches || matches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">No matches logged yet.</td></tr>';
-                return;
             }
 
-            matches.forEach(m => {
-                const tr = document.createElement('tr');
-                // Format Date
-                let dateStr = m.played_at;
-                try { dateStr = new Date(m.played_at).toLocaleString(); } catch (e) { }
+            renderMatchList(matches) {
+                const tbody = document.getElementById('admin-match-list');
+                tbody.innerHTML = '';
+                if (!matches || matches.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No matches logged yet.</td></tr>';
+                    return;
+                }
 
-                // Format Duration
-                const mins = Math.floor(m.duration / 60);
-                const secs = m.duration % 60;
-                const durStr = (mins > 0 ? mins + "m " : "") + secs + "s";
+                matches.forEach(m => {
+                    const tr = document.createElement('tr');
+                    // Format Date
+                    let dateStr = m.played_at;
+                    try { dateStr = new Date(m.played_at).toLocaleString(); } catch (e) { }
 
-                const p1Win = (m.winner_name === m.p1_name);
-                const p2Win = (m.winner_name === m.p2_name);
-                const winColor = p1Win ? COLORS.p1 : (p2Win ? COLORS.p2 : '#fff');
+                    // Format Duration
+                    const mins = Math.floor(m.duration / 60);
+                    const secs = m.duration % 60;
+                    const durStr = (mins > 0 ? mins + "m " : "") + secs + "s";
 
-                tr.innerHTML = `
+                    const p1Win = (m.winner_name === m.p1_name);
+                    const p2Win = (m.winner_name === m.p2_name);
+                    const winColor = p1Win ? COLORS.p1 : (p2Win ? COLORS.p2 : '#fff');
+
+                    tr.innerHTML = `
                     <td style="font-size:0.7rem; color:#aaa;">${dateStr}</td>
                     <td style="color:${COLORS.p1}">${m.p1_name}</td>
                     <td style="color:${COLORS.p2}">${m.p2_name}</td>
                     <td style="font-weight:bold; color:${winColor}">${m.winner_name || 'Draw'}</td>
                     <td>${durStr}</td>
                 `;
-                tbody.appendChild(tr);
-            });
+                    tbody.appendChild(tr);
+                });
+            }
+
+            deleteUser(id, name) {
+                if (!confirm("DELETE User '" + name + "'?\\nThis cannot be undone!")) return;
+                fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'admin_delete_user', admin_user: this.currentUser.name, target_id: id })
+                }).then(r => r.json()).then(d => {
+                    if (d.success) { alert("Deleted."); this.loadAdmin(); }
+                    else alert(d.error);
+                });
+            }
+
+            resetUser(id, name) {
+                if (!confirm("Reset Password for '" + name + "' to 'changeme'?")) return;
+                fetch('auth.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'admin_reset_user', admin_user: this.currentUser.name, target_id: id })
+                }).then(r => r.json()).then(d => {
+                    if (d.success) { alert("Reset to 'changeme'."); }
+                    else alert(d.error);
+                });
+            }
+
+
         }
-
-        deleteUser(id, name) {
-            if (!confirm("DELETE User '" + name + "'?\\nThis cannot be undone!")) return;
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'admin_delete_user', admin_user: this.currentUser.name, target_id: id })
-            }).then(r => r.json()).then(d => {
-                if (d.success) { alert("Deleted."); this.loadAdmin(); }
-                else alert(d.error);
-            });
-        }
-
-        resetUser(id, name) {
-            if (!confirm("Reset Password for '" + name + "' to 'changeme'?")) return;
-            fetch('auth.php', {
-                method: 'POST',
-                body: JSON.stringify({ action: 'admin_reset_user', admin_user: this.currentUser.name, target_id: id })
-            }).then(r => r.json()).then(d => {
-                if (d.success) { alert("Reset to 'changeme'."); }
-                else alert(d.error);
-            });
-        }
-
-
-    }
 
 
     // Initialize Game
     window.gameInstance = new Game();
     window.gameInstance.loop(0);
 
-    // Hard Reload if version mismatch (Simple check)
-    if (location.search.indexOf('v=5.6') === -1) {
-        // console.log("Updating URL version...");
-        // history.replaceState({}, '', location.pathname + '?v=5.6');
-    }
+        // Hard Reload if version mismatch (Simple check)
+        if(location.search.indexOf('v=5.6') === -1) {
+    // console.log("Updating URL version...");
+    // history.replaceState({}, '', location.pathname + '?v=5.6');
+}
 
 }); // MAIN WRAPPER END
