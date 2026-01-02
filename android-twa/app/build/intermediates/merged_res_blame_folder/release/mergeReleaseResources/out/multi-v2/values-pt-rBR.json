@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "no.voxcuriosa.voxsnake.app-mergeReleaseResources-5:/values-pt-rBR/values-pt-rBR.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\chr1203\\.gradle\\caches\\8.11.1\\transforms\\12388d32ff154de644b2df4a3cb5ad96\\transformed\\core-1.1.0\\res\\values-pt-rBR\\values-pt-rBR.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    },
+                    "to": {
+                        "startLines": "6",
+                        "startColumns": "4",
+                        "startOffsets": "487",
+                        "endColumns": "100",
+                        "endOffsets": "583"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\chr1203\\.gradle\\caches\\8.11.1\\transforms\\77d08ee97a7a0929b9f21dda428cd18a\\transformed\\browser-1.4.0\\res\\values-pt-rBR\\values-pt-rBR.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,170,269,381",
+                        "endColumns": "114,98,111,105",
+                        "endOffsets": "165,264,376,482"
+                    }
+                }
+            ]
+        }
+    ]
+}

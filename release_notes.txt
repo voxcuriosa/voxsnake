@@ -1,0 +1,16 @@
+Neon Snake - Update v3.19
+
+🚀 New Features:
+• Native Android Experience: Enjoy Neon Snake as a full dedicated app!
+• Head-to-Head Stats: Track your wins, losses, and draws against friends in local multiplayer.
+• Enhanced Profile: detailed stats view including your best scores and H2H records.
+
+✨ Improvements:
+• Smoother Gameplay: improved touch responsiveness and rendering performance.
+• Guest Sync: Seamlessly sync your high scores when upgrading from a guest account.
+• UI Polish: Cleaner menus, better layout on all screen sizes, and improved "Game Over" screen.
+
+🔧 Bug Fixes:
+• Fixed multiplayer syncing issues.
+• Resolved layout scaling on larger screens and tablets.
+• Various stability improvements.

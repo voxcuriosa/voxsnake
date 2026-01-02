@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "no.voxcuriosa.voxsnake",
+            "sha256_cert_fingerprints": [
+                "FF:FE:79:BB:BA:D3:01:8C:5C:5C:A2:75:AC:32:50:1C:4C:C4:39:C2:27:F1:65:2F:40:51:EF:59:8C:E4:41:24"
+            ]
+        }
+    }
+]

@@ -1,0 +1,10 @@
+no.voxcuriosa.voxsnake.app-core-1.1.0-0 C:\Users\chr1203\.gradle\caches\8.11.1\transforms\12388d32ff154de644b2df4a3cb5ad96\transformed\core-1.1.0\res
+no.voxcuriosa.voxsnake.app-androidbrowserhelper-2.5.0-1 C:\Users\chr1203\.gradle\caches\8.11.1\transforms\6071355b2723133aa2fcbafcfb6267b1\transformed\androidbrowserhelper-2.5.0\res
+no.voxcuriosa.voxsnake.app-browser-1.4.0-2 C:\Users\chr1203\.gradle\caches\8.11.1\transforms\77d08ee97a7a0929b9f21dda428cd18a\transformed\browser-1.4.0\res
+no.voxcuriosa.voxsnake.app-pngs-3 C:\Users\chr1203\OneDrive - Telemark fylkeskommune\Jobb\Diverse\Antigravity\voxsnake\android-twa\app\build\generated\res\pngs\release
+no.voxcuriosa.voxsnake.app-resValues-4 C:\Users\chr1203\OneDrive - Telemark fylkeskommune\Jobb\Diverse\Antigravity\voxsnake\android-twa\app\build\generated\res\resValues\release
+no.voxcuriosa.voxsnake.app-packageReleaseResources-5 C:\Users\chr1203\OneDrive - Telemark fylkeskommune\Jobb\Diverse\Antigravity\voxsnake\android-twa\app\build\intermediates\incremental\release\packageReleaseResources\merged.dir
+no.voxcuriosa.voxsnake.app-packageReleaseResources-6 C:\Users\chr1203\OneDrive - Telemark fylkeskommune\Jobb\Diverse\Antigravity\voxsnake\android-twa\app\build\intermediates\incremental\release\packageReleaseResources\stripped.dir
+no.voxcuriosa.voxsnake.app-release-7 C:\Users\chr1203\OneDrive - Telemark fylkeskommune\Jobb\Diverse\Antigravity\voxsnake\android-twa\app\build\intermediates\merged_res\release\mergeReleaseResources
+no.voxcuriosa.voxsnake.app-main-8 C:\Users\chr1203\OneDrive - Telemark fylkeskommune\Jobb\Diverse\Antigravity\voxsnake\android-twa\app\src\main\res
+no.voxcuriosa.voxsnake.app-release-9 C:\Users\chr1203\OneDrive - Telemark fylkeskommune\Jobb\Diverse\Antigravity\voxsnake\android-twa\app\src\release\res

@@ -20,7 +20,7 @@ echo.
 echo ========================================
 echo Deploying to FTP (voxcuriosa.no)...
 echo ========================================
-python deploy.py
+python upload_assets_final.py
 
 echo.
 echo ========================================

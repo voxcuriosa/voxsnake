@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "no.voxcuriosa.voxsnake.app-mergeReleaseResources-5:/values-en-rXC/values-en-rXC.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\chr1203\\.gradle\\caches\\8.11.1\\transforms\\77d08ee97a7a0929b9f21dda428cd18a\\transformed\\browser-1.4.0\\res\\values-en-rXC\\values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2,3,4,5",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,255,454,665",
+                        "endColumns": "199,198,210,201",
+                        "endOffsets": "250,449,660,862"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\chr1203\\.gradle\\caches\\8.11.1\\transforms\\12388d32ff154de644b2df4a3cb5ad96\\transformed\\core-1.1.0\\res\\values-en-rXC\\values-en-rXC.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "202",
+                        "endOffsets": "253"
+                    },
+                    "to": {
+                        "startLines": "6",
+                        "startColumns": "4",
+                        "startOffsets": "867",
+                        "endColumns": "202",
+                        "endOffsets": "1065"
+                    }
+                }
+            ]
+        }
+    ]
+}

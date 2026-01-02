@@ -1,0 +1,49 @@
+androidx.core.app.RemoteActionCompatParcelizer
+androidx.core.app.CoreComponentFactory
+androidx.core.graphics.drawable.IconCompatParcelizer
+androidx.lifecycle.CompositeGeneratedAdaptersObserver
+android.support.v4.graphics.drawable.IconCompatParcelizer
+com.google.androidbrowserhelper.trusted.FocusActivity
+androidx.versionedparcelable.ParcelImpl
+androidx.core.app.RemoteActionCompat
+no.voxcuriosa.voxsnake.DelegationService
+androidx.lifecycle.SingleGeneratedAdapterObserver
+androidx.core.content.FileProvider
+com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity
+androidx.lifecycle.FullLifecycleObserverAdapter
+no.voxcuriosa.voxsnake.LauncherActivity
+androidx.versionedparcelable.CustomVersionedParcelable
+no.voxcuriosa.voxsnake.Application
+androidx.core.graphics.drawable.IconCompat
+android.support.v4.app.RemoteActionCompatParcelizer
+androidx.annotation.Keep
+androidx.browser.browseractions.BrowserActionsFallbackMenuView
+com.google.androidbrowserhelper.trusted.WebViewFallbackActivity
+com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity
+androidx.lifecycle.ReflectiveGenericLifecycleObserver
+androidx.versionedparcelable.ParcelImpl: android.os.Parcelable$Creator CREATOR
+androidx.core.graphics.drawable.IconCompatParcelizer: IconCompatParcelizer()
+androidx.core.app.RemoteActionCompatParcelizer: RemoteActionCompatParcelizer()
+androidx.core.graphics.drawable.IconCompatParcelizer: androidx.core.graphics.drawable.IconCompat read(androidx.versionedparcelable.VersionedParcel)
+androidx.core.app.CoreComponentFactory: CoreComponentFactory()
+android.support.v4.app.RemoteActionCompatParcelizer: RemoteActionCompatParcelizer()
+androidx.core.app.RemoteActionCompatParcelizer: androidx.core.app.RemoteActionCompat read(androidx.versionedparcelable.VersionedParcel)
+androidx.core.content.FileProvider: FileProvider()
+no.voxcuriosa.voxsnake.DelegationService: DelegationService()
+android.support.v4.graphics.drawable.IconCompatParcelizer: androidx.core.graphics.drawable.IconCompat read(androidx.versionedparcelable.VersionedParcel)
+no.voxcuriosa.voxsnake.Application: Application()
+android.support.v4.graphics.drawable.IconCompatParcelizer: IconCompatParcelizer()
+androidx.core.graphics.drawable.IconCompat: IconCompat()
+com.google.androidbrowserhelper.trusted.FocusActivity: FocusActivity()
+com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity: ManageDataLauncherActivity()
+android.support.v4.graphics.drawable.IconCompatParcelizer: void write(androidx.core.graphics.drawable.IconCompat,androidx.versionedparcelable.VersionedParcel)
+android.support.v4.app.RemoteActionCompatParcelizer: androidx.core.app.RemoteActionCompat read(androidx.versionedparcelable.VersionedParcel)
+androidx.browser.browseractions.BrowserActionsFallbackMenuView: BrowserActionsFallbackMenuView(android.content.Context,android.util.AttributeSet)
+no.voxcuriosa.voxsnake.LauncherActivity: LauncherActivity()
+androidx.core.app.RemoteActionCompatParcelizer: void write(androidx.core.app.RemoteActionCompat,androidx.versionedparcelable.VersionedParcel)
+com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity: NotificationPermissionRequestActivity()
+androidx.core.app.RemoteActionCompat: RemoteActionCompat()
+androidx.versionedparcelable.CustomVersionedParcelable: CustomVersionedParcelable()
+androidx.core.graphics.drawable.IconCompatParcelizer: void write(androidx.core.graphics.drawable.IconCompat,androidx.versionedparcelable.VersionedParcel)
+com.google.androidbrowserhelper.trusted.WebViewFallbackActivity: WebViewFallbackActivity()
+android.support.v4.app.RemoteActionCompatParcelizer: void write(androidx.core.app.RemoteActionCompat,androidx.versionedparcelable.VersionedParcel)

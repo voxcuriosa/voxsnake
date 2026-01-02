@@ -255,6 +255,38 @@ if ($method === 'POST') {
         }
     }
 
+    // --- USER DELETE ACCOUNT (GDPR) ---
+    else if ($action === 'delete_account') {
+        // Double check password
+        $stmt = $conn->prepare("SELECT id, password_hash FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        if ($user = $res->fetch_assoc()) {
+            if (password_verify($password, $user['password_hash'])) {
+                $uid = $user['id'];
+
+                // 1. Delete Matches (Anonymize or Delete)
+                $stmtM = $conn->prepare("DELETE FROM matches WHERE LOWER(p1_name) = LOWER(?) OR LOWER(p2_name) = LOWER(?)");
+                $stmtM->bind_param("ss", $username, $username);
+                $stmtM->execute();
+
+                // 2. Delete Scores
+                $conn->query("DELETE FROM scores WHERE user_id = $uid");
+
+                // 3. Delete User
+                $conn->query("DELETE FROM users WHERE id = $uid");
+
+                echo json_encode(["success" => true, "message" => "Account deleted."]);
+            } else {
+                echo json_encode(["error" => "Wrong Password"]);
+            }
+        } else {
+            echo json_encode(["error" => "User not found"]);
+        }
+    }
+
     // --- ADMIN ACTIONS ---
     else if (strpos($action, 'admin_') === 0) {
         // 1. Verify Requestor IS Admin

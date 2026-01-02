@@ -43,8 +43,30 @@ window.addEventListener('DOMContentLoaded', () => {
     // alert("UPDATED: v6.64 LOADED!"); // Commented out to avoid annoying loop, using Version Text instead.
 
     // Better: Update the Version text immediately    // Final Version
+    // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    if (vCheck) vCheck.innerText = "v3.18";
+    const CURRENT_VER = "v3.35";
+    if (vCheck) vCheck.innerText = CURRENT_VER;
+
+    // --- NUCLEAR CACHE BUSTER ---
+    const bodyVer = document.body.getAttribute('data-version');
+    if (bodyVer !== "3.35") {
+        console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) { registration.unregister(); }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(function (names) {
+                for (let name of names) caches.delete(name);
+            });
+        }
+        // Force Reload with cache bypass
+        setTimeout(() => location.reload(true), 500);
+        return;
+    }
+    // ----------------------------
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) { log("CRITICAL: Canvas not found!"); return; }
@@ -97,6 +119,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const p2ScoreBox = document.getElementById('p2-score-box');
     const dynamicLegend = document.getElementById('dynamic-legend');
 
+    const btnStart2P = document.getElementById('btn-pre-2p'); // NEW
+    if (btn1P) btn1P.innerText = "START 1 PLAYER"; // FORCE UPDATE
+    const btnBackMain = document.getElementById('btn-back-main'); // NEW
+    const menuMainWrapper = document.getElementById('menu-main-wrapper'); // NEW
+    const menu2PWrapper = document.getElementById('menu-2p-wrapper'); // NEW
+
     const nameEntryScreen = document.getElementById('name-entry-screen');
     const playerNameInput = document.getElementById('player-name-input');
     const submitScoreBtn = document.getElementById('submit-score-btn');
@@ -129,6 +157,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // 2. iOS Logic (Manual Instruction)
         if (isIOS && btnInstall) {
+            // Keep the text defined in HTML or ensure it's set here
             btnInstall.innerText = "INSTALL APP (iOS: Share -> Add to Home)";
             btnInstall.classList.remove('hidden');
             btnInstall.style.display = 'block';
@@ -136,6 +165,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnInstall) {
+        // Force Text for iOS if detected (Double check)
+        if (isIOS) btnInstall.innerText = "INSTALL APP (iOS: Share -> Add to Home)";
         btnInstall.onclick = () => {
             if (isIOS) {
                 alert("To install on iOS:\n1. Tap the Share Button (Square with arrow)\n2. Scroll down to 'Add to Home Screen'\n3. Tap 'Add'");
@@ -319,6 +350,14 @@ window.addEventListener('DOMContentLoaded', () => {
             this.isDead = false;
             this.score = 0;
             this.growPending = 0;
+
+            // CONSTANTS
+            const GRID_SIZE = 20;
+            // v6.96: Fixed "Start 1 Player" casing
+            // v9.0: Re-write for cleaner logic
+            const CURRENT_VER = "v3.35";
+            const CANVAS_WIDTH = 800; // Virtual Width
+            const CANVAS_HEIGHT = 600; // Virtual Height
 
             // Effects
             this.ghostTimer = 0;
@@ -537,8 +576,35 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             if (this.btnBackHighScores) {
                 this.bindButton('btn-back-highscores', () => {
-                    this.showMainMenu();
+                    if (history.state && history.state.screen === 'high-scores') history.back();
+                    else this.showMainMenu();
                 });
+            }
+
+            // --- BACK GESTURE SUPPORT (v3.33) ---
+            window.addEventListener('popstate', (e) => {
+                this.handleBackGesture(e);
+            });
+            // ------------------------------------
+        }
+
+        handleBackGesture(e) {
+            // If pstate event fired, browser already went back. We just update UI.
+            // If we are getting back to "null" state (or root), show Main Menu.
+
+            // e.state is the state *we just arrived at*.
+            const state = e.state;
+
+            if (!state || !state.screen) {
+                // We are back at root (Main Menu)
+                this.showMainMenu(false); // false = don't push state
+            } else {
+                // We shouldn't really be navigating FORWARD with back button, 
+                // but if we popped to a state that HAS a screen, show it.
+                // However, our logic is mostly: Root -> Submenu.
+                // So popping usually goes to Root.
+                if (state.screen === 'main-menu') this.showMainMenu(false);
+                // Handle specific cases if we supported nested menus (e.g. Join -> Lobby)
             }
         }
 
@@ -590,10 +656,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 js.classList.remove('nuclear-hidden');
                 js.classList.add('active');
                 js.style.display = 'flex';
+
+                // BACK SUPPORT
+                history.pushState({ screen: 'join' }, 'Join Game', '#join');
             };
 
-            if (lobbyBack) lobbyBack.onclick = () => location.reload();
-            if (joinBack) joinBack.onclick = () => location.reload();
+            if (lobbyBack) lobbyBack.onclick = () => {
+                if (history.state && history.state.screen === 'host') history.back();
+                else location.reload();
+            };
+            if (joinBack) joinBack.onclick = () => {
+                if (history.state && history.state.screen === 'join') history.back();
+                else this.showMainMenu();
+            };
 
             if (btnConnect) {
                 btnConnect.onclick = () => {
@@ -664,6 +739,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (s) {
                 s.classList.remove('hidden'); s.classList.remove('nuclear-hidden');
                 s.classList.add('active'); s.style.display = 'block';
+                // BACK SUPPORT
+                history.pushState({ screen: 'login' }, 'Login', '#login');
             }
         }
 
@@ -673,6 +750,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (s) {
                 s.classList.remove('hidden'); s.classList.remove('nuclear-hidden');
                 s.classList.add('active'); s.style.display = 'block';
+                // BACK SUPPORT
+                history.pushState({ screen: 'register' }, 'Register', '#register');
             }
         }
 
@@ -682,6 +761,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (s) {
                 s.classList.remove('hidden'); s.classList.remove('nuclear-hidden');
                 s.classList.add('active'); s.style.display = 'block';
+                // BACK SUPPORT
+                history.pushState({ screen: 'recover' }, 'Recovery', '#recover');
             }
         }
 
@@ -700,12 +781,14 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // 2. Show Lobby
-            const lobby = document.getElementById('lobby-screen');
             if (lobby) {
                 lobby.classList.remove('hidden');
                 lobby.classList.remove('nuclear-hidden'); // UN-NUKE
                 lobby.classList.add('active');
                 lobby.style.display = 'flex'; // Force Flex
+
+                // BACK SUPPORT
+                history.pushState({ screen: 'host' }, 'Host Game', '#host');
             }
 
             // Reset Status
@@ -871,6 +954,35 @@ window.addEventListener('DOMContentLoaded', () => {
             };
 
             bindButton(btn1P, () => { log("START: Single"); this.startGame('single'); });
+
+            // NEW MENU NAVIGATION (Explicit Dispay Logic)
+            bindButton(btnStart2P, () => {
+                if (menuMainWrapper) menuMainWrapper.style.display = 'none';
+                if (menu2PWrapper) {
+                    menu2PWrapper.classList.remove('hidden');
+                    menu2PWrapper.style.display = 'flex';
+                    menu2PWrapper.style.flexDirection = 'column';
+                    menu2PWrapper.style.alignItems = 'center';
+                    // BACK SUPPORT
+                    history.pushState({ screen: '2p-menu' }, '2 Player Mode', '#2p');
+                }
+            });
+
+            bindButton(btnBackMain, () => {
+                if (history.state && history.state.screen === '2p-menu') {
+                    history.back(); // Native back triggers popstate -> main menu
+                } else {
+                    // Manual fallback
+                    if (menu2PWrapper) menu2PWrapper.style.display = 'none';
+                    if (menuMainWrapper) {
+                        menuMainWrapper.classList.remove('hidden');
+                        menuMainWrapper.style.display = 'flex';
+                        menuMainWrapper.style.flexDirection = 'column';
+                        menuMainWrapper.style.alignItems = 'center';
+                    }
+                }
+            });
+
             bindButton(btn2P, () => { log("START: Multi"); this.startGame('multi'); });
 
             bindButton(restartBtn, () => {
@@ -980,13 +1092,16 @@ window.addEventListener('DOMContentLoaded', () => {
                         aboutScreen.classList.remove('nuclear-hidden'); // CRITICAL FIX
                         aboutScreen.classList.add('active');
                         aboutScreen.style.display = 'block';
+                        // BACK SUPPORT
+                        history.pushState({ screen: 'about' }, 'About', '#about');
                     }
                 });
             }
 
             if (aboutBackBtn) {
                 bindButton(aboutBackBtn, () => {
-                    this.showMainMenu();
+                    if (history.state && history.state.screen === 'about') history.back();
+                    else this.showMainMenu();
                 });
             }
 
@@ -1001,10 +1116,75 @@ window.addEventListener('DOMContentLoaded', () => {
                     contactEmail.onclick = null;
                 };
             }
+
+            // DELETE ACCOUNT BUTTON (v3.20)
+            const btnProfileDelete = document.getElementById('btn-profile-delete');
+
+            // --- MISSING BINDINGS RE-BIND (Fix for Back Gesture & Missing logic) ---
+            const btnAdmin = document.getElementById('btn-admin-panel');
+            const btnAdminClose = document.getElementById('btn-admin-close');
+            const btnProfileBack = document.getElementById('btn-profile-back');
+
+            if (btnAdmin) {
+                bindButton(btnAdmin, () => {
+                    this.hideAllScreens();
+                    const adminScreen = document.getElementById('admin-screen');
+                    if (adminScreen) {
+                        adminScreen.classList.remove('hidden');
+                        adminScreen.classList.remove('nuclear-hidden');
+                        adminScreen.classList.add('active');
+                        adminScreen.style.display = 'block';
+                        this.loadAdmin();
+                        // BACK SUPPORT
+                        history.pushState({ screen: 'admin' }, 'Admin', '#admin');
+                    }
+                });
+            }
+
+            if (btnAdminClose) {
+                bindButton(btnAdminClose, () => {
+                    if (history.state && history.state.screen === 'admin') history.back();
+                    else this.showMainMenu();
+                });
+            }
+
+            if (btnProfileBack) {
+                bindButton(btnProfileBack, () => {
+                    if (history.state && history.state.screen === 'profile') history.back();
+                    else this.showMainMenu();
+                });
+            }
+            // -----------------------------------------------------------------------
+
+            if (btnProfileDelete) {
+                bindButton(btnProfileDelete, () => {
+                    if (confirm("Are you sure you want to PERMANENTLY delete your account? Stats and High Scores will be lost.")) {
+                        const pwd = prompt("Please enter your password to confirm deletion:");
+                        if (pwd) {
+                            this.deleteMyAccount(pwd);
+                        }
+                    }
+                });
+            }
         }
 
         showMainMenu() {
             this.isRunning = false;
+            // RESET MENU STATE (v9.0)
+            const mm = document.getElementById('menu-main-wrapper');
+            const m2 = document.getElementById('menu-2p-wrapper');
+
+            // Defaut: Show Main, Hide 2P
+            if (mm) {
+                mm.classList.remove('hidden');
+                mm.style.display = 'flex';
+                mm.style.flexDirection = 'column';
+                mm.style.alignItems = 'center';
+            }
+            if (m2) {
+                m2.classList.add('hidden');
+                m2.style.display = 'none';
+            }
             this.isPaused = false;
             this.gameMode = null;
 
@@ -1270,9 +1450,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         showHighScoreScreen() {
-            if (nameEntryScreen) nameEntryScreen.classList.add('hidden');
-            if (mainMenu) mainMenu.classList.add('hidden');
-            if (gameOverScreen) gameOverScreen.classList.add('hidden');
+            this.hideAllScreens();
 
             const highScoreScreen = document.getElementById('high-score-screen');
             if (highScoreScreen) {
@@ -1280,6 +1458,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 highScoreScreen.classList.remove('nuclear-hidden');
                 highScoreScreen.classList.add('active');
                 highScoreScreen.style.display = 'flex';
+
+                // BACK SUPPORT
+                history.pushState({ screen: 'high-scores' }, 'High Scores', '#high-scores');
 
                 // Set active tab logic
                 this.updateTabs(this.viewingPlatform || this.platform);
@@ -1621,8 +1802,8 @@ window.addEventListener('DOMContentLoaded', () => {
             // 3. UI Updates based on device
             const btn1P = document.getElementById('btn-1p');
             if (btn1P) {
-                if (window.innerWidth < 768) btn1P.innerText = "START GAME";
-                else btn1P.innerText = "1 PLAYER";
+                if (window.innerWidth < 768) btn1P.innerText = "START 1 PLAYER";
+                else btn1P.innerText = "START 1 PLAYER";
             }
 
             this.draw();
@@ -1985,6 +2166,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 const dynamicLegend = document.getElementById('dynamic-legend');
                 const goLoginBtn = document.getElementById('go-login-btn');
                 const playerNameInput = document.getElementById('player-name-input'); // Re-define safely
+                const h2hBox = document.getElementById('h2h-game-over-stats');
+                if (h2hBox) h2hBox.style.display = 'none'; // Hide by default (Show only in Multi)
 
                 mainMenu.classList.remove('active');
                 mainMenu.classList.add('hidden');
@@ -2181,7 +2364,8 @@ window.addEventListener('DOMContentLoaded', () => {
                         msg = "SCORE SAVED!";
                         color = "#00ffff";
                     }
-                    const statsContainer = document.getElementById('h2h-stats-container');
+                    // FIXED ID BUG (v9.0) - Was h2h-stats-container
+                    const statsContainer = document.getElementById('h2h-game-over-stats');
                     if (statsContainer) statsContainer.innerHTML = "";
                 }
 
@@ -3395,11 +3579,15 @@ window.addEventListener('DOMContentLoaded', () => {
                     profileScreen.classList.add('active');
                     profileScreen.style.display = 'block';
                     this.updateProfileUI();
+                    // BACK SUPPORT
+                    history.pushState({ screen: 'profile' }, 'Profile', '#profile');
                 } else {
                     loginScreen.classList.remove('hidden');
                     loginScreen.classList.remove('nuclear-hidden');
                     loginScreen.classList.add('active');
                     loginScreen.style.display = 'block';
+                    // BACK SUPPORT
+                    history.pushState({ screen: 'login' }, 'Login', '#login');
                 }
             };
         }
@@ -3573,19 +3761,68 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        async deleteMyAccount(password) {
+            if (!this.currentUser) return;
+            try {
+                const response = await fetch('auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete_account', username: this.currentUser.name, password: password })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("Account Deleted. Goodbye!");
+                    this.currentUser = null;
+                    localStorage.removeItem('snake_user');
+                    this.showMainMenu();
+                } else {
+                    alert("Deletion Failed: " + data.error);
+                }
+            } catch (e) {
+                alert("Network Error: " + e);
+            }
+        }
+
         async updateProfileUI() {
             if (!this.currentUser) return;
             const adminText = (this.currentUser.is_admin == 1) ? ' <span style="color:gold; font-size:0.8rem;">(ADMIN)</span>' : '';
             document.getElementById('profile-name').innerHTML = this.currentUser.name + adminText;
 
-            // Show/Hide Admin Button
+            // Show/Hide Admin Button & Delete Button
             const btnAdmin = document.getElementById('btn-admin-panel');
-            if (this.currentUser.is_admin == 1 && btnAdmin) {
-                btnAdmin.classList.remove('hidden');
-                btnAdmin.style.display = 'block';
-            } else if (btnAdmin) {
-                btnAdmin.classList.add('hidden');
-                btnAdmin.style.display = 'none';
+            const btnDelete = document.getElementById('btn-profile-delete');
+
+            // NEW ADMIN CLOSE LOGIC (v9.0)
+            const btnAdminClose = document.getElementById('btn-admin-close');
+            if (btnAdminClose) {
+                btnAdminClose.onclick = () => {
+                    document.getElementById('admin-screen').classList.add('hidden');
+                    // Return to Profile
+                    const ps = document.getElementById('profile-screen');
+                    if (ps) {
+                        ps.classList.remove('hidden');
+                        ps.classList.add('active');
+                        ps.style.display = 'block';
+                    }
+                };
+            }
+
+            if (this.currentUser.is_admin == 1) {
+                // IS ADMIN
+                if (btnAdmin) {
+                    btnAdmin.classList.remove('hidden');
+                    btnAdmin.style.display = 'block';
+                }
+                // Hide Delete for Admin
+                if (btnDelete) btnDelete.style.display = 'none';
+            } else {
+                // NOT ADMIN
+                if (btnAdmin) {
+                    btnAdmin.classList.add('hidden');
+                    btnAdmin.style.display = 'none';
+                }
+                // Show Delete for Normal User
+                if (btnDelete) btnDelete.style.display = 'block';
             }
 
             // Fetch Real Stats

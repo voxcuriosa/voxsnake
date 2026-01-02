@@ -1,111 +1,81 @@
 import re
-import sys
-
-FILE_PATH = 'index.html'
+import os
 
 def bump_version():
-    try:
-        with open(FILE_PATH, 'r', encoding='utf-8') as f:
-            content = f.read()
+    # 1. READ CURRENT VERSION FROM game_v9.js
+    game_js_path = 'game_v9.js'
+    index_html_path = 'index.html'
+    sw_js_path = 'sw.js'
 
-        # Regex to find version "v3.4" or similar
-        # We look for the specific pattern in the "HOW TO PLAY" section or the script tag
-        # Pattern: v(\d+\.\d+)
-        
-        # We want to find the current version first. 
-        # Let's search for the one in the span first to be safe: <span ...>v3.4</span>
-        # Or generally vX.Y
-        
-        # Heuristic: Find first occurrence of vX.Y that looks like a version
-        # Actually, let's look for the one in the script tag '?v=3.4' as the source of truth if possible, or just all of them.
-        
-        # User request: "endre versjonsnummer med 0.1" (change version number by 0.1)
-        
-        # Let's find all occurrences of v(\d+\.\d+) and update them IF they are the same version.
-        
-        # 1. Extract current version
-        # 1. Extract current version
-        match = re.search(r'(?:v=|v)(\d+\.\d+)', content)
-        if not match:
-            print("No version found in index.html (looking for vX.Y)")
-            return
+    if not os.path.exists(game_js_path):
+        print(f"Error: {game_js_path} not found")
+        return
 
-        current_ver_str = match.group(1)
-        current_ver = float(current_ver_str)
-        # Force Reset to 1.00 if we are in the 8.x chaos, or just increment by 0.01
-        if current_ver >= 8.0:
-            new_ver = 1.00
-        else:
-            new_ver = round(current_ver + 0.01, 2)
-        new_ver_str = str(new_ver)
+    with open(game_js_path, 'r', encoding='utf-8') as f:
+        game_js_content = f.read()
+
+    # Find ANY current version to start from
+    # We prefer the one in CURRENT_VER
+    ver_match = re.search(r'const CURRENT_VER = "v(\d+\.\d+)";', game_js_content)
+    if not ver_match:
+        print("Error: Could not find CURRENT_VER in game_v9.js")
+        return
+
+    current_ver_str = ver_match.group(1)
+    current_ver = float(current_ver_str)
+    new_ver = round(current_ver + 0.01, 2)
+    new_ver_str = f"{new_ver:.2f}"
+    
+    print(f"Bumping Game Version: {current_ver_str} -> {new_ver_str}")
+
+    # UPDATE game_v9.js (Global Regex Replace)
+    # 1. Update const CURRENT_VER = "v..."
+    new_game_js = re.sub(r'const CURRENT_VER = "v\d+\.\d+";', f'const CURRENT_VER = "v{new_ver_str}";', game_js_content)
+    
+    # 2. Update bodyVer check: if (bodyVer !== "3.32")
+    # We look for pattern: if (bodyVer !== "\d+\.\d+")
+    # Be careful not to replace other stuff.
+    new_game_js = re.sub(r'if \(bodyVer !== "\d+\.\d+"\)', f'if (bodyVer !== "{new_ver_str}")', new_game_js)
+
+    with open(game_js_path, 'w', encoding='utf-8') as f:
+        f.write(new_game_js)
+    print(f"Updated {game_js_path}")
+
+    # UPDATE index.html
+    # 1. data-version="3.33"
+    # 2. game_v9.js?v=3.33
+    if os.path.exists(index_html_path):
+        with open(index_html_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
         
-        print(f"Bumping version from {current_ver_str} to {new_ver_str}")
+        # Replace data-version
+        new_html = re.sub(r'data-version="\d+\.\d+"', f'data-version="{new_ver_str}"', html_content)
+        # Replace script src version (?v=...)
+        new_html = re.sub(r'game_v9\.js\?v=\d+\.\d+', f'game_v9.js?v={new_ver_str}', new_html)
         
-        # 2. Replace all occurrences of the old version string with the new one
-        # BE CAREFUL: "1.5" (style) vs "3.4" (game).
-        # Should we update ALL numbers? 
-        # The user said "endre versjonsnummer" (singular/general). 
-        # Usually style.css version is separate, but maybe they want everything updated?
-        # Let's stick to the high number (3.4) found in the Game Title/Instructions.
-        # "style.css?v=1.5" might be old.
-        # "game_v2.js?v=3.4" matches the text "v3.4".
+        with open(index_html_path, 'w', encoding='utf-8') as f:
+            f.write(new_html)
+        print(f"Updated {index_html_path}")
+
+    # UPDATE sw.js CACHE VERSION
+    # const CACHE_NAME = 'neon-snake-v54-network-first';
+    if os.path.exists(sw_js_path):
+        with open(sw_js_path, 'r', encoding='utf-8') as f:
+            sw_content = f.read()
         
-        # Let's targeting specifically the value 3.4 (or whatever the main one is).
-        # We will look for the highest version number found ? Or just specific strings.
-        
-        # Strategy: Update 'v3.4' -> 'v3.5' and '?v=3.4' -> '?v=3.5'.
-        
-        # Let's update explicitly the `v{current_ver_str}` pattern to `v{new_ver_str}`
-        # AND `?v={current_ver_str}` to `?v={new_ver_str}`
-        
-        # Actually simpler: just replace logic.
-        
-        # Safety: We assume the user wants the MAIN version updated.
-        # If I see v1.5 and v3.4, I should probably update 3.4.
-        # Let's find the specific one in the "HOW TO PLAY" section as a reference anchor if needed, 
-        # but regex replacing specific values is safer.
-        
-        # Let's find the max version in the file to be safe?
-        matches = re.findall(r'[vV=](\d+\.\d+)', content)
-        if not matches:
-             print("No versions found.")
-             return
-             
-        # Filter to likely versions (not css 1.0 if there is a 3.4)
-        # matches might be ['1.5', '3.4', '3.4']
-        # We want to bump 3.4.
-        
-        max_ver = 0.0
-        for m in matches:
-            try:
-                val = float(m)
-                if val > max_ver:
-                    max_ver = val
-            except:
-                pass
-                
-        if max_ver == 0.0:
-             print("Could not determine version.")
-             return
-             
-        old_ver_str = str(max_ver)
-        new_ver_2 = round(max_ver + 0.01, 2)
-        new_ver_str_2 = str(new_ver_2)
-        
-        print(f"Detected main version: {old_ver_str}. Bumping to {new_ver_str_2}...")
-        
-        # Replace
-        new_content = content.replace(f"v{old_ver_str}", f"v{new_ver_str_2}")
-        new_content = new_content.replace(f"v={old_ver_str}", f"v={new_ver_str_2}")
-        
-        with open(FILE_PATH, 'w', encoding='utf-8') as f:
-            f.write(new_content)
+        # Find vXX
+        sw_match = re.search(r'neon-snake-v(\d+)-network-first', sw_content)
+        if sw_match:
+            current_sw_ver = int(sw_match.group(1))
+            new_sw_ver = current_sw_ver + 1
+            print(f"Bumping SW Cache: v{current_sw_ver} -> v{new_sw_ver}")
             
-        print("Version bumped successfully.")
+            new_sw = sw_content.replace(f'neon-snake-v{current_sw_ver}-network-first', f'neon-snake-v{new_sw_ver}-network-first')
+            with open(sw_js_path, 'w', encoding='utf-8') as f:
+                f.write(new_sw)
+            print(f"Updated {sw_js_path}")
+        else:
+            print("Warning: Could not find CACHE_NAME pattern in sw.js")
 
-    except Exception as e:
-        print(f"Error bumping version: {e}")
-        sys.exit(1)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     bump_version()
