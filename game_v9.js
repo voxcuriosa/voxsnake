@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.37";
+    const CURRENT_VER = "v3.38";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.37") {
+    if (bodyVer !== "3.38") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -355,7 +355,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.37";
+            const CURRENT_VER = "v3.38";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 
@@ -770,6 +770,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         startHost() {
+            alert("DEBUG: startHost() called"); // TRACE 1
             this.stopGame(); // KILL ANY RUNNING GAME
 
             // 1. Reset UI State completely
@@ -806,6 +807,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const hostId = "vs_" + shortId;
 
             try {
+                alert("DEBUG: Creating new Peer with ID: " + hostId); // TRACE 2
                 // Init Peer (DEBUG MODE)
                 this.peer = new Peer(hostId, {
                     debug: 2 // Print warnings to console
@@ -821,6 +823,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }, 5000);
 
                 this.peer.on('open', (id) => {
+                    alert("DEBUG: Peer Open Success!"); // TRACE 3
                     clearTimeout(connTimeout); // Success!
                     console.log('My peer ID is: ' + id);
 
