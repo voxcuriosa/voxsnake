@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.35";
+    const CURRENT_VER = "v3.36";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.35") {
+    if (bodyVer !== "3.36") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -355,7 +355,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.35";
+            const CURRENT_VER = "v3.36";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 
@@ -674,7 +674,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 btnConnect.onclick = () => {
                     const codeInput = document.getElementById('join-id-input');
                     if (codeInput && codeInput.value) {
-                        this.joinGame(codeInput.value);
+                        // v3.36: Auto-prefix with 'vs_' to match Host
+                        const raw = codeInput.value.trim().toUpperCase();
+                        const finalId = raw.startsWith('VS_') ? raw : 'vs_' + raw;
+                        this.joinGame(finalId);
                     } else {
                         alert("Please enter a code!");
                     }
@@ -797,7 +800,10 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('host-status').style.color = "#ffff00";
 
             // Generate Random ID (4 letters)
-            const hostId = Math.random().toString(36).substring(2, 6).toUpperCase();
+            // Generate Random ID (4 letters)
+            const shortId = Math.random().toString(36).substring(2, 6).toUpperCase();
+            // v3.36: Namespace checks (Prefix to avoid collision)
+            const hostId = "vs_" + shortId;
 
             try {
                 // Init Peer
@@ -805,11 +811,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 this.peer.on('open', (id) => {
                     console.log('My peer ID is: ' + id);
-                    document.getElementById('host-id-display').innerText = id;
+                    // Display SHORT ID to user
+                    document.getElementById('host-id-display').innerText = shortId;
                     document.getElementById('host-status').innerText = "WAITING FOR PLAYER 2...";
                     document.getElementById('host-status').style.color = "#aaa";
 
-                    // Gen QR
+                    // Gen QR (Must include full ID)
+                    // URL Param ?join=vs_ABCD
                     const url = location.protocol + '//' + location.host + location.pathname + '?join=' + id;
                     document.getElementById('qrcode').innerHTML = "";
                     new QRCode(document.getElementById("qrcode"), { text: url, width: 128, height: 128 });
