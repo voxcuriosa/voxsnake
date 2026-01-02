@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.36";
+    const CURRENT_VER = "v3.37";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.36") {
+    if (bodyVer !== "3.37") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -355,7 +355,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.36";
+            const CURRENT_VER = "v3.37";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 
@@ -806,11 +806,24 @@ window.addEventListener('DOMContentLoaded', () => {
             const hostId = "vs_" + shortId;
 
             try {
-                // Init Peer
-                this.peer = new Peer(hostId);
+                // Init Peer (DEBUG MODE)
+                this.peer = new Peer(hostId, {
+                    debug: 2 // Print warnings to console
+                });
+
+                // TIMEOUT CHECK
+                const connTimeout = setTimeout(() => {
+                    if (this.peer && !this.peer.open) {
+                        alert("ERROR: Connection to PeerServer Timed Out (5s).\nCheck you internet connection or firewall.");
+                        document.getElementById('host-status').innerText = "CONNECTION FAILED (TIMEOUT)";
+                        document.getElementById('host-status').style.color = "red";
+                    }
+                }, 5000);
 
                 this.peer.on('open', (id) => {
+                    clearTimeout(connTimeout); // Success!
                     console.log('My peer ID is: ' + id);
+
                     // Display SHORT ID to user
                     document.getElementById('host-id-display').innerText = shortId;
                     document.getElementById('host-status').innerText = "WAITING FOR PLAYER 2...";
@@ -851,8 +864,11 @@ window.addEventListener('DOMContentLoaded', () => {
                 });
 
                 this.peer.on('error', (err) => {
+                    clearTimeout(connTimeout);
                     console.error("PeerJS Error:", err);
-                    alert("HOST ERROR: " + err.type);
+                    alert("HOST ERROR: " + (err.type || err) + "\n\nTry refreshing or checking internet.");
+                    document.getElementById('host-status').innerText = "ERROR: " + (err.type || "UNKNOWN");
+                    document.getElementById('host-status').style.color = "red";
                 });
 
                 this.peer.on('connection', (conn) => {
