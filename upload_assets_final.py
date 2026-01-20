@@ -15,9 +15,15 @@ ftp = FTP_TLS(config['host'])
 ftp.login(config['username'], config['password'])
 ftp.prot_p()
 
-# 1. Upload Icons to public_html
-print("Uploading Icons...")
-ftp.cwd('/public_html')
+# 1. Upload Assets to /public_html/snake
+print("Uploading Assets to /snake...")
+try:
+    ftp.cwd('/public_html/snake')
+except:
+    ftp.cwd('/public_html')
+    ftp.mkd('snake')
+    ftp.cwd('snake')
+
 files_to_upload = ['icon_192.png', 'icon_512.png', 'game_v9.js', 'index.html', 'style.css', 'sw.js', 'manifest.json', 'api.php', 'api_sql.php']
 
 for file in files_to_upload:
@@ -28,18 +34,12 @@ for file in files_to_upload:
     else:
         print(f"Skipped {file} (Not found)")
 
-# 1.5 Cleanup (Remove temporary scripts)
+# 2. Upload assetlinks.json to .well-known at ROOT
+print("Uploading AssetLinks to root...")
 try:
-    ftp.delete('cleanup_scores.php')
-    print("Deleted cleanup_scores.php from server")
+    ftp.cwd('/public_html/.well-known')
 except:
-    pass
-
-# 2. Upload assetlinks.json to .well-known
-print("Uploading AssetLinks...")
-try:
-    ftp.cwd('.well-known')
-except:
+    ftp.cwd('/public_html')
     ftp.mkd('.well-known')
     ftp.cwd('.well-known')
 
