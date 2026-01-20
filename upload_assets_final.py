@@ -18,7 +18,7 @@ ftp.prot_p()
 # 1. Upload Icons to public_html
 print("Uploading Icons...")
 ftp.cwd('/public_html')
-files_to_upload = ['icon_192.png', 'icon_512.png', 'game_v9.js', 'index.html', 'style.css', 'sw.js', 'manifest.json', 'api.php', 'api_sql.php', 'cleanup_scores.php']
+files_to_upload = ['icon_192.png', 'icon_512.png', 'game_v9.js', 'index.html', 'style.css', 'sw.js', 'manifest.json', 'api.php', 'api_sql.php']
 
 for file in files_to_upload:
     if os.path.exists(file):
@@ -27,6 +27,13 @@ for file in files_to_upload:
         print(f"Uploaded {file}")
     else:
         print(f"Skipped {file} (Not found)")
+
+# 1.5 Cleanup (Remove temporary scripts)
+try:
+    ftp.delete('cleanup_scores.php')
+    print("Deleted cleanup_scores.php from server")
+except:
+    pass
 
 # 2. Upload assetlinks.json to .well-known
 print("Uploading AssetLinks...")
