@@ -18,7 +18,7 @@ ftp.prot_p()
 # 1. Upload Icons to public_html
 print("Uploading Icons...")
 ftp.cwd('/public_html')
-files_to_upload = ['icon_192.png', 'icon_512.png', 'game_v9.js', 'index.html', 'style.css', 'sw.js', 'manifest.json']
+files_to_upload = ['icon_192.png', 'icon_512.png', 'game_v9.js', 'index.html', 'style.css', 'sw.js', 'manifest.json', 'api.php', 'api_sql.php', 'cleanup_scores.php']
 
 for file in files_to_upload:
     if os.path.exists(file):
