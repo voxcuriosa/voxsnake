@@ -41,7 +41,12 @@ else if ($method === 'POST') {
         exit;
     }
 
-    $name = isset($input['name']) ? strtoupper(trim($input['name'])) : 'ANON';
+    // [v3.41] Block anonymous submissions
+    $name = isset($input['name']) ? strtoupper(trim($input['name'])) : '';
+    if (empty($name) || $name === 'ANON' || $name === 'ANONYMOUS') {
+        echo json_encode(['success' => false, 'error' => 'Anonymous scores are not permitted. Please provide a name.']);
+        exit;
+    }
     $score = isset($input['score']) ? intval($input['score']) : 0;
     $type = isset($input['type']) ? $input['type'] : 'mobile';
 

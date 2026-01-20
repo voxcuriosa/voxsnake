@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.40";
+    const CURRENT_VER = "v3.41";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.40") {
+    if (bodyVer !== "3.41") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -355,7 +355,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.40";
+            const CURRENT_VER = "v3.41";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 
@@ -1422,8 +1422,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         submitHighScore() {
-            // If Logged In, use that name. If not, use Input or "Anonymous"
-            let name = "Anonymous";
+            // If Logged In, use that name. If not, use Input. Anonymous submissions no longer allowed.
+            let name = "";
             if (this.currentUser) {
                 name = this.currentUser.name;
             } else if (playerNameInput) {
@@ -1432,6 +1432,13 @@ window.addEventListener('DOMContentLoaded', () => {
                     name = val.toUpperCase();
                     localStorage.setItem('playerName', name); // Remember manually entered name
                 }
+            }
+
+            // [v3.41] Enforce name validation
+            if (!name) {
+                alert("Please enter your name or log in to submit your score!");
+                if (playerNameInput) playerNameInput.focus();
+                return;
             }
 
             const score = this.currentPendingScore;
