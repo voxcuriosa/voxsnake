@@ -1,0 +1,4 @@
+#Tue Jan 20 18:30:43 CET 2026
+base.0=C\:\\Users\\chr1203\\OneDrive - Telemark fylkeskommune\\Jobb\\Diverse\\Antigravity\\voxsnake\\android-twa\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

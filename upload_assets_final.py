@@ -24,7 +24,7 @@ except:
     ftp.mkd('snake')
     ftp.cwd('snake')
 
-files_to_upload = ['icon_192.png', 'icon_512.png', 'game_v9.js', 'index.html', 'style.css', 'sw.js', 'manifest.json', 'api.php', 'api_sql.php']
+files_to_upload = ['icon_192.png', 'icon_512.png', 'game_v9.js', 'index.html', 'style.css', 'sw.js', 'manifest.json', 'api.php', 'api_sql.php', 'auth.php', 'db_config.php', 'api_matches.php', 'setup_matches.php']
 
 for file in files_to_upload:
     if os.path.exists(file):

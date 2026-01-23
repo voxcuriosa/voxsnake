@@ -17,11 +17,11 @@
   "maskableIconUrl": "https://voxcuriosa.no/snake/icon_512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
-    "path": "C:\\Users\\chr1203\\OneDrive - Telemark fylkeskommune\\Jobb\\Diverse\\Antigravity\\voxsnake\\android-twa\\android.keystore",
+    "path": "android_new.keystore",
     "alias": "android"
   },
-  "appVersionName": "1",
-  "appVersionCode": 1,
+  "appVersionName": "3",
+  "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://voxcuriosa.no/snake/manifest.json",
@@ -43,5 +43,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "1"
+  "appVersion": "3"
 }

@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.44";
+    const CURRENT_VER = "v3.45";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.44") {
+    if (bodyVer !== "3.45") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -103,6 +103,27 @@ window.addEventListener('DOMContentLoaded', () => {
     }, { passive: false });
     if (canvas) canvas.style.touchAction = 'none';
     // -----------------------------------
+
+    // --- VISIT LOGGING (v3.45) ---
+    function logAppVisit() {
+        const payload = {
+            action: 'log_visit',
+            app: 'snake',
+            device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Mobile' : 'PC',
+            screen_resolution: window.screen.width + "x" + window.screen.height,
+            referrer: document.referrer || 'Direct',
+            language: navigator.language || 'en'
+        };
+
+        // Attempt logging to historyquiz endpoint
+        fetch('../historyquiz/auth_v2.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(err => console.log("Analytics skipped."));
+    }
+    logAppVisit();
+    // -----------------------------
 
     // Game Constants
     const GRID_SIZE = 20;
@@ -355,7 +376,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.44";
+            const CURRENT_VER = "v3.45";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 
@@ -570,6 +591,7 @@ window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => this.resize(), 50);
             window.addEventListener('resize', () => this.resize());
             this.loadHighScores();
+            this.loadSession(); // LOAD COOKIE SESSION (v9.1)
 
             if (!this.autoJoining) {
                 this.showMainMenu();
@@ -586,6 +608,69 @@ window.addEventListener('DOMContentLoaded', () => {
                 this.handleBackGesture(e);
             });
             // ------------------------------------
+        }
+
+        // --- COOKIE HELPERS (v9.1) ---
+        setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            // Path scoped to /snake/ for isolation
+            document.cookie = name + "=" + (value || "") + expires + "; path=/snake/";
+        }
+
+        getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        eraseCookie(name) {
+            document.cookie = name + '=; Path=/snake/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        }
+
+        saveSession(user, remember) {
+            const val = JSON.stringify(user);
+            if (remember) {
+                this.setCookie('snake_user', val, 365); // 1 Year
+            } else {
+                this.setCookie('snake_user', val, null); // Session
+            }
+        }
+
+        loadSession() {
+            // Priority 1: Cookie
+            const cookieVal = this.getCookie('snake_user');
+            if (cookieVal) {
+                try {
+                    this.currentUser = JSON.parse(cookieVal);
+                    console.log("Restored Session from Cookie:", this.currentUser.name);
+                    // Sync LocalStorage for redundant scripts
+                    localStorage.setItem('snake_user', cookieVal);
+                    return;
+                } catch (e) {
+                    console.error("Cookie Parse Error", e);
+                }
+            }
+
+            // Priority 2: LocalStorage (Migration / Fallback)
+            const lsVal = localStorage.getItem('snake_user');
+            if (lsVal) {
+                try {
+                    this.currentUser = JSON.parse(lsVal);
+                    console.log("Restored Session from LS:", this.currentUser.name);
+                    // Migrate to Session Cookie (default)
+                    this.setCookie('snake_user', lsVal, null);
+                } catch (e) { }
+            }
         }
 
         handleBackGesture(e) {
@@ -2135,6 +2220,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
         handleInput(e) {
+            // FIX: Robust check for e and e.key (v9.2)
+            if (!e || !e.key) return;
+
             if (e.key.toLowerCase() === 'p' && this.isRunning && !this.isClient) {
                 this.togglePause();
                 return;
@@ -3636,7 +3724,12 @@ window.addEventListener('DOMContentLoaded', () => {
                         // alert("Login Successful! Welcome, " + data.user.name);
                         this.currentUser = data.user;
                         this.isGuest = false; // reset
-                        localStorage.setItem('snake_user', JSON.stringify(data.user));
+
+                        // COOKIE LOGIC (v9.1)
+                        const rememberMe = document.getElementById('login-remember') ? document.getElementById('login-remember').checked : false;
+                        this.saveSession(data.user, rememberMe);
+
+                        localStorage.setItem('snake_user', JSON.stringify(data.user)); // Keep for legacy/redundancy
                         localStorage.setItem('playerName', data.user.name);
 
                         // RETROACTIVE STAT SAVING (v3.14 - Async Fix)
@@ -3717,6 +3810,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (data.success) {
                         alert("Account Created! Logging you in...");
                         this.currentUser = data.user;
+
+                        // COOKIE LOGIC (v9.1)
+                        // For register, we default to session cookie (false) or could add a checkbox later
+                        this.saveSession(data.user, false);
+
                         localStorage.setItem('snake_user', JSON.stringify(data.user));
                         localStorage.setItem('playerName', data.user.name);
 
@@ -3787,6 +3885,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (confirm("Log out?")) {
                 this.currentUser = null;
                 localStorage.removeItem('snake_user');
+                this.eraseCookie('snake_user');
                 alert("Logged out.");
                 this.showMainMenu();
             }

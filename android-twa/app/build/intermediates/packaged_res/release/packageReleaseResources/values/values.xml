@@ -23,12 +23,12 @@
     
   </string>
     <string name="fallbackType" translatable="false">customtabs</string>
-    <string name="fullScopeUrl" translatable="false">https://voxcuriosa.no/</string>
+    <string name="fullScopeUrl" translatable="false">https://voxcuriosa.no/snake/</string>
     <string name="generatorApp" translatable="false">bubblewrap-cli</string>
     <string name="hostName" translatable="false">voxcuriosa.no</string>
-    <string name="launchUrl" translatable="false">https://voxcuriosa.no/index.html</string>
+    <string name="launchUrl" translatable="false">https://voxcuriosa.no/snake/index.html</string>
     <string name="launcherName" translatable="false">NeonSnake</string>
     <string name="orientation" translatable="false">portrait</string>
     <string name="providerAuthority" translatable="false">no.voxcuriosa.voxsnake.fileprovider</string>
-    <string name="webManifestUrl" translatable="false">https://voxcuriosa.no/manifest.json</string>
+    <string name="webManifestUrl" translatable="false">https://voxcuriosa.no/snake/manifest.json</string>
 </resources>

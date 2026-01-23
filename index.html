@@ -50,7 +50,7 @@
     <meta http-equiv="Expires" content="0">
 </head>
 
-<body data-version="3.44">
+<body data-version="3.45">
     <main class="main-wrapper">
         <h1 class="neon-title">NEON SNAKE</h1>
 
@@ -157,7 +157,7 @@
                         <button id="btn-1p" class="neon-btn">START 1 PLAYER</button>
                         <button id="btn-pre-2p" class="neon-btn">START 2 PLAYER</button>
                     </div>
-                    <script src="game_v9.js?v=3.44"></script>
+                    <script src="game_v9.js?v=3.45"></script>
                     <!-- 2 PLAYER SUB MENU -->
                     <div id="menu-2p-wrapper" class="hidden"
                         style="width:100%; display:flex; flex-direction:column; align-items:center;">
@@ -220,16 +220,7 @@
                     <button id="lobby-back-btn" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
                 </div>
 
-                <!-- JOIN SCREEN (Restored) -->
-                <div id="join-screen" class="menu-screen hidden" style="flex-direction:column; align-items:center;">
-                    <h2 class="neon-title">JOIN GAME</h2>
-                    <div style="font-size:0.8rem; color:#aaa; margin-bottom:10px;">ENTER HOST CODE:</div>
-                    <input type="text" id="join-id-input" placeholder="CODE (Ex: ABCD)" maxlength="10"
-                        style="font-size:1.5rem; text-align:center; letter-spacing:3px; text-transform:uppercase; margin-bottom:20px;">
 
-                    <button id="connect-btn" class="neon-btn" style="margin-top:10px;">CONNECT</button>
-                    <button id="join-back-btn" class="neon-btn secondary" style="margin-top:20px;">BACK</button>
-                </div>
 
                 <!-- High Score Screen (NEW) -->
                 <div id="high-score-screen" class="menu-screen hidden">
@@ -323,6 +314,15 @@
                     <h2 class="neon-title">LOGIN</h2>
                     <input type="text" id="login-user" placeholder="USERNAME" maxlength="12">
                     <input type="password" id="login-pass" placeholder="PASSWORD" maxlength="20">
+
+                    <div
+                        style="display:flex; align-items:center; gap:10px; margin-bottom:15px; width:100%; max-width:300px;">
+                        <input type="checkbox" id="login-remember"
+                            style="width:20px; height:20px; accent-color:#00ffff;">
+                        <label for="login-remember" style="color:#aaa; font-size:0.8rem; cursor:pointer;">REMEMBER
+                            ME</label>
+                    </div>
+
                     <button id="btn-do-login" class="neon-btn">LOG IN</button>
                     <div style="margin-top:10px;">
                         <button id="btn-goto-recover" class="neon-btn secondary"
@@ -633,7 +633,7 @@
 
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=3.44"></script>
+        <script src="game_v9.js?v=3.45"></script>
 </body>
 
 </html>

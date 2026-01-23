@@ -1,5 +1,5 @@
 // Update cache version to force refresh
-const CACHE_NAME = 'neon-snake-v66-network-first';
+const CACHE_NAME = 'neon-snake-v67-network-first';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -46,6 +46,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
     // Skip cross-origin requests
     if (!e.request.url.startsWith(location.origin)) return;
+
+    // Skip POST requests (auth.php, etc.)
+    if (e.request.method !== 'GET') return;
 
     e.respondWith(
         fetch(e.request)
