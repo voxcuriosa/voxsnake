@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.45";
+    const CURRENT_VER = "v3.46";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.45") {
+    if (bodyVer !== "3.46") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -115,8 +115,8 @@ window.addEventListener('DOMContentLoaded', () => {
             language: navigator.language || 'en'
         };
 
-        // Attempt logging to historyquiz endpoint
-        fetch('../historyquiz/auth_v2.php', {
+        // Attempt logging to history endpoint
+        fetch('../history/auth_v2.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -376,7 +376,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.45";
+            const CURRENT_VER = "v3.46";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 
