@@ -679,3 +679,66 @@ canvas {
     box-sizing: content-box;
     border: none;
 }
+
+/* Cookie Consent Banner */
+.cookie-banner {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--p1-color);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    border-radius: 12px;
+    padding: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: slideUp 0.5s ease-out;
+}
+
+.cookie-content p {
+    font-size: 0.9rem;
+    color: #ccc;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.cookie-buttons {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+}
+
+.cookie-buttons .neon-btn.small {
+    margin: 0;
+    flex: 1;
+    max-width: 150px;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, 100%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 600px) {
+    .cookie-banner {
+        bottom: 10px;
+        padding: 15px;
+    }
+    .cookie-content p {
+        font-size: 0.8rem;
+    }
+}

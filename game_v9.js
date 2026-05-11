@@ -45,12 +45,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // Better: Update the Version text immediately    // Final Version
     // Better: Update the Version text immediately    // Final Version
     const vCheck = document.getElementById('version-number');
-    const CURRENT_VER = "v3.47";
+    const CURRENT_VER = "v3.48";
     if (vCheck) vCheck.innerText = CURRENT_VER;
 
     // --- NUCLEAR CACHE BUSTER ---
     const bodyVer = document.body.getAttribute('data-version');
-    if (bodyVer !== "3.47") {
+    if (bodyVer !== "3.48") {
         console.log("CRITICAL: STALE HTML DETECTED! Nuking Cache...");
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(function (registrations) {
@@ -105,7 +105,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // -----------------------------------
 
     // --- VISIT LOGGING (v3.45) ---
-    function logAppVisit() {
+    async function logAppVisit() {
         let user = null;
         try {
             const nameEQ = "snake_user=";
@@ -119,10 +119,31 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) { }
 
+        // Default fallback
+        let currentCountry = 'Unknown';
+        try {
+            const geoRes = await fetch('https://get.geojs.io/v1/ip/country.json', { cache: "force-cache" });
+            if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData && geoData.country) currentCountry = geoData.country;
+            } else throw new Error("geojs not ok");
+        } catch (e) {
+            try {
+                const fbRes = await fetch('https://api.country.is/', { cache: "force-cache" });
+                if (fbRes.ok) {
+                    const fbData = await fbRes.json();
+                    if (fbData && fbData.country) currentCountry = fbData.country;
+                }
+            } catch (fbErr) {
+                console.warn("Geoloc fetch failed", fbErr);
+            }
+        }
+
         const payload = {
             action: 'log_visit',
             app: 'snake',
             username: user ? user.name : null,
+            country: currentCountry,
             device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Mobile' : 'PC',
             screen_resolution: window.screen.width + "x" + window.screen.height,
             referrer: document.referrer || 'Direct',
@@ -390,7 +411,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const GRID_SIZE = 20;
             // v6.96: Fixed "Start 1 Player" casing
             // v9.0: Re-write for cleaner logic
-            const CURRENT_VER = "v3.47";
+            const CURRENT_VER = "v3.48";
             const CANVAS_WIDTH = 800; // Virtual Width
             const CANVAS_HEIGHT = 600; // Virtual Height
 

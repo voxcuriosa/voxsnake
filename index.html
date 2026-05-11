@@ -2,9 +2,46 @@
 <html lang="en">
 
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YYPRYXPN70"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+
+        // Initialize with default denied consent
+        if (localStorage.getItem('cookie-consent') !== 'granted') {
+            gtag('consent', 'default', {
+                'ad_storage': 'denied',
+                'analytics_storage': 'denied'
+            });
+        }
+
+        gtag('js', new Date());
+        gtag('config', 'G-YYPRYXPN70');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Snake Multiplayer</title>
+    <link rel="canonical" href="https://voxcuriosa.no/snake/">
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Play Neon Snake - An original, retro-style neon snake game. Battle friends in multiplayer combat or challenge the global leaderboard. Fast-paced, competitive, and completely free! Unblocked io game.">
+    <meta name="keywords" content="neon snake, snake game, multiplayer snake, io games, retro games, arcade games, neon snake game, unblocked games">
+    <meta name="author" content="Christian Borchgrevink-Vigeland">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://voxcuriosa.no/snake/">
+    <meta property="og:title" content="Neon Snake Multiplayer - Retro Arcade Combat">
+    <meta property="og:description" content="Battle friends in multiplayer combat or challenge the global leaderboard. Fast-paced, retro-style neon snake action!">
+    <meta property="og:image" content="https://voxcuriosa.no/snake/feature_graphic_final.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://voxcuriosa.no/snake/">
+    <meta property="twitter:title" content="Neon Snake Multiplayer - Retro Arcade Combat">
+    <meta property="twitter:description" content="Battle friends in multiplayer combat or challenge the global leaderboard. Fast-paced, retro-style neon snake action!">
+    <meta property="twitter:image" content="https://voxcuriosa.no/snake/feature_graphic_final.png">
     <link rel="stylesheet" href="style.css?v=6.81">
 
     <!-- Optimized Font Loading (Non-Blocking) -->
@@ -50,7 +87,7 @@
     <meta http-equiv="Expires" content="0">
 </head>
 
-<body data-version="3.47">
+<body data-version="3.48">
     <main class="main-wrapper">
         <h1 class="neon-title">NEON SNAKE</h1>
 
@@ -157,7 +194,7 @@
                         <button id="btn-1p" class="neon-btn">START 1 PLAYER</button>
                         <button id="btn-pre-2p" class="neon-btn">START 2 PLAYER</button>
                     </div>
-                    <script src="game_v9.js?v=3.47"></script>
+                    <script src="game_v9.js?v=3.48"></script>
                     <!-- 2 PLAYER SUB MENU -->
                     <div id="menu-2p-wrapper" class="hidden"
                         style="width:100%; display:flex; flex-direction:column; align-items:center;">
@@ -633,7 +670,48 @@
 
 
         <!-- SINGLE SOURCE OF TRUTH SCRIPT -->
-        <script src="game_v9.js?v=3.47"></script>
+        <script src="game_v9.js?v=3.48"></script>
+
+        <!-- Cookie Consent Banner -->
+        <div id="cookie-banner" class="cookie-banner hidden">
+            <div class="cookie-content">
+                <p>Denne siden bruker informasjonskapsler (cookies) for å forbedre opplevelsen og analysere trafikk. Vil du godta dette?</p>
+                <div class="cookie-buttons">
+                    <button id="cookie-accept" class="neon-btn small">Godta</button>
+                    <button id="cookie-decline" class="neon-btn small secondary">Avslå</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Cookie Consent Logic
+            (function() {
+                const banner = document.getElementById('cookie-banner');
+                const acceptBtn = document.getElementById('cookie-accept');
+                const declineBtn = document.getElementById('cookie-decline');
+                const consent = localStorage.getItem('cookie-consent');
+
+                if (!consent) {
+                    banner.classList.remove('hidden');
+                }
+
+                acceptBtn.onclick = () => {
+                    localStorage.setItem('cookie-consent', 'granted');
+                    banner.classList.add('hidden');
+                    // Update consent in gtag
+                    if (typeof gtag === 'function') {
+                        gtag('consent', 'update', {
+                            'analytics_storage': 'granted'
+                        });
+                    }
+                };
+
+                declineBtn.onclick = () => {
+                    localStorage.setItem('cookie-consent', 'denied');
+                    banner.classList.add('hidden');
+                };
+            })();
+        </script>
 </body>
 
 </html>
