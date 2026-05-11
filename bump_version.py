@@ -52,6 +52,8 @@ def bump_version():
         new_html = re.sub(r'data-version="\d+\.\d+"', f'data-version="{new_ver_str}"', html_content)
         # Replace script src version (?v=...)
         new_html = re.sub(r'game_v9\.js\?v=\d+\.\d+', f'game_v9.js?v={new_ver_str}', new_html)
+        # Replace style.css version (?v=...)
+        new_html = re.sub(r'style\.css\?v=\d+\.\d+', f'style.css?v={new_ver_str}', new_html)
         
         with open(index_html_path, 'w', encoding='utf-8') as f:
             f.write(new_html)

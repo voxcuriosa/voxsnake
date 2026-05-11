@@ -1,5 +1,5 @@
 // Update cache version to force refresh
-const CACHE_NAME = 'neon-snake-v70-network-first';
+const CACHE_NAME = 'neon-snake-v72-network-first';
 
 const ASSETS_TO_CACHE = [
     './',
