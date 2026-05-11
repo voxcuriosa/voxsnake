@@ -1,5 +1,5 @@
 // Update cache version to force refresh
-const CACHE_NAME = 'neon-snake-v72-network-first';
+const CACHE_NAME = 'neon-snake-v73-network-first';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -9,7 +9,8 @@ const ASSETS_TO_CACHE = [
     './manifest.json',
     './icon_192.png',
     './icon_512.png',
-    './scores.json'
+    './robots.txt',
+    './sitemap.xml'
 ];
 
 // Install Event
